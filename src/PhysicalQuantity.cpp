@@ -1,5 +1,5 @@
 
-// TODO: toString(), convert(), PreferredUnits
+// TODO: convert(), toString(const PreferredUnits& pu)
 
 #include "../include/PhysicalQuantity.h"
 
@@ -76,27 +76,19 @@ const PhysicalQuantity::UnitDefinition PhysicalQuantity::KnownUnits[] =
 	{"Hz", "hertz",    { 0, 0,-1, 0, 0}, 0, 1.0},
 	{"J", "joule",     { 1, 2,-2, 0, 0}, 0, 1.0},
 	{"N", "newton",    { 1, 1,-2, 0, 0}, 0, 1.0},
-	{"lb", "pound",    { 1, 1,-2, 0, 0}, 0, 4.448221615260501}
+	{"lb", "pound",    { 1, 1,-2, 0, 0}, 0, 4.448221615260501},
 	//                   M  D Ti Te Ch
+	{"K","kelvin",     { 0, 0, 0, 1, 0}, 0, 1.0 },
+	{"C","coulomb",    { 0, 0, 0, 0, 1}, 0, 1.0 },
+
 
 	/*Template
-	
+
+	//                   M  D Ti Te Ch
+
 	{"", "",           { 0, 0, 0, 0, 0}, 0, 1.0},
 
 	*/
-	
-	//{"m", "meter", QP::meter, 1, 1.0 } ,
-	//{"g", "gram", &{q::MASS}, 1, 0.001},  // SI standard unit of mass is the kilogram, but this class will parse the prefix separately.
-	//{"s", "second", &{q::TIME}, 1, 1.0},
-
-	// short symbol, long name, factor
-	//DeclareUnitDef(m, meter, 1.0),
-	//DeclareUnitDef(g, gram, 0.001),
-	//DeclareUnitDef(s, second, 1.0),
-	//DeclareUnitDef(Hz, hertz, 1.0),
-	//DeclareUnitDef(min, minute, 60),
-	//DeclareUnitDef(hr, hour, 3600),
-	////{"min", "minute", {{QuantityType::TIME, 1}}, 60.0 }
 };
 const int PhysicalQuantity::KnownUnitsLength = sizeof(PhysicalQuantity::KnownUnits) / sizeof(PhysicalQuantity::UnitDefinition);
 
@@ -244,6 +236,10 @@ void PhysicalQuantity::parseUnits(std::string unitStr, signed char (&unitsOut)[(
 			{
 				if (denom) { throw InvalidExpressionException("Only one '/' to indicate units denominator is allowed."); }
 				denomNext = true;
+				wordStart = i + 1;
+				while (wordStart < ulen && uptr[wordStart] == ' ') { wordStart++; }
+				i = wordStart - 1;
+				continue;
 			}
 
 			if (word == "/")
@@ -273,7 +269,7 @@ void PhysicalQuantity::parseUnits(std::string unitStr, signed char (&unitsOut)[(
 						throw InvalidExpressionException("Units may only have integer exponents.");
 					}
 					upow = atoi(powerStr.c_str());
-					if (denom) { upow *= -1;}
+					//if (denom) { upow *= -1;} // handled in mulunit()
 				}
 				else
 				{
@@ -474,15 +470,106 @@ void PhysicalQuantity::parse(string text)
 std::string PhysicalQuantity::toString()
 {
 	string ret;
-	// TODO: human friendly format
+	// TODO: human friendly readability
 
 	char numbuf[100];
 	sprintf(numbuf, "%g", value);
 	ret = numbuf; 
 
+	if (dim[(int)QuantityType::MASS] > 0) { ret += " kg"; }
+	if (dim[(int)QuantityType::MASS] > 1) 
+	{
+		sprintf(numbuf, "%d", (static_cast<signed int>(dim[(int)QuantityType::MASS])));
+		ret += "^";
+		ret += numbuf;
+	}
+	if (dim[(int)QuantityType::DISTANCE] > 0) { ret += " m"; }
+	if (dim[(int)QuantityType::DISTANCE] > 1) 
+	{
+		sprintf(numbuf, "%d", (static_cast<signed int>(dim[(int)QuantityType::DISTANCE])));
+		ret += "^";
+		ret += numbuf;
+	}
+	if (dim[(int)QuantityType::TIME] > 0) { ret += " s"; }
+	if (dim[(int)QuantityType::TIME] > 1) 
+	{
+		sprintf(numbuf, "%d", (static_cast<signed int>(dim[(int)QuantityType::TIME])));
+		ret += "^";
+		ret += numbuf;
+	}
+	if (dim[(int)QuantityType::TEMPERATURE] > 0) { ret += " K"; }
+	if (dim[(int)QuantityType::TEMPERATURE] > 1)
+	{
+		sprintf(numbuf, "%d", (static_cast<signed int>(dim[(int)(int)QuantityType::TEMPERATURE])));
+		ret += "^";
+		ret += numbuf;
+	}
+	if (dim[(int)QuantityType::CHARGE] > 0) { ret += " C"; }
+	if (dim[(int)QuantityType::CHARGE] > 1) 
+	{
+		sprintf(numbuf, "%d", (static_cast<signed int>(dim[(int)QuantityType::CHARGE])));
+		ret += "^";
+		ret += numbuf;
+	}
 
-	throw exception("Incomplete function");
+
+	bool hasDenominator = false;
+	for (int iDim = 0; iDim < (int)QuantityType::ENUM_MAX; iDim++)
+	{
+		if (dim[iDim] < 0)
+		{
+			hasDenominator = true;
+			break;
+		}
+	}
+
+
+	if (!hasDenominator) return ret;
+	ret += " /";
+
+
+	if (dim[(int)QuantityType::MASS] < 0) { ret += " kg"; }
+	if (dim[(int)QuantityType::MASS] < -1) 
+	{
+		sprintf(numbuf, "%d", (-1 * static_cast<signed int>(dim[(int)QuantityType::MASS])));
+		ret += "^";
+		ret += numbuf;
+	}
+	if (dim[(int)QuantityType::DISTANCE] < 0) { ret += " m"; }
+	if (dim[(int)QuantityType::DISTANCE] < -1) 
+	{
+		sprintf(numbuf, "%d", (-1 * static_cast<signed int>(dim[(int)QuantityType::DISTANCE])));
+		ret += "^";
+		ret += numbuf;
+	}
+	if (dim[(int)QuantityType::TIME] < 0) { ret += " s"; }
+	if (dim[(int)QuantityType::TIME] < -1) 
+	{
+		sprintf(numbuf, "%d", (-1 * static_cast<signed int>(dim[(int)QuantityType::TIME])));
+		ret += "^";
+		ret += numbuf;
+	}
+	if (dim[(int)QuantityType::TEMPERATURE] < 0) { ret += " K"; }
+	if (dim[(int)QuantityType::TEMPERATURE] < -1)
+	{
+		sprintf(numbuf, "%d", (-1 * static_cast<signed int>(dim[(int)(int)QuantityType::TEMPERATURE])));
+		ret += "^";
+		ret += numbuf;
+	}
+	if (dim[(int)QuantityType::CHARGE] < 0) { ret += " C"; }
+	if (dim[(int)QuantityType::CHARGE] < -1) 
+	{
+		sprintf(numbuf, "%d", (-1 * static_cast<signed int>(dim[(int)QuantityType::CHARGE])));
+		ret += "^";
+		ret += numbuf;
+	}
+
 	return ret;
+}
+
+std::string PhysicalQuantity::toString(const PreferredUnits& pu)
+{
+	throw exception("Incomplete function");
 }
 
 PhysicalQuantity PhysicalQuantity::operator* (const PhysicalQuantity& rhs)
@@ -623,6 +710,11 @@ size_t PhysicalQuantity::cstrHasherTiny::operator()(const char* s) const
 	return ret;
 }
 
+bool PhysicalQuantity::operator==(const PhysicalQuantity& rhs)
+{
+	if (memcmp(dim, rhs.dim, sizeof(dim)) != 0) { return false; }
+	return (value == rhs.value);
+}
 
 
 //============================================================================================
@@ -639,6 +731,7 @@ PhysicalQuantity::PreferredUnits::PreferredUnits(const string& unitList)
 	while (pstr[wordStart] == ' ') { wordStart++; }
 	//while ( < len && pstr[wordStart] != 0)
 	char c;
+	int unitIndex;
 	for (pos = wordStart; pos <= len; pos++)
 	{
 		if (pos < len) { c = pstr[pos]; }
@@ -647,7 +740,8 @@ PhysicalQuantity::PreferredUnits::PreferredUnits(const string& unitList)
 			wordEnd = pos;
 			word = unitList.substr(wordStart, wordEnd - wordStart);
 
-			//findUnit
+			unitIndex = PhysicalQuantity::findUnit(word);
+			if (unitIndex != -1) { prefs.push_back(unitIndex); }
 
 			wordStart = wordEnd + 1;
 			while (pstr[wordStart] == ' ') { wordStart++; }

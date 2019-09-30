@@ -22,13 +22,6 @@ public:
 		ENUM_MAX
 	};
 
-	//struct QtyPower
-	//{
-	//	QuantityType type;
-	//	signed int power;
-	//};
-
-
 	struct UnitQty
 	{
 		//UnitType type;
@@ -99,6 +92,7 @@ public:
 
 	class PreferredUnits
 	{
+		friend class PhysicalQuantity;
 	public:
 		PreferredUnits(const std::string& unitList_SpaceDelimited);
 	private:
@@ -124,6 +118,7 @@ public:
 	void parse(std::string text);
 	//__inline void parse(std::string text) { parse(text.c_str()); }
 	std::string toString();
+	std::string toString(const PreferredUnits&);
 
 	PhysicalQuantity operator* (const PhysicalQuantity& rhs);
 	PhysicalQuantity operator/ (const PhysicalQuantity& rhs);
@@ -135,6 +130,7 @@ public:
 	PhysicalQuantity operator+ (double rhs);
 	PhysicalQuantity operator- (double rhs);
 
+	bool operator==(const PhysicalQuantity& rhs);
 
 	class cstrLess
 	{
@@ -151,6 +147,9 @@ public:
 	public:
 		size_t operator()(const char*) const;
 	};
+
+	static signed int findUnit(const std::string& name);
+
 private:
 	double value;
 	signed char dim[(int)QuantityType::ENUM_MAX];
@@ -168,7 +167,6 @@ private:
 	//static std::map<const char*, int, cstrLess> UnitLongNameLookup;
 #endif
 	void init();
-	signed int findUnit(const std::string& name);
 	void parseUnits(std::string unitStr, signed char (&unitsOut)[(int)QuantityType::ENUM_MAX], double& factorOut); // throws if unknown/invalid unit
 	void mulUnit(signed char (&unitsOut)[(int)QuantityType::ENUM_MAX], const UnitDefinition& unit, signed int power, bool invert = false); // deals only with quantity dimension, conversion factors are handled elsewhere
 };
