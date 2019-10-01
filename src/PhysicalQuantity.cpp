@@ -1,73 +1,42 @@
 
-// TODO: convert(), toString(const PreferredUnits& pu)
+// TODO: convert(), toString(const PreferredUnits& pu), NO_THROW
 
 #include "../include/PhysicalQuantity.h"
-
 using namespace std;
+
+//const int PhysicalQuantity::PreferredUnitsBase::staticStorageSize = 4;
 
 
 #ifdef _MSC_VER
 #pragma warning(disable:4996)
 #endif
 
-const double PhysicalQuantity::Pi = 3.1415926535897932384626433832795;
+const PhysicalQuantity::num PhysicalQuantity::Pi = 3.1415926535897932384626433832795;
+
+
+#ifndef LOW_RAM
+std::unordered_map<const char*, int, PhysicalQuantity::cstrHasherTiny, PhysicalQuantity::cstrEq> PhysicalQuantity::UnitSymbolLookup;
+std::unordered_map<const char*, int, PhysicalQuantity::cstrHasherTiny, PhysicalQuantity::cstrEq> PhysicalQuantity::UnitLongNameLookup;
+#endif
+
+
+#ifdef NO_THROW
+void (*PhysicalQuantity::errorHandler)(void* userContext, ErrorCode e);
+void* PhysicalQuantity::errorUserContext;
+#else
 PhysicalQuantity::UnitMismatchException::UnitMismatchException() : std::exception() {}
 PhysicalQuantity::UnitMismatchException::UnitMismatchException(const char* message) : std::exception(message) {}
 PhysicalQuantity::InvalidExpressionException::InvalidExpressionException() : std::exception() {}
 PhysicalQuantity::InvalidExpressionException::InvalidExpressionException(const char* message) : std::exception(message) {}
+#endif
 
-std::unordered_map<const char*, int, PhysicalQuantity::cstrHasherTiny, PhysicalQuantity::cstrEq> PhysicalQuantity::UnitSymbolLookup;
-std::unordered_map<const char*, int, PhysicalQuantity::cstrHasherTiny, PhysicalQuantity::cstrEq> PhysicalQuantity::UnitLongNameLookup;
-
-//#define q PhysicalQuantity::QuantityType
-
-const PhysicalQuantity::Prefix PhysicalQuantity::KnownPrefixes[] =
-{
-	{"y", "yocto", 1e-24},
-	{"z", "zepto", 1e-21},
-	{"a", "atto", 1e-18},
-	{"f", "femto", 1e-15},
-	{"p", "pico", 1e-12},
-	{"n", "nano", 1e-9},
-	{"u", "micro", 1e-6},  // Should I try to make the source files utf-8 for greek letter mu? Ehhhhh...
-	{"m", "milli", 1e-3},
-	{"c", "centi", 1e-2},
-	{"d", "deci", 0.1},
-	{"da", "deka", 10.0},
-	{"h", "hecto", 100.0},
-	{"k", "kilo", 1000.0},
-	{"M", "mega", 1e6},
-	{"G", "giga", 1e9},
-	{"T", "tera", 1e12},
-	{"P", "peta", 1e15},
-	{"E", "exa", 1e18},
-	{"Z", "zetta", 1e21},
-	{"Y", "yotta", 1e24}
-};
-const int PhysicalQuantity::KnownPrefixesLength = sizeof(PhysicalQuantity::KnownPrefixes) / sizeof(PhysicalQuantity::Prefix);
-
-
-// New units must be added in 2 places.
-// Need a separate place for the arrays which hold the dimensional data about a unit, so we can have a const pointer to it,
-// because the compiler can't convert from an initializer_list to a constant array pointer
-//namespace PhysicalQuantityUnitDimensions
-//{
-//	typedef const PhysicalQuantity::UnitQty u;
-//	typedef PhysicalQuantity::QuantityType q;
-//
-//	// QuantityType, exponent
-//	u meter[] = {{q::DISTANCE, 1}};
-//	u gram[] = {{q::MASS, 1}};
-//	u second[] = {{q::TIME, 1}};
-//	u hertz[] = {{q::TIME, -1}};
-//	u minute[] = {{q::TIME, 1}};
-//	u hour[] = {{q::TIME, 1}};
-//	// Template:
-//	// u [] = {{q::, }};
-//}
-////#define DeclareUnitDef(symbol, longName, factor) { #symbol, #longName, PhysicalQuantityUnitDimensions::longName, sizeof(PhysicalQuantityUnitDimensions::longName) / sizeof(PhysicalQuantity::UnitQty), factor}
 const PhysicalQuantity::UnitDefinition PhysicalQuantity::KnownUnits[] = 
 {
+	/*Template
+	//                   M  D Ti Te Ch
+	{"", "",           { 0, 0, 0, 0, 0}, 0, 1.0},
+	*/
+
 	// symbol, longName, { MASS DISTANCE TIME TEMPERATURE CHARGE }, offset, factor
 	//                   M  D Ti Te Ch
 	{"m", "meter",     {+0,+1,+0,+0,+0}, 0, 1.0},
@@ -78,24 +47,54 @@ const PhysicalQuantity::UnitDefinition PhysicalQuantity::KnownUnits[] =
 	{"N", "newton",    { 1, 1,-2, 0, 0}, 0, 1.0},
 	{"lb", "pound",    { 1, 1,-2, 0, 0}, 0, 4.448221615260501},
 	//                   M  D Ti Te Ch
-	{"K","kelvin",     { 0, 0, 0, 1, 0}, 0, 1.0 },
-	{"C","coulomb",    { 0, 0, 0, 0, 1}, 0, 1.0 },
+	{"K","kelvin",     { 0, 0, 0, 1, 0}, 0, 1.0},
+	{"degC","degreeC", { 0, 0, 0, 1, 0}, 273.15, 1.0},
+	//{"degF","degreeF", { 0, 0, 0, 1, 0}, 304.15, 9.0/5.0},
+	{"degF","degreeF", { 0, 0, 0, 1, 0}, 255.37222222222222222222222222222, 0.55555555555555555555555555555556},
+	{"C","coulomb",    { 0, 0, 0, 0, 1}, 0, 1.0},
+	{"A","ampere",    { 0, 0,-1, 0, 1}, 0, 1.0},
 
-
-	/*Template
-
-	//                   M  D Ti Te Ch
-
-	{"", "",           { 0, 0, 0, 0, 0}, 0, 1.0},
-
-	*/
 };
 const int PhysicalQuantity::KnownUnitsLength = sizeof(PhysicalQuantity::KnownUnits) / sizeof(PhysicalQuantity::UnitDefinition);
+
+#define DefineLiteral(symbol) PhysicalQuantity operator ""_##symbol (long double v) { PhysicalQuantity ret(v, #symbol); return ret; } PhysicalQuantity operator ""_##symbol (unsigned long long v) { PhysicalQuantity ret(static_cast<PhysicalQuantity::num>(v), #symbol); return ret; }
+DefineLiteral(m)
+DefineLiteral(g)
+DefineLiteral(s)
+DefineLiteral(Hz)
+DefineLiteral(N)
+DefineLiteral(J)
+DefineLiteral(K)
+DefineLiteral(C)
 
 // Coulombs <==> electron charge
 // 1C = 6.24150975*10^18e or 1e = 1.60217646*10^-19C
 
-#undef q
+
+const PhysicalQuantity::Prefix PhysicalQuantity::KnownPrefixes[] =
+{
+	{"y", "yocto", 1e-24},
+{"z", "zepto", 1e-21},
+{"a", "atto", 1e-18},
+{"f", "femto", 1e-15},
+{"p", "pico", 1e-12},
+{"n", "nano", 1e-9},
+{"u", "micro", 1e-6},  // Should I try to make the source files utf-8 for greek letter mu? Ehhhhh...
+{"m", "milli", 1e-3},
+{"c", "centi", 1e-2},
+{"d", "deci", 0.1},
+{"da", "deka", 10.0},
+{"h", "hecto", 100.0},
+{"k", "kilo", 1000.0},
+{"M", "mega", 1e6},
+{"G", "giga", 1e9},
+{"T", "tera", 1e12},
+{"P", "peta", 1e15},
+{"E", "exa", 1e18},
+{"Z", "zetta", 1e21},
+{"Y", "yotta", 1e24}
+};
+const int PhysicalQuantity::KnownPrefixesLength = sizeof(PhysicalQuantity::KnownPrefixes) / sizeof(PhysicalQuantity::Prefix);
 
 void PhysicalQuantity::init()
 {
@@ -132,14 +131,16 @@ PhysicalQuantity::PhysicalQuantity(PhysicalQuantity&& move) noexcept
 	memcpy(dim, move.dim, sizeof(dim));
 }
 
-PhysicalQuantity::PhysicalQuantity(double value_p, const string& units_p)
+PhysicalQuantity::PhysicalQuantity(num value_p, const string& units_p)
 {
 	init();
 	value = value_p;
-	double unitFactor;
+	num unitFactor;
+	num unitOfs;
 	//units = parseUnits(units_p);
-	parseUnits(units_p, dim, unitFactor);
+	parseUnits(units_p, dim, unitFactor, unitOfs);
 	value *= unitFactor;
+	value += unitOfs;
 }
 
 PhysicalQuantity::PhysicalQuantity(const string& str)
@@ -148,25 +149,25 @@ PhysicalQuantity::PhysicalQuantity(const string& str)
 	parse(str);
 }
 
-//PhysicalQuantity::PhysicalQuantity(double value_p, const std::vector<PhysicalQuantity::UnitQty>& units_p)
+//PhysicalQuantity::PhysicalQuantity(num value_p, const std::vector<PhysicalQuantity::UnitQty>& units_p)
 //{
 //	value = value_p;
 //	units = units_p;
 //}
 //
-//PhysicalQuantity::PhysicalQuantity(double value_p, std::vector<PhysicalQuantity::UnitQty>&& units_mv)
+//PhysicalQuantity::PhysicalQuantity(num value_p, std::vector<PhysicalQuantity::UnitQty>&& units_mv)
 //{
 //	value = value_p;
 //	units = std::move(units_mv); // maybe redundant but eh, better to be clear, no run time cost
 //}
 
-//double PhysicalQuantity::convert(const std::vector<UnitQty> unit)
+//num PhysicalQuantity::convert(const std::vector<UnitQty> unit)
 //{
 //	throw exception("incomplete function");
 //	return 0.0;
 //}
 
-double PhysicalQuantity::convert(const string& units)
+PhysicalQuantity::num PhysicalQuantity::convert(const string& units)
 {
 	throw exception("incomplete function");
 	return 0.0;
@@ -200,14 +201,15 @@ bool matchLast(string search, string match)
 	return true;
 }
 
-//void PhysicalQuantity::parseUnits(std::string unitStr, std::vector<PhysicalQuantity::UnitQty>& unitsOut, double& factorOut)
-void PhysicalQuantity::parseUnits(std::string unitStr, signed char (&unitsOut)[(int)QuantityType::ENUM_MAX], double& factorOut)
+//void PhysicalQuantity::parseUnits(std::string unitStr, std::vector<PhysicalQuantity::UnitQty>& unitsOut, num& factorOut)
+void PhysicalQuantity::parseUnits(std::string unitStr, signed char (&unitsOut)[(int)QuantityType::ENUM_MAX], num& factorOut, num& ofsOut)
 {
 	//std::vector<UnitQty> ret;
 	//unitsOut.clear();
 	memset(unitsOut, 0, sizeof(unitsOut));
 	factorOut = 1.0;
 	char c = 0;
+	num tempOfs = 0.0;
 	const char* uptr = unitStr.c_str();
 	int ulen = unitStr.length();
 	if (ulen == 0) { return; }
@@ -345,6 +347,18 @@ void PhysicalQuantity::parseUnits(std::string unitStr, signed char (&unitsOut)[(
 				}
 
 
+				if (KnownUnits[foundUnit].offset != 0.0)
+				{
+					if (tempOfs != 0.0)
+					{
+						throw InvalidExpressionException("Multiple units given which apply an offset (e.g. degrees F)");
+					}
+					if (upow < -1 || upow > 1)
+					{
+						throw InvalidExpressionException("Can not handle an offset unit with a power greater than 1. (e.g. degrees F squared)");
+					}
+					tempOfs = KnownUnits[foundUnit].offset;
+				}
 				factorOut *= KnownUnits[foundUnit].factor;
 				mulUnit(unitsOut, KnownUnits[foundUnit], upow, denom);
 				//UnitQty q;
@@ -364,6 +378,25 @@ void PhysicalQuantity::parseUnits(std::string unitStr, signed char (&unitsOut)[(
 			wordStart = wordEnd;
 			while (uptr[wordStart] == ' ' && wordStart < ulen) { wordStart++; }
 		}
+	}
+	
+	// Apply offset (mainly for temperature in degrees)
+	// Unless it's something like degrees per second, basically some derived unit
+	bool applyOfs = true;
+	if (tempOfs != 0.0)
+	{
+		for (int iCheckDim = 0; iCheckDim < (int)QuantityType::ENUM_MAX; iCheckDim++)
+		{
+			if (unitsOut[iCheckDim] != 0 && iCheckDim != (int)QuantityType::TEMPERATURE)
+			{
+				//throw InvalidExpressionException("");
+				applyOfs = false;
+			}
+		}
+	}
+	if (applyOfs)
+	{
+		ofsOut = tempOfs;
 	}
 }
 
@@ -432,7 +465,7 @@ void PhysicalQuantity::mulUnit(signed char(&unitsOut)[(int)QuantityType::ENUM_MA
 
 void PhysicalQuantity::parse(string text)
 {
-	double newValue = 0.0;
+	num newValue = 0.0;
 	int firstNotSpace = text.find_first_not_of(" ");
 	if (firstNotSpace > 0) { text = text.substr(firstNotSpace); }
 	if (text.length() == 0) { throw InvalidExpressionException("Quantity can not be null."); }
@@ -462,9 +495,11 @@ void PhysicalQuantity::parse(string text)
 	}
 	
 	value = atof(text.c_str());
-	double unitFactor;
-	parseUnits(text.substr(firstNotNumber), dim, unitFactor);
+	num unitFactor;
+	num unitOfs;
+	parseUnits(text.substr(firstNotNumber), dim, unitFactor, unitOfs);
 	value *= unitFactor;
+	value += unitOfs;
 }
 
 std::string PhysicalQuantity::toString()
@@ -567,8 +602,11 @@ std::string PhysicalQuantity::toString()
 	return ret;
 }
 
-std::string PhysicalQuantity::toString(const PreferredUnits& pu)
+string PhysicalQuantity::toString(const PreferredUnitsBase& pu)
 {
+	// TODO: this func
+	string ret;
+	
 	throw exception("Incomplete function");
 }
 
@@ -616,27 +654,31 @@ PhysicalQuantity PhysicalQuantity::operator- (const PhysicalQuantity& rhs)
 	return ret;
 }
 
-PhysicalQuantity PhysicalQuantity::operator* (double rhs)
+PhysicalQuantity PhysicalQuantity::operator* (num rhs)
 {
 	PhysicalQuantity ret(*this);
 	ret.value = value * rhs;
 	return ret;
 }
 
-PhysicalQuantity PhysicalQuantity::operator/ (double rhs)
+PhysicalQuantity PhysicalQuantity::operator/ (num rhs)
 {
 	PhysicalQuantity ret(*this);
 	ret.value = value / rhs;
 	return ret;
 }
 
-PhysicalQuantity PhysicalQuantity::operator+ (double rhs)
+PhysicalQuantity PhysicalQuantity::operator+ (num rhs)
 {
 	for (int i = 0; i < (int)QuantityType::ENUM_MAX; i++)
 	{
 		if (dim[i] != 0)
 		{
+#ifdef NO_THROW
+			errorHandler(errorUserContext, E_UNIT_MISMATCH);
+#else
 			throw UnitMismatchException("");
+#endif
 		}
 	}
 	PhysicalQuantity ret(*this);
@@ -644,7 +686,7 @@ PhysicalQuantity PhysicalQuantity::operator+ (double rhs)
 	return ret;
 }
 
-PhysicalQuantity PhysicalQuantity::operator- (double rhs)
+PhysicalQuantity PhysicalQuantity::operator- (num rhs)
 {
 	for (int i = 0; i < (int)QuantityType::ENUM_MAX; i++)
 	{
@@ -659,7 +701,9 @@ PhysicalQuantity PhysicalQuantity::operator- (double rhs)
 }
 
 signed int PhysicalQuantity::findUnit(const string& name)
+//bool PhysicalQuantity::findUnit(const char* name, int& outUnitIndex, int& outPrefixIndex)
 {
+	// TODO: convert away from string
 	signed int ret;
 #ifdef LOW_RAM
 	for (int i = 0; i < KnownUnitsLength; i++)
@@ -719,11 +763,14 @@ bool PhysicalQuantity::operator==(const PhysicalQuantity& rhs)
 
 //============================================================================================
 // Display and conversion stuff
-PhysicalQuantity::PreferredUnits::PreferredUnits(const string& unitList)
+PhysicalQuantity::PreferredUnits_dynamic::PreferredUnits_dynamic(const string& unitList)
 {
 	const char* pstr = unitList.c_str();
 	int len = unitList.length();
 	int pos = 0;
+	unitIndeces = new int[4]; //staticStorage;
+	int storageCapacity = 4; // staticStorageSize;
+	count_ = 0;
 	std::pair<int, int> a;
 	int wordStart = 0;
 	int wordEnd = 0;
@@ -741,13 +788,43 @@ PhysicalQuantity::PreferredUnits::PreferredUnits(const string& unitList)
 			word = unitList.substr(wordStart, wordEnd - wordStart);
 
 			unitIndex = PhysicalQuantity::findUnit(word);
-			if (unitIndex != -1) { prefs.push_back(unitIndex); }
+			if (unitIndex != -1)
+			{
+				//prefs.push_back(unitIndex); 
+				if (count_ >= storageCapacity)
+				{
+					int* tmpArray = new int[int(storageCapacity * 1.5) + 1];
+					memcpy(tmpArray, unitIndeces, sizeof(int) * count_);
+					unitIndeces = tmpArray;
+				}
+				unitIndeces[count_] = unitIndex;
+				count_++;
+			}
 
 			wordStart = wordEnd + 1;
 			while (pstr[wordStart] == ' ') { wordStart++; }
 			pos = wordStart;
 		}
 	}
+}
+PhysicalQuantity::PreferredUnits_dynamic::~PreferredUnits_dynamic()
+{
+	//if (unitIndeces != staticStorage) { delete [] unitIndeces; }
+	delete [] unitIndeces;
+}
+
+PhysicalQuantity::PreferredUnits_static::PreferredUnits_static(const char* unitList, int* storage, size_t storageSizeBytes)
+{
+	count_ = 0;
+	unitIndeces = storage;
+	int capacity = storageSizeBytes / sizeof(int);
+	// TODO:
+	//findUnit(unitList)
+}
+
+const PhysicalQuantity::UnitDefinition& PhysicalQuantity::PreferredUnitsBase::operator[] (int i)
+{
+	return KnownUnits[unitIndeces[i]];
 }
 
 bool PhysicalQuantity::cstrLess::operator()(const char* a, const char* b) const
@@ -760,13 +837,81 @@ bool PhysicalQuantity::cstrEq::operator()(const char* a, const char* b) const
 	return (strcmp(a, b) == 0);
 }
 
+CSubString::CSubString(const char* str_arg, size_t start_arg, size_t len_arg)
+{
+	str = str_arg;
+	start = start_arg;
+	end = start + len_arg;
+}
 
-#define DefineLiteral(symbol) PhysicalQuantity operator ""_##symbol (long double v) { PhysicalQuantity ret(v, #symbol); return ret; } PhysicalQuantity operator ""_##symbol (unsigned long long v) { PhysicalQuantity ret((double)v, #symbol); return ret; }
-DefineLiteral(m)
-DefineLiteral(g)
-DefineLiteral(s)
-DefineLiteral(Hz)
-DefineLiteral(N)
-DefineLiteral(J)
+bool CSubString::operator== (const char* cmp)
+{
+	for (int i = start; (i < end) && (*cmp != 0) && (str[i] != 0); i++)
+	{
+		if (str[i] != *cmp) { return false; }
+		if (str[i] == 0) { return true; }
+		if (*cmp == 0) { return false; }
+		cmp++;
+	}
+	return true;
+}
 
+bool CSubString::begins(const char* test)
+{
+	for (int i = start; i < end; i++)
+	{
+		if (str[i] != *test) { return false; }
+		if (*test == 0) { return false; }
+		test++;
+	}
+	return true;
+}
 
+bool CSubString::ends(const char* test)
+{
+	int tlen = strlen(test);
+	if (tlen < (end - start)) { return false; }
+	int ti = tlen - (end - start);
+	for (int i = start; i < end; i++)
+	{
+		if (str[i] != test[ti]) { return false; }
+		if (str[i] == 0) { return true; }
+		ti++;
+	}
+	return true;
+}
+
+bool CSubString::copy(char* buf, int size)
+{
+	int len = end - start;
+	if (size <= len) { return false; }
+	memcpy(buf, &str[start], len);
+	buf[len] = 0;
+	return true;
+}
+
+int CSubString::at(const char* test, int startArg)
+{
+	bool match;
+	int mylen = end - start;
+	for (int iStart = startArg; test[iStart] != 0; iStart++)
+	{
+		if (test[iStart] == 0) { return -1; }
+		if (test[iStart] == str[start])
+		{
+			match = true;
+			for (int i = 0; i < mylen; i++)
+			{
+				if (test[iStart + i] != str[start + i])
+				{
+					match = false;
+					break;
+				}
+				if (str[start + i] == 0) { return iStart; }
+				if (test[iStart + i] == 0) { return -1; }
+			}
+			if (match) { return iStart; }
+		}
+	}
+	return -1;
+}
