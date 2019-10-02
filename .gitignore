@@ -3,3 +3,4 @@ Debug/
 .vs/
 *.7z
 include/PhysicalQuantity/hashTables.h
+x64/

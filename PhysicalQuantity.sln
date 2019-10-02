@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.29311.281
+# Visual Studio 15
+VisualStudioVersion = 15.0.28307.572
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PhysicalQuantity", "PhysicalQuantity.vcxproj", "{8CB2172B-EA9F-42FF-BFE4-C4D22AA2821A}"
 EndProject
@@ -9,6 +9,8 @@ Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
 		Debug|x86 = Debug|x86
+		hash|x64 = hash|x64
+		hash|x86 = hash|x86
 		Release|x64 = Release|x64
 		Release|x86 = Release|x86
 	EndGlobalSection
@@ -17,6 +19,10 @@ Global
 		{8CB2172B-EA9F-42FF-BFE4-C4D22AA2821A}.Debug|x64.Build.0 = Debug|x64
 		{8CB2172B-EA9F-42FF-BFE4-C4D22AA2821A}.Debug|x86.ActiveCfg = Debug|Win32
 		{8CB2172B-EA9F-42FF-BFE4-C4D22AA2821A}.Debug|x86.Build.0 = Debug|Win32
+		{8CB2172B-EA9F-42FF-BFE4-C4D22AA2821A}.hash|x64.ActiveCfg = hash|x64
+		{8CB2172B-EA9F-42FF-BFE4-C4D22AA2821A}.hash|x64.Build.0 = hash|x64
+		{8CB2172B-EA9F-42FF-BFE4-C4D22AA2821A}.hash|x86.ActiveCfg = hash|Win32
+		{8CB2172B-EA9F-42FF-BFE4-C4D22AA2821A}.hash|x86.Build.0 = hash|Win32
 		{8CB2172B-EA9F-42FF-BFE4-C4D22AA2821A}.Release|x64.ActiveCfg = Release|x64
 		{8CB2172B-EA9F-42FF-BFE4-C4D22AA2821A}.Release|x64.Build.0 = Release|x64
 		{8CB2172B-EA9F-42FF-BFE4-C4D22AA2821A}.Release|x86.ActiveCfg = Release|Win32

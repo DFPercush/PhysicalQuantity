@@ -3,22 +3,38 @@
 #include <PhysicalQuantity.h>
 #include <PhysicalQuantity/hash.h>
 
+typedef PhysicalQuantity PQ;
+
+int xmain()
+{
+	PhysicalQuantity::cstrHasherTiny h;
+	auto r = h("gram");
+	r = h("joule");
+	r = h("ampere");
+	return 0;
+}
 int main(int argc, char** argv)
 {
+	//return xmain();
 	for (int iArg = 1; iArg < argc; iArg++)
 	{
 		if (!strcmp(argv[iArg], "hash"))
 		{
 			if (argc > iArg)
 			{
-				iArg++;
-				int htsize = atoi(argv[iArg]);
-				if (htsize == 0)
-				{
-					printf("hash command expects a size for the hash table\n");
-					return 1;
-				}
-				PhysicalQuantity_buildHashTable(htsize);
+				//iArg++;
+				//int htsize = atoi(argv[iArg]);
+				//if (htsize == 0)
+				//{
+				//	printf("hash command expects a size for the hash table\n");
+				//	return 1;
+				//}
+				//PhysicalQuantity_dumpHashTable(htsize);
+				//PhysicalQuantity_dumpHashTable(&PhysicalQuantity::KnownUnits[0], PhysicalQuantity::KnownUnits[0]);
+				PhysicalQuantity_dumpHashTable(&PhysicalQuantity::KnownUnits[0], &PhysicalQuantity::KnownUnits[0].symbol, sizeof(PhysicalQuantity::UnitDefinition), PhysicalQuantity::KnownUnitsLength, PhysicalQuantity::hashTableSize_UnitSymbols, "UnitSymbols");
+				PhysicalQuantity_dumpHashTable(&PhysicalQuantity::KnownUnits[0], &PhysicalQuantity::KnownUnits[0].longName, sizeof(PhysicalQuantity::UnitDefinition), PhysicalQuantity::KnownUnitsLength, PhysicalQuantity::hashTableSize_UnitLongNames, "UnitLongNames");
+				PhysicalQuantity_dumpHashTable(&PhysicalQuantity::KnownPrefixes[0], &PhysicalQuantity::KnownPrefixes[0].symbol, sizeof(PhysicalQuantity::Prefix), PhysicalQuantity::KnownPrefixesLength, PhysicalQuantity::hashTableSize_PrefixSymbols, "PrefixSymbols");
+				PhysicalQuantity_dumpHashTable(&PhysicalQuantity::KnownPrefixes[0], &PhysicalQuantity::KnownPrefixes[0].longName, sizeof(PhysicalQuantity::Prefix), PhysicalQuantity::KnownPrefixesLength, PhysicalQuantity::hashTableSize_PrefixLongNames, "PrefixLongNames");
 				return 0;
 			}
 			else
@@ -42,8 +58,9 @@ int main(int argc, char** argv)
 	else { printf("Fail.\n"); }
 	printf("%s\n", p.toString().c_str());
 	PhysicalQuantity par;
-	par.parse(p.toString());
+	par.parse(p.toString().c_str());
 	printf("Parsed: %s\n", par.toString().c_str());
+	printf("1.2e11 ang --> %s\n", PQ(1.2e11_ang).toString().c_str());
 
 	return 0;
 }
@@ -79,13 +96,12 @@ int main02()
 
 int main03()
 {
-	printf("%u\n", PhysicalQuantity::cstrHasherTiny{}("km"));
-	printf("%u\n", PhysicalQuantity::cstrHasherTiny{}("N"));
-	printf("%u\n", PhysicalQuantity::cstrHasherTiny{}("Js"));
-	printf("%u\n", PhysicalQuantity::cstrHasherTiny{}("degF"));
-
-	printf("%u\n", PhysicalQuantity::cstrHasherTiny{}("mph"));
-	printf("%u\n", PhysicalQuantity::cstrHasherTiny{}("kph"));
+	printf("%u\n", (unsigned int)PhysicalQuantity::cstrHasherTiny{}("km"));
+	printf("%u\n", (unsigned int)PhysicalQuantity::cstrHasherTiny{}("N"));
+	printf("%u\n", (unsigned int)PhysicalQuantity::cstrHasherTiny{}("Js"));
+	printf("%u\n", (unsigned int)PhysicalQuantity::cstrHasherTiny{}("degF"));
+	printf("%u\n", (unsigned int)PhysicalQuantity::cstrHasherTiny{}("mph"));
+	printf("%u\n", (unsigned int)PhysicalQuantity::cstrHasherTiny{}("kph"));
 	return 0;
 }
 
