@@ -1,9 +1,39 @@
 
 #include <stdio.h>
-#include "include/PhysicalQuantity.h"
+#include <PhysicalQuantity.h>
+#include <PhysicalQuantity/hash.h>
 
-int main01()
+int main(int argc, char** argv)
 {
+	for (int iArg = 1; iArg < argc; iArg++)
+	{
+		if (!strcmp(argv[iArg], "hash"))
+		{
+			if (argc > iArg)
+			{
+				iArg++;
+				int htsize = atoi(argv[iArg]);
+				if (htsize == 0)
+				{
+					printf("hash command expects a size for the hash table\n");
+					return 1;
+				}
+				PhysicalQuantity_buildHashTable(htsize);
+				return 0;
+			}
+			else
+			{
+				printf("hash command expects a size for the hash table\n");
+				return 1;
+			}
+		}
+		else
+		{
+			printf("Unknown command '%s'\n", argv[iArg]);
+			return 1;
+		}
+	}
+
 	PhysicalQuantity q("12 N m");
 	auto m = 2.0_m;
 	auto n = 6_N;
@@ -18,7 +48,7 @@ int main01()
 	return 0;
 }
 
-int main()
+int main02()
 {
 	const char* teststr = "Hello world.";
 	CSubString s(teststr, 1, 2);
@@ -44,6 +74,18 @@ int main()
 	printf(" %d ", s.at(""));
 	printf(" %d ", s.at("e"));
 
+	return 0;
+}
+
+int main03()
+{
+	printf("%u\n", PhysicalQuantity::cstrHasherTiny{}("km"));
+	printf("%u\n", PhysicalQuantity::cstrHasherTiny{}("N"));
+	printf("%u\n", PhysicalQuantity::cstrHasherTiny{}("Js"));
+	printf("%u\n", PhysicalQuantity::cstrHasherTiny{}("degF"));
+
+	printf("%u\n", PhysicalQuantity::cstrHasherTiny{}("mph"));
+	printf("%u\n", PhysicalQuantity::cstrHasherTiny{}("kph"));
 	return 0;
 }
 

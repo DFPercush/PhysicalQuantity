@@ -159,16 +159,17 @@ public:
 	};
 
 	static signed int findUnit(const std::string& name);
-	//static bool findUnit(const char* name, int& outUnitIndex, int& outPrefixIndex);
-
-private:
-	num value;
-	signed char dim[(int)QuantityType::ENUM_MAX];
+	static bool findUnit(const char* name, int& outUnitIndex, int& outPrefixIndex);
 
 	static const UnitDefinition KnownUnits[];
 	static const int KnownUnitsLength;
 	static const Prefix KnownPrefixes[];
 	static const int KnownPrefixesLength;
+
+private:
+	num value;
+	signed char dim[(int)QuantityType::ENUM_MAX];
+
 #ifndef LOW_RAM
 
 	static std::unordered_map<const char*, int, cstrHasherTiny, cstrEq> UnitSymbolLookup;

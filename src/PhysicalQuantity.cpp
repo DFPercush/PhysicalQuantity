@@ -1,7 +1,9 @@
 
 // TODO: convert(), toString(const PreferredUnits& pu), NO_THROW
 
-#include "../include/PhysicalQuantity.h"
+#include <PhysicalQuantity.h>
+#include <PhysicalQuantity/hash.h>
+#include <PhysicalQuantity/hashTables.h>
 using namespace std;
 
 //const int PhysicalQuantity::PreferredUnitsBase::staticStorageSize = 4;
@@ -700,12 +702,19 @@ PhysicalQuantity PhysicalQuantity::operator- (num rhs)
 	return ret;
 }
 
+bool PhysicalQuantity::findUnit(const char* name, int& outUnitIndex, int& outPrefixIndex)
+{
+#if defined(LOW_RAM) || defined(NO_THROW)
+#else
+#endif
+	return false;
+}
+
 signed int PhysicalQuantity::findUnit(const string& name)
-//bool PhysicalQuantity::findUnit(const char* name, int& outUnitIndex, int& outPrefixIndex)
 {
 	// TODO: convert away from string
 	signed int ret;
-#ifdef LOW_RAM
+#if defined(LOW_RAM) || defined(NO_THROW)
 	for (int i = 0; i < KnownUnitsLength; i++)
 	{
 		//if (matchLast(name, KnownUnits[i].symbol) || matchLast(name, KnownUnits[i].longName))
@@ -740,18 +749,6 @@ signed int PhysicalQuantity::findUnit(const string& name)
 	return ret;
 #endif
 
-}
-
-size_t PhysicalQuantity::cstrHasherTiny::operator()(const char* s) const
-{
-	size_t ret = 0;
-	unsigned int poly = 0xE53B;
-	for (int pos = 0; s[pos] != 0; pos++)
-	{
-		if (ret & 0x80000000) { ret ^= poly; }
-		ret = (ret << 1) ^ s[pos];
-	}
-	return ret;
 }
 
 bool PhysicalQuantity::operator==(const PhysicalQuantity& rhs)
