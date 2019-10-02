@@ -2,3 +2,4 @@ Debug/
 *.i
 .vs/
 *.7z
+include/PhysicalQuantity/hashTables.h
