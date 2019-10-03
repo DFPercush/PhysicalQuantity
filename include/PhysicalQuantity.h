@@ -1,20 +1,6 @@
 #pragma once
 
-//=================================================================================================================
-// Preprocessor options:   (See README.txt)
-
-//#define NO_NEW           // Do not use dynamic memory allocation.
-//#define NO_STD_STRING    // Do not #include <string> or use std::string .
-//#define NO_LITERALS      // Do not define literal operators like 1_kg . 
-                           // User defined literals require a C++11 compiler or newer.
-//#define NO_INLINE        // Do not use inline functions, make all functions normal calls.
-//#define INLINE_KEYWORD inline  // default is __inline
-//#define NO_HASHING       // Do not use hash tables for unit string lookups (Tables can be in ROM)
-//#define NO_THROW         // Do not use 'throw' for errors, instead use an error callback (see errorHandler)
-//#define NO_PRINTF        // Do not include functions which use printf, mainly for pre-generating the hash tables.
-
-// End preprocessor options
-//=================================================================================================================
+#include <PhysicalQuantity/ppOptions.h>
 
 
 #if !defined(NO_INLINE) && !defined(INLINE_KEYWORD)
@@ -132,16 +118,6 @@ public:
 #endif
 
 	};
-	//class cstrLess
-	//{
-	//public:
-	//	bool operator() (const char* a, const char* b) const;
-	//};
-	//class cstrEq
-	//{
-	//public:
-	//	bool operator() (const char* a, const char* b) const;
-	//};
 
 #endif //#ifndef NO_HASHING
 
@@ -242,7 +218,7 @@ public:
 	PhysicalQuantity(const char* str);
 	~PhysicalQuantity() = default;
 
-	void parse(const char* text);
+	void parse(const CSubString& text);
 	num convert(const CSubString& units) const;
 	bool sprint(char* buf, int size, const PreferredUnitsBase& pu) const;
 	bool sprint(char* buf, int size) const;
@@ -290,7 +266,6 @@ private:
 	signed char dim[(int)QuantityType::ENUM_MAX];
 
 	void init();
-	//void parseUnits(std::string unitStr, signed char (&unitsOut)[(int)QuantityType::ENUM_MAX], num& factorOut, num& offsetOut); // throws if unknown/invalid unit
 	static void parseUnits(const CSubString& unitStr, signed char (&unitsOut)[(int)QuantityType::ENUM_MAX], num& factorOut, num& offsetOut); // throws if unknown/invalid unit
 	static void mulUnit(signed char (&unitsOut)[(int)QuantityType::ENUM_MAX], const UnitDefinition& unit, signed int power, bool invert = false); // deals only with quantity dimension, conversion factors are handled elsewhere
 
@@ -301,12 +276,16 @@ public:
 	static bool findUnit(const char* pcharName, int& outUnitIndex, int& outPrefixIndex);
 	bool sameUnitAs(const PhysicalQuantity& rhs) const;
 	bool unitsMatch(const PhysicalQuantity& rhs) const;
+	void parse(const char* text);
+
 #else
 	INLINE_KEYWORD static void parseUnits(const char* unitStr, signed char (&unitsOut)[(int)QuantityType::ENUM_MAX], num& factorOut, num& offsetOut) { return parseUnits(CSubString(unitStr), unitsOut, factorOut, offsetOut); }
 	INLINE_KEYWORD num convert(const char* units) const { return convert(csubstr(units)); }
 	INLINE_KEYWORD static bool findUnit(const char* pcharName, int& outUnitIndex, int& outPrefixIndex) { return findUnit(CSubString(pcharName), outUnitIndex, outPrefixIndex); }
 	INLINE_KEYWORD bool sameUnitAs(const PhysicalQuantity& rhs) const { return isLikeQuantity(rhs); }
 	INLINE_KEYWORD bool unitsMatch(const PhysicalQuantity& rhs) const { return isLikeQuantity(rhs); }
+	INLINE_KEYWORD void parse(const char* text) { parse(csubstr(text)); }
+
 #endif
 	// End main class members
 	//==================================================================================

@@ -1,4 +1,6 @@
 
+//#define NO_INLINE
+
 #include <stdio.h>
 #include <PhysicalQuantity.h>
 #include <PhysicalQuantity/hash.h>

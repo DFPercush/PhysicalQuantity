@@ -240,9 +240,10 @@ Adding more units:
 	3. In PhysicalQuantity.h, find all the DeclareLiteral() macros and add:
 		DeclareLiteral(symbol)  // again, do not put in quotes
 
-	4. Rebuild the hash tables. Compile the VC project or 'make' on a PC 
-		and invoke with the command line "hash". e.g. 
-			./PhysicalQuantity.exe hash > include/PhysicalQuantity/hashTables.h
+	4. Rebuild the hash tables. 
+		There is a separate VC project called genhashtables, and its output is to
+		be fed back into the main project as hashTables.h
+			($OutputDir)/genhashtables > include/PhysicalQuantity/hashTables.h
 	
 	5. Examine the generated file to see if the bucket size is obnoxious, i.e. lots of 
 		hashing collisions.
