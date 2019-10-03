@@ -15,22 +15,53 @@ during addition and subtraction, as well as scalar operations.
 
 
 System requirements:
-	- A C++ compiler which supports:
-		- classes with overloaded operators
-		- __inline functions in headers (TODO: Optional #define NO_INLINE)
+	All you really need is a rudimentary C++ compiler that can handle classes with 
+overloaded operators. There are several preprocessor options for compilers 
+and target systems which lack certain features like 'new' and 'printf'.
+Some of the nice features you can use if you have them are:
 
-		- (optional) literal operators (C++11), with preprocessor option 
-			e.g. 12_km
-			#define NO_LITERALS
-		- (optional) 'new' dynamic memory allocation can be utilized for convenience
-			during text output / toString(), but is not strictly required
-			#define NO_NEW
-		- (optional) try/throw/catch exception handling,
-			: see "Error handling" below
-			#define NO_THROW
-	- (optional) approx. 1KB of ROM space for static constants, hash tables, etc.
-		#define NO_HASHING
-	- (TODO - not yet implemented)  Does not need templates or STL support.
+	- (optional) literal operators (C++11), with preprocessor option 
+		e.g. 12_km
+		#define NO_LITERALS to disable
+
+	- (optional) 'new' dynamic memory allocation can be utilized for convenience
+		during text output / toString(), but is not strictly required
+		#define NO_NEW to disable
+
+	- (optional) try/throw/catch exception handling
+		See "Error handling" below
+		#define NO_THROW to use error callback instead
+
+	- (optional) approx. 1KB of ROM space for hash tables.
+	    This speeds up parsing and output.
+		#define NO_HASHING to disable.
+
+	- Does not require templates or STL support. 
+	
+	- std::string toString() is optional. Can write text output to a static buffer 
+	   via sprint(buf, len);
+
+	- Comes with a CSubString class (alias csubstr) which has a lot of the
+	  functionality of std::strings without the memory overhead. It stores
+	  a pointer and offsets to a single immutable source string, and can be
+	  useful for read only operations like parsing, chopping, slicing and dicing.
+
+	For any of these #define options, you can either uncomment the related line
+in the header, you can #define the option in your source file before #including 
+the header, or you can pass the #define as an argument to the compiler. All this 
+flexibility does makes it necessary, however, to check that various modules are 
+compiled with the same configuration as their dependencies. There is an easy macro 
+for this purpose called 'PQHeaderOptionsMatch'.  Here's an example:
+
+	#include <PhysicalQuantity.h>
+	int main() {
+		if (!PQHeaderOptionsMatch) {
+			printf("Error: library code was compiled with different header options.\n");
+			return 1;
+		}
+		...
+	}
+
 
 
 Performance:
@@ -41,6 +72,24 @@ with how this particular aspect is handled. You can have a hash table in ROM to
 make unit lookups faster, or use a slower linear search for minimum memory 
 overhead.
 
+Q: Can a PhysicalQuantity be binary-copied with memcpy() or DMA?
+A: Yes, but beware of invalid values resulting from parsing errors
+    during construction. 
+
+Q: Can it be sent over a network in binary?
+A: Sort of. I would recommend using the htond() or htonf() function from 
+   socket.h / winsock.h to ensure that you don't have problems with endianness,
+   but if you know for sure that both machines use the same byte order, you could
+   just dump (&x, sizeof(x)) to the send buffer, if you don't mind the extra overhead
+   of padding bytes taking up bandwidth. To do things properly for the
+   general case, you will need to declare a friend function in the header to have 
+   access to the raw value, then send htond(x.value), and raw copy x.dim.
+
+Q: Does the structure store references or pointers to any external buffers?
+A: No, but the PreferredUnits class which is used for formatting text output 
+   requires some buffer storage. The main PhysicalQuantity class that stores
+   and manipulates physical values is self-contained.
+
 
 Memory usage:
 	A low memory footprint is paramount to this design, with options to reduce
@@ -48,24 +97,27 @@ memory usage even further. The precision of values is governed by the typedef
 'num' in the main header file. By default, this is 'double'.
 Each value currently requires space for a 'num' plus 5 bytes,
 so a total of 13 bytes per value, out of the box. Changing the 'num' typedef
-to 'float' would bring that down to 9. 
-	Alternately, one could theoretically modify the unit storage as a struct of
+to 'float' would bring that down to 9.
+	In reality, the addition of padding bytes will probably mean that for double
+precision, the size will be 16 bytes, and for float, 12.
+	Theoretically, it might be possible to modify the unit storage as a struct of
 bit fields to perhaps 2 bytes instead of 5. Not often does one run into units 
-of the 127th power, but that would be possible in the default configuration.
+of the 127th power, but that is possible in the default configuration.
 Bit fields would make calculations slightly slower, requiring an extra 
 fetch/shift/or operation on every read/write, and speed is also
 important. But if you really need to save space, it might be worth looking into.
 That is, if your compiler supports it. This would involve modifying code, a little
 more involved than a simple preprocessor option. I didn't see the need, but
 that's how I would go about it if I had to.
-	(TODO) STL containers and dynamic memory allocation are mostly avoided, with 
-the exception of the PreferredUnits class using it optionally. PreferredUnits 
+	STL containers and dynamic memory allocation are strictly avoided if you
+#define NO_NEW. The main place memory buffers are required is the PreferredUnits
+class. It can operate in dynamic or static mode. PreferredUnits 
 is how you specify the units of text output. It is basically a cache of unit 
 lookups which you can reuse in subsequent toString() calls, rather than having
 to parse the units each time.
-	There is a preprocessor option (NO_NEW) to strictly 
-avoid all dynamic allocation. In this case you need to give PreferredUnits 
-a storage buffer of (int[however many units you tell it]) when constructed. 
+	In the static case, you need to give PreferredUnits 
+a storage buffer of (int[however many units you tell it * 2]) when constructed. 
+Note that the size parameter is specified in bytes, not elements.
 A buffer which is too small will not generate an error, but it may cause 
 toString() output to show the wrong units. None of this is required if you
 just want to get the value, though.
@@ -120,7 +172,11 @@ contact me or comment on github.
 
 
 Exception safety:
-	(TODO)
+	If an error occurs during an operation such as adding two dissimilar values,
+the original value (left hand side) will remain unmodified. If a parsing error
+occurs during the construction of an object, its value will be a scalar 0.
+Errors during toString/sprint will not modify the value, but you may not get
+the correct / any output.
 	
 
 Error handling:

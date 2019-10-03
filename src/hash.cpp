@@ -1,5 +1,8 @@
 
+
 #include <PhysicalQuantity.h>
+
+#ifndef NO_HASHING
 
 // These tables can go in ROM
 // If you change these values or add new units,
@@ -84,7 +87,7 @@ size_t PhysicalQuantity::cstrHasherTiny::operator()(const CSubString& s) const
 }
 
 
-#if !defined(NO_PRINTF) && !defined(NO_NEW)
+#ifndef NO_PRINTF
 
 void PhysicalQuantity_dumpHashTable(const void* pArray, const char * const* pcstrMember, int elementSize, int arrayLen, int hashTableSize, const char* arrayName)
 {
@@ -200,3 +203,5 @@ int PhysicalQuantity_dumpHashTable(int HashTableSize)
 }
 ********************************************************************************/
 #endif  // #if !defined(NO_PRINTF) && !defined(NO_NEW)
+
+#endif //#ifndef NO_HASHING

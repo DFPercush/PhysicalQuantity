@@ -1,60 +1,81 @@
 #pragma once
 
-// Preprocessor options:
-//#define NO_INLINE
-//#define NO_HASHING
-//#define NO_THROW
-//#define NO_PRINTF
-//#define NO_NEW
-//#define NO_LITERALS
+//=================================================================================================================
+// Preprocessor options:   (See README.txt)
+
+//#define NO_NEW           // Do not use dynamic memory allocation.
+//#define NO_STD_STRING    // Do not #include <string> or use std::string .
+//#define NO_LITERALS      // Do not define literal operators like 1_kg . 
+                           // User defined literals require a C++11 compiler or newer.
+//#define NO_INLINE        // Do not use inline functions, make all functions normal calls.
+//#define INLINE_KEYWORD inline  // default is __inline
+//#define NO_HASHING       // Do not use hash tables for unit string lookups (Tables can be in ROM)
+//#define NO_THROW         // Do not use 'throw' for errors, instead use an error callback (see errorHandler)
+//#define NO_PRINTF        // Do not include functions which use printf, mainly for pre-generating the hash tables.
+
+// End preprocessor options
+//=================================================================================================================
+
+
+#if !defined(NO_INLINE) && !defined(INLINE_KEYWORD)
+#define INLINE_KEYWORD __inline
+#endif //#if !defined(NO_INLINE) && !defined(INLINE_KEYWORD)
+
+//==================================================================================
+// Config checking
+#ifdef NO_NEW
+#define PQ_HAS_NO_NEW 0x01
+#else
+#define PQ_HAS_NO_NEW 0
+#endif
+#ifdef NO_STD_STRING
+#define PQ_HAS_NO_STD_STRING 0x02
+#else
+#define PQ_HAS_NO_STD_STRING 0
+#endif
+#ifdef NO_LITERALS
+#define PQ_HAS_NO_LITERALS 0x04
+#else
+#define PQ_HAS_NO_LITERALS 0
+#endif
+#ifdef NO_INLINE
+#define PQ_HAS_NO_INLINE 0x08
+#else
+#define PQ_HAS_NO_INLINE 0
+#endif
+#ifdef NO_HASHING
+#define PQ_HAS_NO_HASHING 0x10
+#else
+#define PQ_HAS_NO_HASHING 0
+#endif
+#ifdef NO_THROW
+#define PQ_HAS_NO_THROW 0x20
+#else
+#define PQ_HAS_NO_THROW 0
+#endif
+#ifdef NO_PRINTF
+#define PQ_HAS_NO_PRINTF 0x40
+#else
+#define PQ_HAS_NO_PRINTF 0
+#endif
+#define PQ_HEADER_OPTIONS (PQ_HAS_NO_NEW | PQ_HAS_NO_STD_STRING | PQ_HAS_NO_LITERALS | PQ_HAS_NO_INLINE | PQ_HAS_NO_HASHING | PQ_HAS_NO_THROW | PQ_HAS_NO_PRINTF)
+// End config checking
+//==================================================================================
+
+// csubstr.h is included in the PhysicalQuantity project's include/ directory.
+// This path should be included in project settings or as an -I in makefile
+#include <csubstr.h>
 
 #ifndef NO_THROW
 #include <exception>
 #include <stdexcept>
 #endif
-#ifndef NO_NEW
-#include <vector>
-//#include <unordered_map>
+#ifdef NO_NEW
+#define NO_STD_STRING
 #endif
-
-// TODO: not depend on std::strings
-//#include <string>
-
-//class CSubString;
-class CSubString
-{
-private:
-	const char* str;
-	int start;
-	int end; // length in constructor, internally end is easier
-public:
-	//typedef double num; //Duplicate typedef, meh
-
-	CSubString();
-	CSubString(const char* str_arg, int start_arg = 0, int len_arg = -1);
-	//CSubString(const CSubString& cp);
-	CSubString(const CSubString& from, int start_arg = 0, int len_arg = -1);
-	__inline char operator[](int index) const { if (start + index >= end) { return 0; } return str[start + index];}
-	CSubString& operator=(const CSubString& cp);
-	bool operator== (const char* cmp) const;
-	bool operator==(const CSubString& cmp) const;
-	bool begins(const CSubString& test) const;
-	bool ends(const CSubString& test) const;
-	__inline bool begins(const char* test) const { return begins(CSubString(test)); }
-	__inline bool ends(const char* test) const { return ends(CSubString(test)); }
-	int at(const char* test, int start = 0) const; // where this needle appears in a haystack argument, or -1
-	__inline int size() const { return end - start; }
-	__inline int length() const { return end - start; }
-	bool copy(char* buf, int size) const;
-	int find_first_of(const CSubString& find, int startOfs = 0) const;
-	int find_first_not_of(const CSubString& find, int startOfs = 0) const;
-	__inline int find_first_of(const char* find, int startOfs = 0) const { return find_first_of(CSubString(find), startOfs); }
-	__inline int find_first_not_of(const char* find, int startOfs = 0) const { return find_first_not_of(CSubString(find), startOfs); }
-	int find_first_of(char c) const;
-	int find_first_not_of(char c) const;
-	double atof(); // Not thread safe. Modifies original string temporarily.
-};
-typedef CSubString csubstr;
+#ifndef NO_STD_STRING
+#include <string>
+#endif
 
 class PhysicalQuantity
 {
@@ -62,7 +83,10 @@ public:
 	
 	// Base numeric type
 	typedef double num;
+	//typedef float num;
 
+	//==================================================================================
+	// Unit and dimension stuff
 	enum class QuantityType // : int
 	{
 		MASS,
@@ -88,19 +112,62 @@ public:
 		const char* longName;
 		num factor;
 	};
+	// End unit and dimension stuff
+	//==================================================================================
 
 
+	//==================================================================================
+	// Hashing function 
+	//    originally to be used as a template parameter to unordered_map,
+	//    but that wastes a lot of RAM
+#ifndef NO_HASHING
+	struct cstrHasherTiny
+	{
+	public:
+		size_t operator()(const CSubString& s) const;
+#ifdef NO_INLINE
+		size_t operator()(const char* s) const;
+#else
+		INLINE_KEYWORD size_t operator()(const char* s) const { return operator()(CSubString(s)); }
+#endif
+
+	};
+	//class cstrLess
+	//{
+	//public:
+	//	bool operator() (const char* a, const char* b) const;
+	//};
+	//class cstrEq
+	//{
+	//public:
+	//	bool operator() (const char* a, const char* b) const;
+	//};
+
+#endif //#ifndef NO_HASHING
+
+	// End hashing function
+	//==================================================================================
+
+
+	//==================================================================================
+	// Error handling stuff
 #ifdef NO_THROW
 	enum ErrorCode
 	{
 		E_SUCCESS = 0,
 		E_UNIT_MISMATCH,
 		E_INVALID_EXPRESSION,
-		E_MEMORY
+		E_MEMORY,
+		E_LOGIC_ERROR,
+		E_HEADER_CONFIG
 	};
 	static void (*errorHandler)(void* userContext, ErrorCode e);
 	static void* errorUserContext;
-	__inline static void SetErrorHandler(void (*errorHandler_arg)(void* context, ErrorCode e)) { errorHandler = errorHandler_arg; }
+#ifndef NO_INLINE
+	INLINE_KEYWORD static void SetErrorHandler(void (*errorHandler_arg)(void* context, ErrorCode e)) { errorHandler = errorHandler_arg; }
+#else
+	static void SetErrorHandler(void (*errorHandler_arg)(void* context, ErrorCode e)) { errorHandler = errorHandler_arg; }
+#endif
 #else
 	class UnitMismatchException : public std::exception
 	{
@@ -114,17 +181,32 @@ public:
 		InvalidExpressionException();
 		InvalidExpressionException(const char* message);
 	};
+	class HeaderConfigException : public std::exception
+	{
+	public:
+		HeaderConfigException();
+		HeaderConfigException(const char* message);
+	};
 #endif  // !NO_THROW
+	// End error handling stuff
+	//==================================================================================
 
+
+	//==================================================================================
+	// Formatting stuff 
 	class PreferredUnitsBase
 	{
 		friend class PhysicalQuantity;
 	protected:
 		int* unitIndeces;
 		int count_;
-		__inline int count() { return count_; }
 		const UnitDefinition& operator[] (int i);
 		void build(const CSubString& unitList, int* buffer, int bufferLen, bool dynamic);
+#ifdef NO_INLINE
+		int count();
+#else
+		INLINE_KEYWORD int count() { return count_; }
+#endif
 	};
 
 #ifndef NO_NEW
@@ -145,101 +227,99 @@ public:
 #else
 	typedef PreferredUnits_dynamic PreferredUnits;
 #endif
-	
-	static const num Pi;
+	// End formatting stuff
+	//==================================================================================
 
+	//==================================================================================
+	// Main class members
 	PhysicalQuantity();
 	PhysicalQuantity(const PhysicalQuantity& copy);
 	PhysicalQuantity(PhysicalQuantity&& move) noexcept;
 	PhysicalQuantity(num value, const char* unit);
+	PhysicalQuantity(num value);
+	PhysicalQuantity& operator=(num value);
+	PhysicalQuantity& operator=(const PhysicalQuantity& cp);
 	PhysicalQuantity(const char* str);
-	//PhysicalQuantity(num value, const std::vector<UnitQty>& units);
-	//PhysicalQuantity(num value, std::vector<UnitQty>&& units);
 	~PhysicalQuantity() = default;
 
-	// To read the value, specify the unit, must match
-	//num convert(const std::vector<UnitQty> unit);
-	num convert(const std::string& units);
-
-	//void parse(CSubString)
 	void parse(const char* text);
-	//void parse(std::string text);
-	//__inline void parse(std::string text) { parse(text.c_str()); }
-
-#ifndef NO_NEW
-	std::string toString();
-	std::string toString(const PreferredUnitsBase&);
+	num convert(const CSubString& units) const;
+	bool sprint(char* buf, int size, const PreferredUnitsBase& pu) const;
+	bool sprint(char* buf, int size) const;
+#ifndef NO_STD_STRING
+	std::string toString() const;
+	std::string toString(const PreferredUnitsBase&) const;
 #endif
 
-	PhysicalQuantity operator* (const PhysicalQuantity& rhs);
-	PhysicalQuantity operator/ (const PhysicalQuantity& rhs);
-	PhysicalQuantity operator+ (const PhysicalQuantity& rhs);
-	PhysicalQuantity operator- (const PhysicalQuantity& rhs);
+	PhysicalQuantity operator* (const PhysicalQuantity& rhs) const;
+	PhysicalQuantity operator/ (const PhysicalQuantity& rhs) const;
+	PhysicalQuantity operator+ (const PhysicalQuantity& rhs) const;
+	PhysicalQuantity operator- (const PhysicalQuantity& rhs) const;
 
-	PhysicalQuantity operator* (num rhs);
-	PhysicalQuantity operator/ (num rhs);
-	PhysicalQuantity operator+ (num rhs);
-	PhysicalQuantity operator- (num rhs);
+	PhysicalQuantity operator* (num rhs) const;
+	PhysicalQuantity operator/ (num rhs) const;
+	PhysicalQuantity operator+ (num rhs) const;
+	PhysicalQuantity operator- (num rhs) const;
 
-	bool operator==(const PhysicalQuantity& rhs);
+	bool operator==(const PhysicalQuantity& rhs) const;
 	// TODO: boolean comparison operators
 	
-	bool isLikeQuantity(const PhysicalQuantity& rhs);
-	__inline bool sameUnitAs(const PhysicalQuantity& rhs) { return isLikeQuantity(rhs); }
-	__inline bool unitsMatch(const PhysicalQuantity& rhs) { return isLikeQuantity(rhs); }
+	bool isLikeQuantity(const PhysicalQuantity& rhs) const;
 
-	class cstrLess
-	{
-	public:
-		bool operator() (const char* a, const char* b) const;
-	};
-	class cstrEq
-	{
-	public:
-		bool operator() (const char* a, const char* b) const;
-	};
-	struct cstrHasherTiny
-	{
-	public:
-		size_t operator()(const CSubString& s) const;
-		__inline size_t operator()(const char* s) const { return operator()(CSubString(s)); }
-	};
 
-	//static signed int findUnit(const std::string& name);
 	static bool findUnit(CSubString name, int& outUnitIndex, int& outPrefixIndex);
-	__inline static bool findUnit(const char* pcharName, int& outUnitIndex, int& outPrefixIndex) { return findUnit(CSubString(pcharName), outUnitIndex, outPrefixIndex); }
+	static bool feq(num a, num b, num toleranceFactor);
 
+	static const num Pi;
+	static const int compiledHeaderOptions;
 	static const UnitDefinition KnownUnits[];
 	static const int KnownUnitsLength;
 	static const Prefix KnownPrefixes[];
 	static const int KnownPrefixesLength;
-
+#ifndef NO_HASHING
 	// Hash table sizes are defined in hash.cpp
 	static const int hashTableSize_UnitSymbols;
 	static const int hashTableSize_UnitLongNames;
 	static const int hashTableSize_PrefixSymbols;
 	static const int hashTableSize_PrefixLongNames;
+#endif //#ifndef NO_HASHING
+	static num equalityToleranceFactor;
 
 private:
 	num value;
 	signed char dim[(int)QuantityType::ENUM_MAX];
 
-#ifndef NO_NEW
-
-	//static std::unordered_map<const char*, int, cstrHasherTiny, cstrEq> UnitSymbolLookup;
-	//static std::unordered_map<const char*, int, cstrHasherTiny, cstrEq> UnitLongNameLookup;
-#endif
 	void init();
 	//void parseUnits(std::string unitStr, signed char (&unitsOut)[(int)QuantityType::ENUM_MAX], num& factorOut, num& offsetOut); // throws if unknown/invalid unit
-	void parseUnits(const CSubString& unitStr, signed char (&unitsOut)[(int)QuantityType::ENUM_MAX], num& factorOut, num& offsetOut); // throws if unknown/invalid unit
-	__inline void parseUnits(const char* unitStr, signed char (&unitsOut)[(int)QuantityType::ENUM_MAX], num& factorOut, num& offsetOut) { return parseUnits(CSubString(unitStr), unitsOut, factorOut, offsetOut); }
-	void mulUnit(signed char (&unitsOut)[(int)QuantityType::ENUM_MAX], const UnitDefinition& unit, signed int power, bool invert = false); // deals only with quantity dimension, conversion factors are handled elsewhere
+	static void parseUnits(const CSubString& unitStr, signed char (&unitsOut)[(int)QuantityType::ENUM_MAX], num& factorOut, num& offsetOut); // throws if unknown/invalid unit
+	static void mulUnit(signed char (&unitsOut)[(int)QuantityType::ENUM_MAX], const UnitDefinition& unit, signed int power, bool invert = false); // deals only with quantity dimension, conversion factors are handled elsewhere
+
+public:
+#ifdef NO_INLINE
+	static void parseUnits(const char* unitStr, signed char(&unitsOut)[(int)QuantityType::ENUM_MAX], num& factorOut, num& offsetOut);
+	num convert(const char* units) const;
+	static bool findUnit(const char* pcharName, int& outUnitIndex, int& outPrefixIndex);
+	bool sameUnitAs(const PhysicalQuantity& rhs) const;
+	bool unitsMatch(const PhysicalQuantity& rhs) const;
+#else
+	INLINE_KEYWORD static void parseUnits(const char* unitStr, signed char (&unitsOut)[(int)QuantityType::ENUM_MAX], num& factorOut, num& offsetOut) { return parseUnits(CSubString(unitStr), unitsOut, factorOut, offsetOut); }
+	INLINE_KEYWORD num convert(const char* units) const { return convert(csubstr(units)); }
+	INLINE_KEYWORD static bool findUnit(const char* pcharName, int& outUnitIndex, int& outPrefixIndex) { return findUnit(CSubString(pcharName), outUnitIndex, outPrefixIndex); }
+	INLINE_KEYWORD bool sameUnitAs(const PhysicalQuantity& rhs) const { return isLikeQuantity(rhs); }
+	INLINE_KEYWORD bool unitsMatch(const PhysicalQuantity& rhs) const { return isLikeQuantity(rhs); }
+#endif
+	// End main class members
+	//==================================================================================
 };
 
+#define PQHeaderOptionsMatch (PQ_HEADER_OPTIONS == PhysicalQuantity::compiledHeaderOptions)
 
 
+//==================================================================================
+// Literals
 #ifndef NO_LITERALS
 // Declare literals
+// TODO: Also declare with all prefixes?
 #define DeclareLiteral(symbol) PhysicalQuantity operator ""_##symbol(long double); PhysicalQuantity operator ""_##symbol(unsigned long long);
 
 DeclareLiteral(m)
@@ -253,3 +333,5 @@ DeclareLiteral(C)
 DeclareLiteral(ang)
 
 #endif // !NO_LITERALS
+// End literals
+//==================================================================================
