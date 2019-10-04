@@ -172,7 +172,7 @@ CSubString::CSubString(const CSubString& from, int start_arg, int len_arg)
 {
 	str = from.str;
 	start = from.start + (int)start_arg;
-	if ((len_arg == -1) || (start_arg + len_arg > (from.end - start)))
+	if ((len_arg == -1) || (start + len_arg > (from.end)))
 	{
 		end = from.end;
 	}
@@ -341,7 +341,7 @@ char CSubString::operator[](int index) const { if (start + index >= end) { retur
 bool CSubString::begins(const char* test) const { return begins(CSubString(test)); }
 bool CSubString::ends(const char* test) const { return ends(CSubString(test)); }
 int CSubString::size() const { return end - start; }
-int CSubString::length() const { return end - start; }
+int CSubString::length() const { return (end - start) >= 0 ? (end-start) : 0 ; }
 int CSubString::find_first_of(const char* find, int startOfs) const { return find_first_of(CSubString(find), startOfs); }
 int CSubString::find_first_not_of(const char* find, int startOfs) const { return find_first_not_of(CSubString(find), startOfs); }
 #endif //#ifdef NO_INLINE

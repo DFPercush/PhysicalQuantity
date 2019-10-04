@@ -11,9 +11,30 @@ int main(int argc, char** argv)
 	PQ x = 8_m;
 	PQ y = 4.1_s;
 	PQ z = x * y;
+	z = 1400_g * 1_m * 1_m / 1_s / 2_s;
 	char buf[100];
-	z.sprint(buf, 100, PQ::PreferredUnits("m s"));
+	z.sprint(buf, 100, PQ::PreferredUnits("J m s kg"));
 	printf("%s\n", buf);
+	z.sprint(buf, 100, "J m s kg");
+	printf("%s\n", buf);
+	z.sprint(buf, 100);
+	printf("%s\n", buf);
+
+	z = PQ("1.23 J^2");
+	z.sprint(buf, 100, "J");
+	printf("%s\n", buf);
+	
+	const char* toEval = "256 kg  m * 50 cm / (2 s * 1 s) * 2 ^ 3";
+	PQ ev = PQ::eval(toEval);
+	//                                             2
+	//                                                        8
+	//                             128
+	//                                     64
+	//                                                   512
+
+	ev.sprint(buf, 100, "J");
+	printf("eval(\"%s\") = %s\n", toEval, buf);
+
 	return 0;
 
 	if (!PQHeaderOptionsMatch) 

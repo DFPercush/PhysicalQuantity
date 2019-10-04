@@ -116,6 +116,10 @@ const int dekaIndex = 10; // If any more prefixes are added, this should be the 
                           // Used to optimize lookups because this is the only prefix longer than 1 char
                           // If that changes, might need to change findUnit()
 
+
+
+typedef PhysicalQuantity PQ;
+
 void PhysicalQuantity::init()
 {
 	value = 0.0;
@@ -154,7 +158,8 @@ PhysicalQuantity::PhysicalQuantity(num value_p, const char* units_p)
 	value += unitOfs;
 }
 
-PhysicalQuantity::PhysicalQuantity(const char* str)
+
+PhysicalQuantity::PhysicalQuantity(CSubString str)
 {
 	init();
 	parse(str);
@@ -308,6 +313,7 @@ void PhysicalQuantity::parseUnits(const CSubString& unitStr, signed char (&units
 	{
 		if (denomNext) { denom = true; }
 		if (i < ulen) { c = unitStr[i]; }
+		else { c = 0; }
 		if (c == ' ' || c == '*' || c == '/' || i == ulen) 
 		{
 			wordEnd = i;
@@ -390,49 +396,53 @@ void PhysicalQuantity::parseUnits(const CSubString& unitStr, signed char (&units
 					upow = 1;
 				}
 
-				if (!findUnit(ssUnitName, foundUnit, foundPrefix))
+				if (ssUnitName.length() > 0)
 				{
-#ifdef NO_THROW
-					errorHandler(errorUserContext, E_INVALID_EXPRESSION);
-					return;
-#else
-					throw InvalidExpressionException();
-#endif
-				}
+					if (!findUnit(ssUnitName, foundUnit, foundPrefix))
+					{
+	#ifdef NO_THROW
+						errorHandler(errorUserContext, E_INVALID_EXPRESSION);
+						return;
+	#else
+						throw InvalidExpressionException();
+	#endif
+					}
 				
-				if (foundPrefix >= 0)
-				{
-					factorOut *= KnownPrefixes[foundPrefix].factor;
-				}
-				if (KnownUnits[foundUnit].offset != 0.0)
-				{
-					if (tempOfs != 0.0)
+					if (foundPrefix >= 0)
 					{
-#ifdef NO_THROW
-						errorHandler(errorUserContext, E_INVALID_EXPRESSION);
-						return;
-#else
-						throw InvalidExpressionException("Multiple units given which apply an offset (e.g. degrees F)");
-#endif
+						factorOut *= KnownPrefixes[foundPrefix].factor;
 					}
-					if (upow < -1 || upow > 1)
+					if (KnownUnits[foundUnit].offset != 0.0)
 					{
-#ifdef NO_THROW
-						errorHandler(errorUserContext, E_INVALID_EXPRESSION);
-						return;
-#else
-						throw InvalidExpressionException("Can not handle an offset unit with a power greater than 1. (e.g. degrees F squared)");
-#endif
+						if (tempOfs != 0.0)
+						{
+	#ifdef NO_THROW
+							errorHandler(errorUserContext, E_INVALID_EXPRESSION);
+							return;
+	#else
+							throw InvalidExpressionException("Multiple units given which apply an offset (e.g. degrees F)");
+	#endif
+						}
+						if (upow < -1 || upow > 1)
+						{
+	#ifdef NO_THROW
+							errorHandler(errorUserContext, E_INVALID_EXPRESSION);
+							return;
+	#else
+							throw InvalidExpressionException("Can not handle an offset unit with a power greater than 1. (e.g. degrees F squared)");
+	#endif
+						}
+						tempOfs = KnownUnits[foundUnit].offset;
 					}
-					tempOfs = KnownUnits[foundUnit].offset;
-				}
-				factorOut *= KnownUnits[foundUnit].factor;
-				mulUnit(unitsOut, KnownUnits[foundUnit], upow, denom);
-			} // Not a key word / char
+					factorOut *= KnownUnits[foundUnit].factor;
+					mulUnit(unitsOut, KnownUnits[foundUnit], upow, denom);
+				}  //if (ssUnitName.length() > 0)
+			} // end 'else' meaning not a key word / char
 
 			// Advance to next word
 			wordStart = wordEnd;
 			while (unitStr[wordStart] == ' ' && wordStart < ulen) { wordStart++; }
+			i = wordStart;
 		}
 	}
 
@@ -503,11 +513,6 @@ void PhysicalQuantity::parse(const CSubString& text_arg)
 	value += unitOfs;
 }
 
-
-size_t PhysicalQuantity::sprint(char* buf, int size, bool useSlash) const
-{
-	return sprint(buf, size, PreferredUnits(""), useSlash);
-}
 void PhysicalQuantity::WriteOutputUnit(int plen, int ulen, int reduceExp, int &outofs, int size, char * buf, int ipre, const PhysicalQuantity::UnitDefinition & testunit) const
 {
 	int reduceExpLen = 0;
@@ -1192,6 +1197,202 @@ bool PhysicalQuantity::feq(PhysicalQuantity::num a, PhysicalQuantity::num b, Phy
 	else { return false; }
 }
 
+PhysicalQuantity PhysicalQuantity::eval(CSubString str)
+{
+	// trying to avoid any dynamic allocation here,
+	// even if it takes a few extra passes
+	//int pstart;
+	int pleft = -1;
+	int pright = -1;
+	int plevel = 0;
+	PQ left;
+	PQ right;
+	//PQ val;
+	char prev = 0;
+	char c;
+	int len = str.length();
+	//for (int i = 0; i < len; i++)
+	plevel = 0;
+	for (int i = len - 1; i >= 0; i--)
+	{
+		c = str[i];
+		if (c == ')')
+		{
+			if (plevel == 0) { pright = i; }
+			plevel++;
+		}
+		else if (c == '(')
+		{
+			if (plevel == 0)
+			{
+#ifdef NO_THROW
+				errorHandler(errorUserContext, E_INVALID_EXPRESSION);
+				return PQ("0");
+#else
+				throw InvalidExpressionException("Closed parentheses without matching open");
+#endif
+			}
+			pleft = i;
+			plevel--;
+		}
+		else if (c == '+' && plevel == 0)
+		{
+			left = eval(str.substr(0, i - 1));
+			right = eval(str.substr(i + 1));
+			return left + right;
+		}
+		else if (c == '-' && plevel == 0)
+		{
+			left = eval(str.substr(0, i - 1));
+			right = eval(str.substr(i + 1));
+			return left - right;
+		}
+		prev = c;
+	}
+
+	plevel = 0;
+	for (int i = len - 1; i >= 0; i--)
+	{
+		c = str[i];
+		if (c == ')')
+		{
+			if (plevel == 0) { pright = i; }
+			plevel++;
+		}
+		else if (c == '(')
+		{
+			if (plevel == 0)
+			{
+#ifdef NO_THROW
+				errorHandler(errorUserContext, E_INVALID_EXPRESSION);
+				return PQ("0");
+#else
+				throw InvalidExpressionException("Closed parentheses without matching open");
+#endif
+			}
+			pleft = i;
+			plevel--;
+		}
+		else if (c == '*' && plevel == 0)
+		{
+			left = eval(str.substr(0, i - 1));
+			right = eval(str.substr(i + 1));
+			return left * right;
+		}
+		else if (c == '/' && plevel == 0)
+		{
+			left = eval(str.substr(0, i - 1));
+			right = eval(str.substr(i + 1));
+			return left / right;
+		}
+		prev = c;
+	}
+
+	plevel = 0;
+	for (int i = len - 1; i >= 0; i--)
+	{
+		c = str[i];
+		if (c == ')')
+		{
+			if (plevel == 0) { pright = i; }
+			plevel++;
+		}
+		else if (c == '(')
+		{
+			if (plevel == 0)
+			{
+#ifdef NO_THROW
+				errorHandler(errorUserContext, E_INVALID_EXPRESSION);
+				return PQ("0");
+#else
+				throw InvalidExpressionException("Closed parentheses without matching open");
+#endif
+			}
+			pleft = i;
+			plevel--;
+		}
+		// Exponent operator ^ is parsed if previous character is not a letter,
+		// in which case it's considered part of a unit
+		else if (c == '^' && plevel == 0 &&
+			(!(str[i - 1] >= 'a' && str[i - 1] <= 'z')) &&
+			(!(str[i - 1] >= 'A' && str[i - 1] <= 'Z'))
+			)
+		{
+			PQ mant = eval(str.substr(0, i - 1));
+			PQ exp(str.substr(i + 1));
+			for (int i = 0; i < (int)QuantityType::ENUM_MAX; i++)
+			{
+				if (exp.dim[i] != 0)
+				{
+#ifdef NO_THROW
+					errorHandler(errorUserContext, E_INVALID_EXPRESSION);
+					return val;
+#else
+					throw InvalidExpressionException("Exponent must be a scalar");
+#endif
+				}
+			}
+			if (exp.value != (num)((int)exp.value))
+			{
+				for (int i = 0; i < (int)QuantityType::ENUM_MAX; i++)
+				{
+					if (mant.dim[i] != 0)
+					{
+#ifdef NO_THROW
+						errorHandler(errorUserContext, E_INVALID_EXPRESSION);
+						return PQ("0");
+#else
+						throw InvalidExpressionException("Exponent of a quantity with units must be an integer");
+#endif
+					}
+				}
+			}
+			mant.value = pow(mant.value, exp.value);
+			for (int i = 0; i < (int)QuantityType::ENUM_MAX; i++)
+			{
+				int newpow = mant.dim[i] * (int)exp.value;
+				//overflow_error
+				if (newpow > 127 || newpow < -128)
+				{
+#ifdef NO_THROW
+					errorHandler(errorUserContext, E_OVERFLOW);
+					return PQ("0");
+#else
+					throw overflow_error("Unit exponent too large");
+#endif
+				}
+			}
+			return mant;
+		}
+		prev = c;
+	}
+
+
+	if (plevel != 0 ||
+		(pleft == -1 && pright != -1) ||
+		(pleft != -1 && pright == -1))
+	{
+#ifdef NO_THROW
+		errorHandler(errorUserContext, E_INVALID_EXPRESSION);
+		return val;
+#else
+		throw InvalidExpressionException("Mismatched parentheses");
+#endif
+	}
+
+
+	if (pleft == -1)
+	{
+		return PQ(str);
+	}
+	else 
+	{
+		left = eval(str.substr(pleft + 1, pright - pleft - 1));
+		return left;
+	}
+}
+
+
 
 #ifdef NO_INLINE
 #ifdef NO_THROW
@@ -1201,12 +1402,15 @@ void PhysicalQuantity::SetErrorHandler(void (*errorHandler_arg)(void* context, E
 int PhysicalQuantity::PreferredUnitsBase::count() const { return count_; }
 size_t PhysicalQuantity::cstrHasherTiny::operator()(const char* s) const { return operator()(CSubString(s)); }
 
+PhysicalQuantity::PhysicalQuantity(const char* str) { PhysicalQuantity(CSubString(str)); }
 void PhysicalQuantity::parseUnits(const char* unitStr, signed char (&unitsOut)[(int)QuantityType::ENUM_MAX], num& factorOut, num& offsetOut) { return parseUnits(CSubString(unitStr), unitsOut, factorOut, offsetOut); }
 PhysicalQuantity::num PhysicalQuantity::convert(const char* units) const { return convert(csubstr(units)); }
 bool PhysicalQuantity::findUnit(const char* pcharName, int& outUnitIndex, int& outPrefixIndex) { return findUnit(CSubString(pcharName), outUnitIndex, outPrefixIndex); }
 bool PhysicalQuantity::sameUnitAs(const PhysicalQuantity& rhs) const { return isLikeQuantity(rhs); }
 bool PhysicalQuantity::unitsMatch(const PhysicalQuantity& rhs) const { return isLikeQuantity(rhs); }
 void PhysicalQuantity::parse(const char* text) { parse(csubstr(text)); }
+size_t PhysicalQuantity::sprint(char* buf, int size, const char* pu, bool useSlash) const { return sprint(buf, size, PreferredUnits(pu), useSlash); }
+size_t PhysicalQuantity::sprint(char* buf, int size, bool useSlash) const {	return sprint(buf, size, PreferredUnits(""), useSlash); }
 #endif //#ifdef NO_INLINE
 
 

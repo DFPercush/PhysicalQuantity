@@ -3,6 +3,8 @@
 // Preprocessor options:
 //#define NO_INLINE        // Do not use inline functions, make all functions normal calls.
 
+#include "PhysicalQuantity/ppOptions.h"
+
 #ifndef INLINE_KEYWORD
 #define INLINE_KEYWORD __inline
 #endif
@@ -47,7 +49,7 @@ public:
 	INLINE_KEYWORD bool begins(const char* test) const { return begins(CSubString(test)); }
 	INLINE_KEYWORD bool ends(const char* test) const { return ends(CSubString(test)); }
 	INLINE_KEYWORD int size() const { return end - start; }
-	INLINE_KEYWORD int length() const { return end - start; }
+	INLINE_KEYWORD int length() const { return (end - start) >= 0 ? (end-start) : 0 ; }
 	INLINE_KEYWORD int find_first_of(const char* find, int startOfs = 0) const { return find_first_of(CSubString(find), startOfs); }
 	INLINE_KEYWORD int find_first_not_of(const char* find, int startOfs = 0) const { return find_first_not_of(CSubString(find), startOfs); }
 #endif

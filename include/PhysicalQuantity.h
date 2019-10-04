@@ -135,7 +135,8 @@ public:
 		E_INVALID_EXPRESSION,
 		E_MEMORY,
 		E_LOGIC_ERROR,
-		E_HEADER_CONFIG
+		E_HEADER_CONFIG,
+		E_OVERFLOW
 	};
 	static void (*errorHandler)(void* userContext, ErrorCode e);
 	static void* errorUserContext;
@@ -220,16 +221,15 @@ public:
 	PhysicalQuantity(PhysicalQuantity&& move) noexcept;
 	PhysicalQuantity(num value, const char* unit);
 	PhysicalQuantity(num value);
+	PhysicalQuantity(CSubString str);
 	PhysicalQuantity& operator=(num value);
 	PhysicalQuantity& operator=(const PhysicalQuantity& cp);
-	PhysicalQuantity(const char* str);
 	~PhysicalQuantity() = default;
 
 	void parse(const CSubString& text);
 	num convert(const CSubString& units) const;
 	void sprintHalf(const PhysicalQuantity::PreferredUnitsBase & pu, int &md, PhysicalQuantity &r, int origmd, bool useSlash, int &outofs, int size, char * buf) const;
 	size_t sprint(char* buf, int size, const PreferredUnitsBase& pu, bool useSlash = true) const;
-	size_t sprint(char* buf, int size, bool useSlash = true) const;
 #ifndef NO_STD_STRING
 	std::string toString() const;
 	std::string toString(const PreferredUnitsBase&) const;
@@ -253,6 +253,7 @@ public:
 
 	static bool findUnit(CSubString name, int& outUnitIndex, int& outPrefixIndex);
 	static bool feq(num a, num b, num toleranceFactor);
+	static PhysicalQuantity eval(CSubString str);
 
 	static const num Pi;
 	static const int compiledHeaderOptions;
@@ -286,20 +287,26 @@ private:
 
 public:
 #ifdef NO_INLINE
+	PhysicalQuantity(const char* str);
 	static void parseUnits(const char* unitStr, signed char(&unitsOut)[(int)QuantityType::ENUM_MAX], num& factorOut, num& offsetOut);
 	num convert(const char* units) const;
 	static bool findUnit(const char* pcharName, int& outUnitIndex, int& outPrefixIndex);
 	bool sameUnitAs(const PhysicalQuantity& rhs) const;
 	bool unitsMatch(const PhysicalQuantity& rhs) const;
 	void parse(const char* text);
+	size_t sprint(char* buf, int size, const char* pu, bool useSlash = true) const;
+	size_t sprint(char* buf, int size, bool useSlash = true) const;
 
 #else
+	INLINE_KEYWORD 	PhysicalQuantity(const char* str) { PhysicalQuantity(CSubString(str)); }
 	INLINE_KEYWORD static void parseUnits(const char* unitStr, signed char (&unitsOut)[(int)QuantityType::ENUM_MAX], num& factorOut, num& offsetOut) { return parseUnits(CSubString(unitStr), unitsOut, factorOut, offsetOut); }
 	INLINE_KEYWORD num convert(const char* units) const { return convert(csubstr(units)); }
 	INLINE_KEYWORD static bool findUnit(const char* pcharName, int& outUnitIndex, int& outPrefixIndex) { return findUnit(CSubString(pcharName), outUnitIndex, outPrefixIndex); }
 	INLINE_KEYWORD bool sameUnitAs(const PhysicalQuantity& rhs) const { return isLikeQuantity(rhs); }
 	INLINE_KEYWORD bool unitsMatch(const PhysicalQuantity& rhs) const { return isLikeQuantity(rhs); }
 	INLINE_KEYWORD void parse(const char* text) { parse(csubstr(text)); }
+	INLINE_KEYWORD size_t sprint(char* buf, int size, const char* pu, bool useSlash = true) const { return sprint(buf, size, PreferredUnits(pu), useSlash); }
+	INLINE_KEYWORD size_t sprint(char* buf, int size, bool useSlash = true) const { return sprint(buf, size, PreferredUnits(""), useSlash); }
 
 #endif
 	// End main class members
