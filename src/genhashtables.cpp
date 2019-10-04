@@ -1,7 +1,8 @@
 
-// Note: Make sure PQ_GENERATING_HASH_TABLES is #defined in project settings / compiler arguments,
+// Note: Make sure PQ_GENERATING_HASH_TABLES is defined in project settings / 
+// preprocessor options, or as a compiler argument,
 // or you will get errors about undeclared identifiers *_HashTable
-// It's not enough to declare it here. Some source files also need it.
+// It's not enough to declare it here. Some source .cpp files also need it.
 
 #include <PhysicalQuantity.h>
 #include <PhysicalQuantity/hash.h>

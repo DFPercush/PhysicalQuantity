@@ -241,9 +241,11 @@ Adding more units:
 		DeclareLiteral(symbol)  // again, do not put in quotes
 
 	4. Rebuild the hash tables. 
+		If using the Visual Studio solution, this is done automatically by a
+		custom build step.
 		There is a separate VC project called genhashtables, and its output is to
 		be fed back into the main project as hashTables.h
-			($OutputDir)/genhashtables > include/PhysicalQuantity/hashTables.h
+			($OutputPath)/genhashtables > include/PhysicalQuantity/hashTables.h
 	
 	5. Examine the generated file to see if the bucket size is obnoxious, i.e. lots of 
 		hashing collisions.

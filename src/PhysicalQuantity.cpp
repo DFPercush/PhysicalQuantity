@@ -125,7 +125,6 @@ void PhysicalQuantity::init()
 PhysicalQuantity::PhysicalQuantity()
 {
 	init();
-	value = 0.0;
 }
 
 
@@ -196,6 +195,84 @@ bool PhysicalQuantity::isLikeQuantity(const PhysicalQuantity& rhs) const
 	if (!memcmp(dim, rhs.dim, sizeof(dim))) { return true; }
 	return false;
 }
+
+unsigned int PhysicalQuantity::magdim() const
+{
+	int ret = 0;
+	int di;
+	for (int i = 0; i < (int)QuantityType::ENUM_MAX; i++)
+	{
+		di = dim[i];
+		if (di >= 0) { ret += di; }
+		else { ret -= di; }
+	}
+	return ret;
+}
+
+//void PhysicalQuantity::magdimMulDiv(const UnitDefinition& unit, int& mulOut, int& divOut int& powOut) const
+int PhysicalQuantity::magdimReduce(const UnitDefinition& unit) const
+//magdimMulDiv(const PhysicalQuantity::UnitDefinition& unit) const
+{
+	//int ret = 0;
+	//int rmul = 0;
+	////int rdiv = 0;
+	//int test;
+	
+	//int maxpow = 0;
+	//int maxFactor = 1;
+
+	int mdUnitDiff = 0;
+	for (int iq = 0; iq < (int)QuantityType::ENUM_MAX; iq++)
+	{
+		mdUnitDiff += dim[iq] - unit.dim[iq];
+	}
+	if (mdUnitDiff == 0) 
+	{
+		return 0;
+	}
+	int direction = (mdUnitDiff > 0) ? 1 : -1;
+	unsigned int mdorig = magdim();
+	int testpow = 0;
+	int lastpow;
+	unsigned int mdlast;
+	mdUnitDiff = mdorig;
+	do
+	{
+		mdlast = mdUnitDiff;
+		lastpow = testpow;
+		testpow += direction;
+		mdUnitDiff = 0;
+		for (int iq = 0; iq < (int)QuantityType::ENUM_MAX; iq++)
+		{
+			mdUnitDiff += dim[iq] - unit.dim[iq] * testpow;
+		}
+	} while (mdUnitDiff < mdlast);
+	return lastpow;
+
+	//do
+	//{
+	//	testpow++;
+	//	for (int i = 0; i < (int)QuantityType::ENUM_MAX; i++)
+	//	{
+	//		//
+	//
+	//		//test = dim[i] - unit.dim[i] * testpow;
+	//		//if (test >= 0) { rdiv += test; }
+	//		//else { rdiv -= test; }
+	//		//
+	//		//test = dim[i] + unit.dim[i];
+	//		//if (test >= 0) { rmul += test; }
+	//		//else { rmul -= test; }
+	//
+	//		//di = dim[i] - unit.dim[i];
+	//		//if (di >= 0) { ret += di; }
+	//		//else { ret -= di; }
+	//	}
+	//} while (maxFactor > 0);
+	//mulOut = rmul;
+	//divOut = rdiv;
+}
+
 
 void PhysicalQuantity::parseUnits(const CSubString& unitStr, signed char (&unitsOut_arg)[(int)QuantityType::ENUM_MAX], num& factorOut_arg, num& ofsOut_arg)
 {
@@ -379,263 +456,8 @@ void PhysicalQuantity::parseUnits(const CSubString& unitStr, signed char (&units
 	}
 	factorOut_arg = factorOut;
 	ofsOut_arg = ofsOut;
+	memcpy(unitsOut_arg, unitsOut, sizeof(unitsOut));
 }
-
-
-
-/*****************************************
-//void PhysicalQuantity::parseUnits(std::string unitStr, std::vector<PhysicalQuantity::UnitQty>& unitsOut, num& factorOut)
-void PhysicalQuantity::parseUnits(std::string unitStr, signed char (&unitsOut)[(int)QuantityType::ENUM_MAX], num& factorOut, num& ofsOut)
-{
-	//std::vector<UnitQty> ret;
-	//unitsOut.clear();
-	memset(unitsOut, 0, sizeof(unitsOut));
-	factorOut = 1.0;
-	char c = 0;
-	num tempOfs = 0.0;
-	const char* uptr = unitStr.c_str();
-	int ulen = (int)unitStr.length();
-	if (ulen == 0) { return; }
-	int wordStart = 0;
-	int wordEnd = 0;
-	string word;
-	while (uptr[wordStart] == ' ' && wordStart < ulen) { wordStart++; }
-	int foundPrefix, foundUnit;
-	int iCaret;
-	bool denom = false;
-	string unitName, powerStr;
-	int upow = 0;
-	bool denomNext = false;
-	for (int i = wordStart; i <= ulen; i++)
-	{
-		if (denomNext) { denom = true; }
-		if (i < ulen) { c = uptr[i]; }
-		if (c == ' ' || c == '*' || c == '/' || i == ulen) 
-		{
-			wordEnd = i;
-
-			// Do stuff
-			word = unitStr.substr(wordStart, wordEnd - wordStart);
-
-			if (c == '/')
-			{
-				if (denom) { throw InvalidExpressionException("Only one '/' to indicate units denominator is allowed."); }
-				denomNext = true;
-				wordStart = i + 1;
-				while (wordStart < ulen && uptr[wordStart] == ' ') { wordStart++; }
-				i = wordStart - 1;
-				continue;
-			}
-
-			if (word == "/")
-			{
-				if (denom) { throw InvalidExpressionException("Only one '/' to indicate units denominator is allowed."); }
-				denom = true;
-			}
-			else if (word == "*") {	} // implied
-			else if (word == "^")
-			{
-				throw InvalidExpressionException("No spaces between unit and power please... for now.");
-			}
-			else
-			{
-				upow = 1;
-				iCaret = (int)word.find_first_of('^');
-				if (iCaret != string::npos)
-				{
-					unitName = word.substr(0, iCaret);
-					powerStr = word.substr(iCaret + 1);
-					if (powerStr.length() == 0)
-					{
-						throw InvalidExpressionException("Expected an integer after '^' for unit exponent");
-					}
-					if (powerStr.find_first_not_of("0123456789-+") != string::npos)
-					{
-						throw InvalidExpressionException("Units may only have integer exponents.");
-					}
-					upow = atoi(powerStr.c_str());
-					//if (denom) { upow *= -1;} // handled in mulunit()
-				}
-				else
-				{
-					unitName = word;
-					upow = 1;
-				}
-
-				foundPrefix = -1;
-				foundUnit = findUnit(unitName);
-				if (foundUnit == -1)
-				{
-					foundPrefix = -1;
-					for (int iPrefix = 0; iPrefix < KnownPrefixesLength; iPrefix++)
-					{
-						if (matchFirst(unitName, KnownPrefixes[iPrefix].symbol))
-						{
-							foundPrefix = iPrefix;
-							break;
-						}
-						if (matchFirst(unitName, KnownPrefixes[iPrefix].longName))
-						{
-							foundPrefix = iPrefix;
-							break;
-						}
-					}
-					if (foundPrefix != -1)
-					{
-						string mainUnit = unitName.substr(strlen(KnownPrefixes[foundPrefix].symbol));
-						foundUnit = findUnit(mainUnit);
-						if (foundUnit == -1)
-						{
-							mainUnit = unitName.substr(strlen(KnownPrefixes[foundPrefix].longName));
-							//foundUnit
-							foundUnit = findUnit(mainUnit);
-						}
-					}
-
-					//foundUnit = -1;
-					if (foundUnit == -1)
-					{
-						for (int iUnit = 0; iUnit < KnownUnitsLength; iUnit++)
-						{
-							if (matchLast(unitName, KnownUnits[iUnit].symbol))
-							{
-								foundUnit = iUnit;
-								break;
-							}
-							if (matchLast(unitName, KnownUnits[iUnit].longName))
-							{
-								foundUnit = iUnit;
-								break;
-							}
-						}
-					}
-				}
-
-				if (foundUnit == -1)
-				{
-					throw InvalidExpressionException("Unknown unit");
-				}
-				
-				if ((foundPrefix != -1) &&
-					(foundUnit != -1) && 
-					(strlen(KnownPrefixes[foundPrefix].symbol) > word.length() - strlen(KnownUnits[foundUnit].symbol))
-					)
-				{
-					// Collision between unit and prefix, for example "m"
-					foundPrefix = -1;
-				}
-				else if (foundPrefix >= 0)
-				{
-					factorOut *= KnownPrefixes[foundPrefix].factor;
-				}
-
-
-				if (KnownUnits[foundUnit].offset != 0.0)
-				{
-					if (tempOfs != 0.0)
-					{
-						throw InvalidExpressionException("Multiple units given which apply an offset (e.g. degrees F)");
-					}
-					if (upow < -1 || upow > 1)
-					{
-						throw InvalidExpressionException("Can not handle an offset unit with a power greater than 1. (e.g. degrees F squared)");
-					}
-					tempOfs = KnownUnits[foundUnit].offset;
-				}
-				factorOut *= KnownUnits[foundUnit].factor;
-				mulUnit(unitsOut, KnownUnits[foundUnit], upow, denom);
-				//UnitQty q;
-				//for (int iQty = 0; iQty < KnownUnits[foundUnit].nqtys; iQty++)
-				//{
-				//	q.type = KnownUnits[foundUnit].qtys[iQty].type;
-				//	
-				//}
-				//q.unitDefIndex = foundUnit;
-				//q.type = KnownUnits[foundUnit].type;
-				//q.power = upow;
-				//unitsOut.push_back(q);
-
-			} // Not a special word
-
-			// Advance to next word
-			wordStart = wordEnd;
-			while (uptr[wordStart] == ' ' && wordStart < ulen) { wordStart++; }
-		}
-	}
-	
-	// Apply offset (mainly for temperature in degrees)
-	// Unless it's something like degrees per second, basically some derived unit
-	bool applyOfs = true;
-	if (tempOfs != 0.0)
-	{
-		for (int iCheckDim = 0; iCheckDim < (int)QuantityType::ENUM_MAX; iCheckDim++)
-		{
-			if (unitsOut[iCheckDim] != 0 && iCheckDim != (int)QuantityType::TEMPERATURE)
-			{
-				//throw InvalidExpressionException("");
-				applyOfs = false;
-			}
-		}
-	}
-	if (applyOfs)
-	{
-		ofsOut = tempOfs;
-	}
-}
-**************************************************************/
-
-
-//void PhysicalQuantity::mulUnit(std::vector<UnitQty>& out, const UnitDefinition& unit, signed int power, bool invert)
-//{
-//	bool found0 = false;
-//	bool foundMatch = false;
-//	if (invert) { power *= -1; }
-//	for (unsigned int iq = 0; iq < unit.nqtys; iq++)
-//	{
-//		foundMatch = false;
-//		for (unsigned int io = 0; io < out.size(); io++)
-//		{
-//			if (out[io].type == unit.qtys[iq].type)
-//			{
-//				foundMatch = true;
-//				out[io].power += unit.qtys[iq].power * power;
-//
-//				//if (invert)
-//				//{
-//				//	out[io].power -= unit.qtys[iq].power * power;
-//				//}
-//				//else
-//				//{
-//				//	out[io].power += unit.qtys[iq].power * power;
-//				//}
-//			}
-//		}
-//		if (!foundMatch)
-//		{
-//			UnitQty q = unit.qtys[iq];
-//			q.power *= power;
-//			out.push_back(q);
-//		}
-//	}
-//
-//	// Scan for zero powers and delete
-//	do
-//	{
-//		found0 = false;
-//		//for (decltype(out)::iterator it = out.begin)
-//		//for (auto it : out)
-//		for (std::vector<UnitQty>::iterator it = out.begin(); it != out.end(); it++)
-//		{
-//			//if (it.power) {}
-//			if (it->power == 0)
-//			{
-//				found0 = true;
-//				out.erase(it);
-//				break;
-//			}
-//		}
-//	} while (found0);
-//}
 
 
 void PhysicalQuantity::mulUnit(signed char(&unitsOut)[(int)QuantityType::ENUM_MAX], const UnitDefinition& unit, signed int power, bool invert)
@@ -678,15 +500,162 @@ void PhysicalQuantity::parse(const CSubString& text_arg)
 	value += unitOfs;
 }
 
-bool PhysicalQuantity::sprint(char* buf, int size) const
+size_t PhysicalQuantity::sprint(char* buf, int size) const
 {
-	// TODO: Here
-	return false;
+	return sprint(buf, size, PreferredUnits(""));
 }
-bool PhysicalQuantity::sprint(char* buf, int size, const PreferredUnitsBase& pu) const
+size_t PhysicalQuantity::sprint(char* buf, int size, const PreferredUnitsBase& pu) const
 {
 	// TODO: Here
-	return false;
+	int md, origmd;
+	PhysicalQuantity r = *this; // result
+	origmd = r.magdim();
+	md = origmd;
+	int dmul = md;
+	int ddiv = md;
+	int dpow;
+	int outofs = 0;
+	int ulen;
+	int plen;
+	int ipre;
+	int reduceExp;
+	int reduceExpLen;
+	//bool reduces;
+	int nextLengthNeeded;
+	bool denom;
+	for (int ipu = 0; ipu < pu.count() && md != 0; ipu++)
+	{
+		const UnitDefinition& testunit = KnownUnits[pu[ipu].iUnit];
+		//const Prefix& pre = KnownPrefixes[pu[ipu].iPrefix];
+		ipre = pu[ipu].iPrefix;
+		if (ipre == -1) { plen = 0;}
+		else { plen = (int)strlen(KnownPrefixes[ipre].symbol); }
+		ulen = (int)strlen(testunit.symbol);
+
+		//r.magdimMulDiv(testunit, dmul, ddiv, dpow); sadgdfgdfggb
+		//denom = (ddiv < dmul);
+		//if (mda < md)
+
+		reduceExp = r.magdimReduce(testunit);
+		//if (dmul < md || ddiv < md)
+		if (reduceExp != 0)
+		{
+			// if it reduces the overall dimension of the value, use it.
+			if (origmd == 1 && testunit.offset != 0.0) 
+			{
+				r.value -= testunit.offset; 
+			}
+			r.value /= testunit.factor;
+			mulUnit(r.dim, testunit, reduceExp, true);
+
+			// Write output
+			// ...except we don't know the final numeric value and that comes first
+			// Ok, print it last then shuffle the number to the front
+			nextLengthNeeded = plen + ulen + 1;
+			if (reduceExp > 1) 
+			{
+				reduceExpLen = log10(reduceExp) + 1;
+				nextLengthNeeded += reduceExpLen; 
+			}
+			else if (reduceExp < -1) 
+			{
+				reduceExpLen = log10(-reduceExp) + 2;
+				nextLengthNeeded += reduceExpLen; 
+			}
+			if (outofs + nextLengthNeeded < size)
+			{
+				// write space
+				buf[outofs++] = ' ';
+				// write prefix
+				if (plen > 0) 
+				{
+					memcpy(buf + outofs, KnownPrefixes[ipre].symbol, plen); 
+					outofs += plen;
+				}
+				// write unit
+				memcpy(buf + outofs, testunit.symbol, ulen);
+				outofs += ulen;
+				// write power
+				if (reduceExp != 0)
+				{
+					buf[outofs++] = '^';
+					sprintf(buf + outofs, "%d", reduceExp);
+					outofs += reduceExpLen;
+				}
+			}
+			else
+			{
+				outofs += nextLengthNeeded; //plen + ulen + 1;
+			}
+		}
+		md = r.magdim();
+	}
+	for (int iu = 0; iu < KnownUnitsLength && md != 0; iu++)
+	{
+		const UnitDefinition& testunit = KnownUnits[iu];
+		ulen = (int)strlen(testunit.symbol);
+		//mda = r.magdimDiv(testunit);
+
+		//magdimMulDiv(testunit, dmul, ddiv, dpow);  sdjlsdfhgjksdhjkh
+		//denom = (ddiv < dmul);
+		//if (mda < md)
+		//if (dmul < md || ddiv < md)
+
+		reduceExp = r.magdimReduce(testunit);
+		if (reduceExp != 0)
+		{
+			if (origmd == 1 && testunit.offset != 0.0) 
+			{
+				r.value -= testunit.offset; 
+			}
+			r.value /= testunit.factor;
+			mulUnit(r.dim, testunit, reduceExp, true);
+
+			// Write output
+			if (outofs + ulen + 1 < size)
+			{
+				buf[outofs++] = ' ';
+				memcpy(buf + outofs, testunit.symbol, ulen);
+				outofs += ulen;
+			}
+			else
+			{
+				outofs += ulen + 1;
+			}
+		}
+		md = r.magdim();
+	}
+	if (md != 0)
+	{
+#ifdef NO_THROW
+		errorHandler(errorUserContext, E_LOGIC_ERROR);
+		return outOfs + 1;
+#else
+		throw logic_error("units left over after conversion");
+#endif
+	}
+
+	// TODO: Actually print the number
+	// This is not very portable;
+	// it's also very unsafe...
+	sprintf(buf + outofs, " %g", r.value);
+	int numofs = outofs;
+	int numlen = (int)strlen(buf + numofs);
+	outofs += numlen;
+	char c;
+	for (int isubpos = 0; isubpos < numlen; isubpos++)
+	{
+		c = buf[numofs + isubpos];
+		for (int iBubble = numofs + isubpos; iBubble > isubpos; iBubble--)
+		{
+			buf[iBubble] = buf[iBubble - 1];
+		}
+		buf[isubpos] = c;
+	}
+
+	if (outofs < size) { buf[outofs] = 0; }
+	else if (size > 0) { buf[size - 1] = 0; }
+	return outofs + 1;
 }
 
 #if !defined(NO_STD_STRING) && !defined(NO_PRINTF)
@@ -967,8 +936,8 @@ bool PhysicalQuantity::findUnit(CSubString name, int& outUnitIndex, int& outPref
 	}
 
 	csubstr tryUnitNames[2];
-	tryUnitNames[0] = csubstr(name, 1);
-	tryUnitNames[1] = csubstr(name);
+	tryUnitNames[0] = csubstr(name);
+	tryUnitNames[1] = csubstr(name, 1);
 	int iTryUnitName = 0; // (iPrefix == -1) ? 1 : 0;
 
 	// look up unit symbol
@@ -1120,23 +1089,23 @@ bool PhysicalQuantity::operator==(const PhysicalQuantity& rhs) const
 //============================================================================================
 // Display and conversion stuff
 
-void PhysicalQuantity::PreferredUnitsBase::build(const CSubString& unitList, int* buffer, int bufferLen, bool dynamic)   //(const CSubString& unitList, int* buffer, int bufferLen, bool dynamic)
+void PhysicalQuantity::PreferredUnitsBase::build(const CSubString& unitList, PhysicalQuantity::PreferredUnitsBase::UnitPref* buffer, int bufferSizeBytes, bool dynamic)   //(const CSubString& unitList, int* buffer, int bufferLen, bool dynamic)
 {
 	//const char* pstr = unitList.c_str();
 	int len = (int)unitList.length();
 	int pos = 0;
 	unitIndeces = buffer; //new int[4]; //staticStorage;
+	int bufferLen = bufferSizeBytes / sizeof(UnitPref);
 	int storageCapacity = bufferLen; // staticStorageSize;
 	count_ = 0;
 	std::pair<int, int> a;
 	int wordStart = 0;
 	int wordEnd = 0;
-	//string word;
 	csubstr word;
 	while (unitList[wordStart] == ' ') { wordStart++; }
-	//while ( < len && pstr[wordStart] != 0)
 	char c;
 	int unitIndex, prefixIndex;
+	int iCaret;
 	for (pos = wordStart; pos <= len; pos++)
 	{
 		if (pos < len) { c = unitList[pos]; }
@@ -1144,6 +1113,8 @@ void PhysicalQuantity::PreferredUnitsBase::build(const CSubString& unitList, int
 		{
 			wordEnd = pos;
 			word = csubstr(unitList, wordStart, wordEnd - wordStart); //unitList.substr(wordStart, wordEnd - wordStart);
+			iCaret = word.find_first_of('^');
+			if (iCaret != -1) { word = word.substr(0, iCaret); }
 
 			//unitIndex = PhysicalQuantity::findUnit(word);
 			//if (unitIndex != -1)
@@ -1159,15 +1130,17 @@ void PhysicalQuantity::PreferredUnitsBase::build(const CSubString& unitList, int
 					if (dynamic)
 					{
 						int newStorageCapacity = int(storageCapacity * 1.5) + 1;
-						int* tmpArray = new int[newStorageCapacity];
-						memcpy(tmpArray, unitIndeces, sizeof(int) * count_);
+						//int* tmpArray = new int[newStorageCapacity];
+						UnitPref* tmpArray = new UnitPref[newStorageCapacity];
+						memcpy(tmpArray, unitIndeces, sizeof(UnitPref) * count_);
 						unitIndeces = tmpArray;
 						storageCapacity = newStorageCapacity;
 					}
 					else { return; }
 #endif
 				}
-				unitIndeces[count_] = unitIndex;
+				unitIndeces[count_].iUnit = unitIndex;
+				unitIndeces[count_].iPrefix = prefixIndex;
 				count_++;
 			}
 
@@ -1192,7 +1165,7 @@ PhysicalQuantity::PreferredUnits_dynamic::~PreferredUnits_dynamic()
 
 #else // !NO_NEW
 
-PhysicalQuantity::PreferredUnits_static::PreferredUnits_static(const CSubString& unitList, int* storage, size_t storageSizeBytes)
+PhysicalQuantity::PreferredUnits_static::PreferredUnits_static(const CSubString& unitList, void* storage, size_t storageSizeBytes)
 {
 	count_ = 0;
 	unitIndeces = storage;
@@ -1202,9 +1175,9 @@ PhysicalQuantity::PreferredUnits_static::PreferredUnits_static(const CSubString&
 
 #endif  // !NO_NEW
 
-const PhysicalQuantity::UnitDefinition& PhysicalQuantity::PreferredUnitsBase::operator[] (int i)
+const PhysicalQuantity::PreferredUnitsBase::UnitPref& PhysicalQuantity::PreferredUnitsBase::operator[] (int i) const
 {
-	return KnownUnits[unitIndeces[i]];
+	return unitIndeces[i]; // KnownUnits[unitIndeces[i]];
 }
 
 bool PhysicalQuantity::feq(PhysicalQuantity::num a, PhysicalQuantity::num b, PhysicalQuantity::num toleranceFactor)
@@ -1226,7 +1199,7 @@ bool PhysicalQuantity::feq(PhysicalQuantity::num a, PhysicalQuantity::num b, Phy
 void PhysicalQuantity::SetErrorHandler(void (*errorHandler_arg)(void* context, ErrorCode e)) { errorHandler = errorHandler_arg; }
 #endif //#ifdef NO_THROW
 
-int PhysicalQuantity::PreferredUnitsBase::count() { return count_; }
+int PhysicalQuantity::PreferredUnitsBase::count() const { return count_; }
 size_t PhysicalQuantity::cstrHasherTiny::operator()(const char* s) const { return operator()(CSubString(s)); }
 
 void PhysicalQuantity::parseUnits(const char* unitStr, signed char (&unitsOut)[(int)QuantityType::ENUM_MAX], num& factorOut, num& offsetOut) { return parseUnits(CSubString(unitStr), unitsOut, factorOut, offsetOut); }

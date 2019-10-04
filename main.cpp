@@ -8,6 +8,14 @@ typedef PhysicalQuantity PQ;
 
 int main(int argc, char** argv)
 {
+	PQ x = 8_m;
+	PQ y = 4_s;
+	PQ z = x / y;
+	char buf[100];
+	z.sprint(buf, 100, PQ::PreferredUnits("m s"));
+	printf("%s\n", buf);
+	return 0;
+
 	if (!PQHeaderOptionsMatch) 
 	{
 		printf("Error: library code was compiled with different header options.\n");

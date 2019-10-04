@@ -173,15 +173,21 @@ public:
 	class PreferredUnitsBase
 	{
 		friend class PhysicalQuantity;
+	public:
+		struct UnitPref
+		{
+			int iUnit;
+			int iPrefix;
+		};
 	protected:
-		int* unitIndeces;
+		UnitPref* unitIndeces;
 		int count_;
-		const UnitDefinition& operator[] (int i);
-		void build(const CSubString& unitList, int* buffer, int bufferLen, bool dynamic);
+		const UnitPref& operator[] (int i) const;
+		void build(const CSubString& unitList, UnitPref* buffer, int bufferSizeBytes, bool dynamic);
 #ifdef NO_INLINE
-		int count();
+		int count() const;
 #else
-		INLINE_KEYWORD int count() { return count_; }
+		INLINE_KEYWORD int count() const { return count_; }
 #endif
 	};
 
@@ -192,12 +198,13 @@ public:
 		PreferredUnits_dynamic(const CSubString& unitList_SpaceDelimited);
 		~PreferredUnits_dynamic();
 	};
-#endif
+#else
 	class PreferredUnits_static : public PreferredUnitsBase
 	{
 	public:
-		PreferredUnits_static(const CSubString& unitList, int* storage, size_t storageSizeBytes);
+		PreferredUnits_static(const CSubString& unitList_SpaceDelimited, void* storage, size_t storageSizeBytes);
 	};
+#endif
 #ifdef NO_NEW
 	typedef PreferredUnits_static PreferredUnits;
 #else
@@ -220,8 +227,8 @@ public:
 
 	void parse(const CSubString& text);
 	num convert(const CSubString& units) const;
-	bool sprint(char* buf, int size, const PreferredUnitsBase& pu) const;
-	bool sprint(char* buf, int size) const;
+	size_t sprint(char* buf, int size, const PreferredUnitsBase& pu) const;
+	size_t sprint(char* buf, int size) const;
 #ifndef NO_STD_STRING
 	std::string toString() const;
 	std::string toString(const PreferredUnitsBase&) const;
@@ -268,6 +275,8 @@ private:
 	void init();
 	static void parseUnits(const CSubString& unitStr, signed char (&unitsOut)[(int)QuantityType::ENUM_MAX], num& factorOut, num& offsetOut); // throws if unknown/invalid unit
 	static void mulUnit(signed char (&unitsOut)[(int)QuantityType::ENUM_MAX], const UnitDefinition& unit, signed int power, bool invert = false); // deals only with quantity dimension, conversion factors are handled elsewhere
+	unsigned int magdim() const; // Magnitude of dimension = sum(abs(dim[x]))
+	int magdimReduce(const UnitDefinition& unit) const;  // Divide by what power of (unit) to minimize magdim? Used in text output logic.
 
 public:
 #ifdef NO_INLINE
