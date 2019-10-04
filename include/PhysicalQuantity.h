@@ -227,6 +227,7 @@ public:
 
 	void parse(const CSubString& text);
 	num convert(const CSubString& units) const;
+	void sprintHalf(const PhysicalQuantity::PreferredUnitsBase & pu, int &md, PhysicalQuantity &r, int origmd, bool useSlash, int &outofs, int size, char * buf) const;
 	size_t sprint(char* buf, int size, const PreferredUnitsBase& pu, bool useSlash = true) const;
 	size_t sprint(char* buf, int size, bool useSlash = true) const;
 #ifndef NO_STD_STRING
@@ -279,6 +280,8 @@ private:
 	int magdimReduce(const UnitDefinition& unit) const;  // Divide by what power of (unit) to minimize magdim? Used in text output logic.
 
 	// in conjunction with sprint()
+	void sprintHalf(PhysicalQuantity& r, const PhysicalQuantity::PreferredUnitsBase & pu, bool& hasDenom, bool inDenomNow, int &md, int origmd, bool useSlash, int &outofs, int size, char * buf) const;
+	void sprintHalfTryUnit(const PhysicalQuantity::UnitDefinition & testunit, PhysicalQuantity & r, int origmd, bool & hasDenom, bool useSlash, bool inDenomNow, int plen, int & outofs, int size, char * buf, int ipre, int & md) const;
 	void WriteOutputUnit(int plen, int ulen, int reduceExp, int &outofs, int size, char * buf, int ipre, const PhysicalQuantity::UnitDefinition & testunit) const;
 
 public:

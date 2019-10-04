@@ -246,7 +246,7 @@ int PhysicalQuantity::magdimReduce(const UnitDefinition& unit) const
 		after = 0;
 		for (int iq = 0; iq < (int)QuantityType::ENUM_MAX; iq++)
 		{
-			after += dim[iq] - unit.dim[iq] * testpow;
+			after += abs(dim[iq] - (unit.dim[iq] * testpow));
 		}
 		if (after < 0) { after = -after; }
 	} while (after < (int)mdlast);
@@ -504,6 +504,10 @@ void PhysicalQuantity::parse(const CSubString& text_arg)
 }
 
 
+size_t PhysicalQuantity::sprint(char* buf, int size, bool useSlash) const
+{
+	return sprint(buf, size, PreferredUnits(""), useSlash);
+}
 void PhysicalQuantity::WriteOutputUnit(int plen, int ulen, int reduceExp, int &outofs, int size, char * buf, int ipre, const PhysicalQuantity::UnitDefinition & testunit) const
 {
 	int reduceExpLen = 0;
@@ -544,85 +548,80 @@ void PhysicalQuantity::WriteOutputUnit(int plen, int ulen, int reduceExp, int &o
 		outofs += nextLengthNeeded; //plen + ulen + 1;
 	}
 }
-
-size_t PhysicalQuantity::sprint(char* buf, int size, bool useSlash) const
+void PhysicalQuantity::sprintHalf(PhysicalQuantity& r, const PhysicalQuantity::PreferredUnitsBase & pu, bool& hasDenom, bool inDenomNow, int &md, int origmd, bool useSlash, int &outofs, int size, char * buf) const
 {
-	return sprint(buf, size, PreferredUnits(""), useSlash);
-}
-size_t PhysicalQuantity::sprint(char* buf, int size, const PreferredUnitsBase& pu, bool useSlash) const
-{
-	// TODO: Here
-	int md, origmd;
-	PhysicalQuantity r = *this; // result
-	origmd = r.magdim();
-	md = origmd;
-	int outofs = 0;
-
-	   	  
-
-
-
-	int ulen;
-	int plen;
-	int ipre;
-	int reduceExp;
-	bool hasDenom = false;
+	//int ulen;
+	//int plen;
+	//int ipre;
+	//int reduceExp;
+	//bool goForOutput;
+	hasDenom = false;
 	for (int ipu = 0; ipu < pu.count() && md != 0; ipu++)
 	{
 		const UnitDefinition& testunit = KnownUnits[pu[ipu].iUnit];
-		ipre = pu[ipu].iPrefix;
-		if (ipre == -1) { plen = 0;}
+		int ipre = pu[ipu].iPrefix;
+		int plen;
+		if (ipre == -1) { plen = 0; }
 		else { plen = (int)strlen(KnownPrefixes[ipre].symbol); }
-		ulen = (int)strlen(testunit.symbol);
-
-		reduceExp = r.magdimReduce(testunit);
-		if (reduceExp != 0)
-		{
-			// if it reduces the overall dimension of the value, use it.
-			if (origmd == 1 && testunit.offset != 0.0) 
-			{
-				r.value -= testunit.offset; 
-			}
-			r.value /= testunit.factor;
-			mulUnit(r.dim, testunit, reduceExp, true);
-			if (useSlash && reduceExp < 0)
-			{
-				hasDenom = true;
-			}
-			WriteOutputUnit(plen, ulen, reduceExp, outofs, size, buf, ipre, testunit);
-		}
-		md = r.magdim();
+		sprintHalfTryUnit(testunit, r, origmd, hasDenom, useSlash, inDenomNow, plen, outofs, size, buf, ipre, md);
 	}
 
 	// That's all the PreferredUnits. Is there anything left over?
-	ipre = -1;
-	plen = 0;
 	for (int iu = 0; iu < KnownUnitsLength && md != 0; iu++)
 	{
 		const UnitDefinition& testunit = KnownUnits[iu];
-		ulen = (int)strlen(testunit.symbol);
-
-		reduceExp = r.magdimReduce(testunit);
-		if (reduceExp != 0)
-		{
-			if (origmd == 1 && testunit.offset != 0.0) 
-			{
-				r.value -= testunit.offset; 
-			}
-			r.value /= testunit.factor;
-			mulUnit(r.dim, testunit, reduceExp, true);
-			WriteOutputUnit(plen, ulen, reduceExp, outofs, size, buf, ipre, testunit);
-		}
-		md = r.magdim();
+		sprintHalfTryUnit(testunit, r, origmd, hasDenom, useSlash, inDenomNow, 0, outofs, size, buf, -1, md);
 	}
+}
+void PhysicalQuantity::sprintHalfTryUnit(const PhysicalQuantity::UnitDefinition & testunit, PhysicalQuantity & r, int origmd, bool & hasDenom, bool useSlash, bool inDenomNow, int plen, int & outofs, int size, char * buf, int ipre, int & md) const
+{
+	int ulen = (int)strlen(testunit.symbol);
+	int reduceExp = r.magdimReduce(testunit);
+	if (reduceExp != 0)
+	{
+		// if it reduces the overall dimension of the value, use it.
+		if (origmd == 1 && testunit.offset != 0.0)
+		{
+			r.value -= testunit.offset;
+		}
+		r.value /= testunit.factor;
+		mulUnit(r.dim, testunit, reduceExp, true);
+		bool goForOutput = false;
+		if (reduceExp < 0)
+		{
+			hasDenom = true;
+			if (!useSlash || inDenomNow)
+			{
+				goForOutput = true;
+			}
+			if (inDenomNow) reduceExp *= -1;
+		}
+		else { goForOutput = !inDenomNow; } // if (!inDenomNow) { }
+		if (goForOutput) 
+		{
+			WriteOutputUnit(plen, ulen, reduceExp, outofs, size, buf, ipre, testunit); 
+		}
+	}
+	md = r.magdim();
+}
+size_t PhysicalQuantity::sprint(char* buf, int size, const PreferredUnitsBase& pu, bool useSlash) const
+{
+	PhysicalQuantity r = *this;
+	int md, origmd;
+	origmd = magdim();
+	md = origmd;
+	int outofs = 0;
+	bool hasDenom = false;
 
-
-
-
-
-
-
-
+	sprintHalf(r, pu, hasDenom, false, md, origmd, useSlash, outofs, size, buf);
+	if (hasDenom && useSlash)
+	{
+		buf[outofs++] = ' ';
+		buf[outofs++] = '/';
+		md = origmd;
+		r = *this;
+		sprintHalf(r, pu, hasDenom, true, md, origmd, useSlash, outofs, size, buf);
+	}
 
 	if (md != 0)
 	{
@@ -635,7 +634,7 @@ size_t PhysicalQuantity::sprint(char* buf, int size, const PreferredUnitsBase& p
 	}
 
 	// Now, actually print the number
-	// This is not very portable;
+	// TODO: This is not very portable;
 	// it's also very unsafe...
 	sprintf(buf + outofs, " %g", r.value);
 	int numofs = outofs;
