@@ -227,8 +227,8 @@ public:
 
 	void parse(const CSubString& text);
 	num convert(const CSubString& units) const;
-	size_t sprint(char* buf, int size, const PreferredUnitsBase& pu) const;
-	size_t sprint(char* buf, int size) const;
+	size_t sprint(char* buf, int size, const PreferredUnitsBase& pu, bool useSlash = true) const;
+	size_t sprint(char* buf, int size, bool useSlash = true) const;
 #ifndef NO_STD_STRING
 	std::string toString() const;
 	std::string toString(const PreferredUnitsBase&) const;
@@ -277,6 +277,9 @@ private:
 	static void mulUnit(signed char (&unitsOut)[(int)QuantityType::ENUM_MAX], const UnitDefinition& unit, signed int power, bool invert = false); // deals only with quantity dimension, conversion factors are handled elsewhere
 	unsigned int magdim() const; // Magnitude of dimension = sum(abs(dim[x]))
 	int magdimReduce(const UnitDefinition& unit) const;  // Divide by what power of (unit) to minimize magdim? Used in text output logic.
+
+	// in conjunction with sprint()
+	void WriteOutputUnit(int plen, int ulen, int reduceExp, int &outofs, int size, char * buf, int ipre, const PhysicalQuantity::UnitDefinition & testunit) const;
 
 public:
 #ifdef NO_INLINE

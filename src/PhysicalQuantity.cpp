@@ -221,32 +221,35 @@ int PhysicalQuantity::magdimReduce(const UnitDefinition& unit) const
 	//int maxpow = 0;
 	//int maxFactor = 1;
 
-	int mdUnitDiff = 0;
+	unsigned int mdorig = magdim();
+	int after = 0;
 	for (int iq = 0; iq < (int)QuantityType::ENUM_MAX; iq++)
 	{
-		mdUnitDiff += dim[iq] - unit.dim[iq];
+		after += dim[iq] - unit.dim[iq];
 	}
+	int mdUnitDiff = ((after >= 0) ? after : -after) - (int)mdorig;
+
 	if (mdUnitDiff == 0) 
 	{
 		return 0;
 	}
-	int direction = (mdUnitDiff > 0) ? 1 : -1;
-	unsigned int mdorig = magdim();
+	int direction = (mdUnitDiff < 0) ? 1 : -1;
 	int testpow = 0;
 	int lastpow;
 	unsigned int mdlast;
-	mdUnitDiff = mdorig;
+	after = mdorig;
 	do
 	{
-		mdlast = mdUnitDiff;
+		mdlast = after;
 		lastpow = testpow;
 		testpow += direction;
-		mdUnitDiff = 0;
+		after = 0;
 		for (int iq = 0; iq < (int)QuantityType::ENUM_MAX; iq++)
 		{
-			mdUnitDiff += dim[iq] - unit.dim[iq] * testpow;
+			after += dim[iq] - unit.dim[iq] * testpow;
 		}
-	} while (mdUnitDiff < mdlast);
+		if (after < 0) { after = -after; }
+	} while (after < (int)mdlast);
 	return lastpow;
 
 	//do
@@ -500,44 +503,79 @@ void PhysicalQuantity::parse(const CSubString& text_arg)
 	value += unitOfs;
 }
 
-size_t PhysicalQuantity::sprint(char* buf, int size) const
+
+void PhysicalQuantity::WriteOutputUnit(int plen, int ulen, int reduceExp, int &outofs, int size, char * buf, int ipre, const PhysicalQuantity::UnitDefinition & testunit) const
 {
-	return sprint(buf, size, PreferredUnits(""));
+	int reduceExpLen = 0;
+	int nextLengthNeeded = plen + ulen + 1;
+	if (reduceExp > 1) 
+	{
+		reduceExpLen = (int)log10(reduceExp) + 1;
+		nextLengthNeeded += reduceExpLen; 
+	}
+	else if (reduceExp < 0) // -1) 
+	{
+		reduceExpLen = (int)log10(-reduceExp) + 2;
+		nextLengthNeeded += reduceExpLen; 
+	}
+	if (outofs + nextLengthNeeded < size)
+	{
+		// write space
+		buf[outofs++] = ' ';
+		// write prefix
+		if (plen > 0 && ipre != -1) 
+		{
+			memcpy(buf + outofs, KnownPrefixes[ipre].symbol, plen); 
+			outofs += plen;
+		}
+		// write unit
+		memcpy(buf + outofs, testunit.symbol, ulen);
+		outofs += ulen;
+		// write power
+		if (reduceExp != 1)
+		{
+			buf[outofs++] = '^';
+			sprintf(buf + outofs, "%d", reduceExp);
+			outofs += reduceExpLen;
+		}
+	}
+	else
+	{
+		outofs += nextLengthNeeded; //plen + ulen + 1;
+	}
 }
-size_t PhysicalQuantity::sprint(char* buf, int size, const PreferredUnitsBase& pu) const
+
+size_t PhysicalQuantity::sprint(char* buf, int size, bool useSlash) const
+{
+	return sprint(buf, size, PreferredUnits(""), useSlash);
+}
+size_t PhysicalQuantity::sprint(char* buf, int size, const PreferredUnitsBase& pu, bool useSlash) const
 {
 	// TODO: Here
 	int md, origmd;
 	PhysicalQuantity r = *this; // result
 	origmd = r.magdim();
 	md = origmd;
-	int dmul = md;
-	int ddiv = md;
-	int dpow;
 	int outofs = 0;
+
+	   	  
+
+
+
 	int ulen;
 	int plen;
 	int ipre;
 	int reduceExp;
-	int reduceExpLen;
-	//bool reduces;
-	int nextLengthNeeded;
-	bool denom;
+	bool hasDenom = false;
 	for (int ipu = 0; ipu < pu.count() && md != 0; ipu++)
 	{
 		const UnitDefinition& testunit = KnownUnits[pu[ipu].iUnit];
-		//const Prefix& pre = KnownPrefixes[pu[ipu].iPrefix];
 		ipre = pu[ipu].iPrefix;
 		if (ipre == -1) { plen = 0;}
 		else { plen = (int)strlen(KnownPrefixes[ipre].symbol); }
 		ulen = (int)strlen(testunit.symbol);
 
-		//r.magdimMulDiv(testunit, dmul, ddiv, dpow); sadgdfgdfggb
-		//denom = (ddiv < dmul);
-		//if (mda < md)
-
 		reduceExp = r.magdimReduce(testunit);
-		//if (dmul < md || ddiv < md)
 		if (reduceExp != 0)
 		{
 			// if it reduces the overall dimension of the value, use it.
@@ -547,59 +585,22 @@ size_t PhysicalQuantity::sprint(char* buf, int size, const PreferredUnitsBase& p
 			}
 			r.value /= testunit.factor;
 			mulUnit(r.dim, testunit, reduceExp, true);
-
-			// Write output
-			// ...except we don't know the final numeric value and that comes first
-			// Ok, print it last then shuffle the number to the front
-			nextLengthNeeded = plen + ulen + 1;
-			if (reduceExp > 1) 
+			if (useSlash && reduceExp < 0)
 			{
-				reduceExpLen = log10(reduceExp) + 1;
-				nextLengthNeeded += reduceExpLen; 
+				hasDenom = true;
 			}
-			else if (reduceExp < -1) 
-			{
-				reduceExpLen = log10(-reduceExp) + 2;
-				nextLengthNeeded += reduceExpLen; 
-			}
-			if (outofs + nextLengthNeeded < size)
-			{
-				// write space
-				buf[outofs++] = ' ';
-				// write prefix
-				if (plen > 0) 
-				{
-					memcpy(buf + outofs, KnownPrefixes[ipre].symbol, plen); 
-					outofs += plen;
-				}
-				// write unit
-				memcpy(buf + outofs, testunit.symbol, ulen);
-				outofs += ulen;
-				// write power
-				if (reduceExp != 0)
-				{
-					buf[outofs++] = '^';
-					sprintf(buf + outofs, "%d", reduceExp);
-					outofs += reduceExpLen;
-				}
-			}
-			else
-			{
-				outofs += nextLengthNeeded; //plen + ulen + 1;
-			}
+			WriteOutputUnit(plen, ulen, reduceExp, outofs, size, buf, ipre, testunit);
 		}
 		md = r.magdim();
 	}
+
+	// That's all the PreferredUnits. Is there anything left over?
+	ipre = -1;
+	plen = 0;
 	for (int iu = 0; iu < KnownUnitsLength && md != 0; iu++)
 	{
 		const UnitDefinition& testunit = KnownUnits[iu];
 		ulen = (int)strlen(testunit.symbol);
-		//mda = r.magdimDiv(testunit);
-
-		//magdimMulDiv(testunit, dmul, ddiv, dpow);  sdjlsdfhgjksdhjkh
-		//denom = (ddiv < dmul);
-		//if (mda < md)
-		//if (dmul < md || ddiv < md)
 
 		reduceExp = r.magdimReduce(testunit);
 		if (reduceExp != 0)
@@ -610,21 +611,19 @@ size_t PhysicalQuantity::sprint(char* buf, int size, const PreferredUnitsBase& p
 			}
 			r.value /= testunit.factor;
 			mulUnit(r.dim, testunit, reduceExp, true);
-
-			// Write output
-			if (outofs + ulen + 1 < size)
-			{
-				buf[outofs++] = ' ';
-				memcpy(buf + outofs, testunit.symbol, ulen);
-				outofs += ulen;
-			}
-			else
-			{
-				outofs += ulen + 1;
-			}
+			WriteOutputUnit(plen, ulen, reduceExp, outofs, size, buf, ipre, testunit);
 		}
 		md = r.magdim();
 	}
+
+
+
+
+
+
+
+
+
 	if (md != 0)
 	{
 #ifdef NO_THROW
@@ -635,13 +634,14 @@ size_t PhysicalQuantity::sprint(char* buf, int size, const PreferredUnitsBase& p
 #endif
 	}
 
-	// TODO: Actually print the number
+	// Now, actually print the number
 	// This is not very portable;
 	// it's also very unsafe...
 	sprintf(buf + outofs, " %g", r.value);
 	int numofs = outofs;
 	int numlen = (int)strlen(buf + numofs);
 	outofs += numlen;
+	// Now shuffle the number to the beginning
 	char c;
 	for (int isubpos = 0; isubpos < numlen; isubpos++)
 	{
