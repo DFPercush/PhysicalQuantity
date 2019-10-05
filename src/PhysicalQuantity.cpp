@@ -5,6 +5,8 @@ TODO:
 	. initializer_list ? {1.23, {0,1,0,0,0}}
 	. constexpr
 	. print a double without sprintf ? Arduino for example can't sprintf floating points
+	.	> -48+3
+		-483
 */
 
 #include <PhysicalQuantity.h>
