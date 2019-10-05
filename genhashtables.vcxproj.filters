@@ -24,7 +24,7 @@
     <ClCompile Include="src\csubstr.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\PhysicalQuantity.cpp">
+    <ClCompile Include="src\PhysicalUnitDefinitions.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

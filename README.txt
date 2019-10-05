@@ -180,10 +180,14 @@ the correct / any output.
 	
 
 Error handling:
-	By default, unless NO_THROW is #defined, the code can throw a couple of errors: 
-UnitMismatchException, and InvalidExpressionException. Both of these types inherit
-from std::exception, so if you don't want any standard library stuff in your code,
-you may want to use the next option.
+	The class can throw a few exceptions, all based on std::exception. Here's what they mean:
+		- UnitMismatchException - Units do not match during add, subtract, or convert()
+		- InvalidExpressionException - There was a parsing error.
+		- HeaderConfigException - The #define options are different between your code and
+		  what the library / object was compiled with.
+		- std::overflow - unit exponent too large
+		- std::logic error - Congratulations, you found a bug.
+
 	If NO_THROW is #defined, the class will declare a couple of static members which
 are publicly accessible to you: 'errorHandler', which is a pointer to a function,
 and 'errorUserContext', which is an opaque void* pointer for you to use however
@@ -201,8 +205,13 @@ something. Here's some recommended code:
 		...
 	}
 	int DeepInTheBowelsOfYourCode() {
-		PQ makeAnError = 1.2_km + 3.4_kg;
-		if (g_pqErr) { g_pqErr = 0; return -1; }
+		PQ makeAnError = 1.2_km + 3.4_g;
+		if (g_pqErr) 
+		{
+			handleSomehow(); 
+			g_pqErr = 0; 
+			return -1; 
+		}
 		...
 		return 0;
 	}
@@ -217,10 +226,12 @@ call stack and restore them before return;. The main point is to be careful
 not to use junk values after an error and let it propagate through the system.
 
 
-Adding more units:
+
+How to add more units:
 	You may want to implement a unit that is not part of the library yet. Here is
 	a step by step guide on how to implement new units:
-	1. In PhysicalQuantity.cpp, find the KnownUnits[] array, and add a line.
+
+	1. In PhysicalUnitDefinitions.cpp, find the KnownUnits[] array, and add a line.
 		The format should be commented in there, but just in case, you'll need
 		the symbol, the long name, the dimensions/powers of 
 		{mass, distance, time, temperature, charge}, the offset amount
@@ -230,19 +241,19 @@ Adding more units:
 		You remember that ice cube tray method from high school, right?
 		What are they teaching you kids these days?
 
-	2. Immediately below KnownUnits[] you will find the literal definitions.
+	2. At the end of PhysicalQuantity.cpp you will find the literal definitions.
 		Add a line: DefineLiteral(symbol) // do not quote symbol
 		You may choose not to define a literal if it introduces a naming conflict
 		or you simply don't want to pollute the namespace. However, if you
 		want your changes to be pulled into the origin repo, you should define
 		the literal unless its symbol conflicts with a more popular unit.
 
-	3. In PhysicalQuantity.h, find all the DeclareLiteral() macros and add:
+	3. In PhysicalQuantity.h, find all the DeclareLiteral() macros at the end and add:
 		DeclareLiteral(symbol)  // again, do not put in quotes
 
 	4. Rebuild the hash tables. 
 		If using the Visual Studio solution, this is done automatically by a
-		custom build step.
+		custom build step. "Rebuild all" should invoke this. 
 		There is a separate VC project called genhashtables, and its output is to
 		be fed back into the main project as hashTables.h
 			($OutputPath)/genhashtables > include/PhysicalQuantity/hashTables.h

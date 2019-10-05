@@ -7,7 +7,9 @@
 #include <PhysicalQuantity.h>
 #include <PhysicalQuantity/hash.h>
 
+#if defined(_MSC_VER) && defined(BEEP_IF_HASH_TABLES_REBUILT)
 #include <Windows.h>
+#endif
 
 int main()
 {
@@ -15,6 +17,10 @@ int main()
 	PhysicalQuantity_dumpHashTable(&PhysicalQuantity::KnownUnits[0], &PhysicalQuantity::KnownUnits[0].longName, sizeof(PhysicalQuantity::UnitDefinition), PhysicalQuantity::KnownUnitsLength, PhysicalQuantity::hashTableSize_UnitLongNames, "UnitLongNames");
 	PhysicalQuantity_dumpHashTable(&PhysicalQuantity::KnownPrefixes[0], &PhysicalQuantity::KnownPrefixes[0].symbol, sizeof(PhysicalQuantity::Prefix), PhysicalQuantity::KnownPrefixesLength, PhysicalQuantity::hashTableSize_PrefixSymbols, "PrefixSymbols");
 	PhysicalQuantity_dumpHashTable(&PhysicalQuantity::KnownPrefixes[0], &PhysicalQuantity::KnownPrefixes[0].longName, sizeof(PhysicalQuantity::Prefix), PhysicalQuantity::KnownPrefixesLength, PhysicalQuantity::hashTableSize_PrefixLongNames, "PrefixLongNames");
-	Beep(1000, 500);
+
+#if defined(_MSC_VER) && defined(BEEP_IF_HASH_TABLES_REBUILT)
+	Beep(440, 150),
+	Beep((int)(440 * (pow(2,(5.0/12)))), 150);
+#endif
 	return 0;
 }

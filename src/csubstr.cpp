@@ -122,7 +122,8 @@ int CSubString::find_first_of(const CSubString& find, int startOfs) const
 {
 	for (int iMe = start + startOfs; iMe < end; iMe++)
 	{
-		for (int iFind = 0; find[iFind]; iFind++)
+		//for (int iFind = 0; find[iFind]; iFind++)
+		for (int iFind = 0; iFind < find.length(); iFind++)
 		{
 			if (str[iMe] == find[iFind]) { return iMe - start; }
 		}
@@ -133,11 +134,88 @@ int CSubString::find_first_of(const CSubString& find, int startOfs) const
 int CSubString::find_first_not_of(const CSubString& find, int startOfs) const
 {
 	int ret = -1;
-	bool found;
 	for (int iMe = start + startOfs; iMe < end; iMe++)
 	{
+		bool found;
 		found = false;
-		for (int iFind = 0; find[iFind]; iFind++)
+		//for (int iFind = 0; find[iFind]; iFind++)
+		for (int iFind = 0; iFind < find.length(); iFind++)
+		{
+			if (str[iMe] == find[iFind]) 
+			{
+				found = true;
+				break; 
+			}
+		}
+		if (!found) 
+		{
+			return iMe - start; 
+		}
+	}
+	return -1;
+}
+
+int CSubString::find_first_of(char c, int startOfs) const
+{
+	for (int iMe = start + startOfs; iMe < end; iMe++)
+	{
+		if (str[iMe] == c) { return iMe - start; }
+	}
+	return -1;
+}
+
+int CSubString::find_first_not_of(char c, int startOfs) const
+{
+	for (int iMe = start + startOfs; iMe < end; iMe++)
+	{
+		if (str[iMe] != c) { return iMe - start; }
+	}
+	return -1;
+}
+
+int CSubString::find_last_of(const CSubString& find, int startOfs) const
+{
+	//for (int iMe = start + startOfs; iMe < end; iMe++)
+	int iMe;
+	if (startOfs < 0)
+	{
+		iMe = end + startOfs;
+		if (iMe < start) { return -1; }
+	}
+	else 
+	{
+		iMe = start + startOfs;
+		if (iMe >= end) { return -1; }
+	}
+	for (; iMe >= start; iMe--)
+	{
+		for (int iFind = 0; iFind < find.length(); iFind++)
+		{
+			if (str[iMe] == find[iFind]) { return iMe - start; }
+		}
+	}
+	return -1;
+}
+
+int CSubString::find_last_not_of(const CSubString& find, int startOfs) const
+{
+	int iMe;
+	if (startOfs < 0)
+	{
+		iMe = end + startOfs;
+		if (iMe < start) { return -1; }
+	}
+	else 
+	{
+		iMe = start + startOfs;
+		if (iMe >= end) { return -1; }
+	}
+	for (; iMe >= start; iMe--)
+	{
+		bool found;
+		found = false;
+		//for (int iFind = 0; find[iFind]; iFind++)
+		for (int iFind = 0; iFind < find.length(); iFind++)
 		{
 			if (str[iMe] == find[iFind]) 
 			{
@@ -150,23 +228,47 @@ int CSubString::find_first_not_of(const CSubString& find, int startOfs) const
 	return -1;
 }
 
-int CSubString::find_first_of(char c) const
+int CSubString::find_last_of(char c, int startOfs) const
 {
-	for (int iMe = start; iMe < end; iMe++)
+	int iMe;
+	if (startOfs < 0)
+	{
+		iMe = end + startOfs;
+		if (iMe < start) { return -1; }
+	}
+	else 
+	{
+		iMe = start + startOfs;
+		if (iMe >= end) { return -1; }
+	}
+	for (; iMe >= start; iMe--)
 	{
 		if (str[iMe] == c) { return iMe - start; }
 	}
 	return -1;
 }
 
-int CSubString::find_first_not_of(char c) const
+int CSubString::find_last_not_of(char c, int startOfs) const
 {
-	for (int iMe = start; iMe < end; iMe++)
+
+	int iMe;
+	if (startOfs < 0)
+	{
+		iMe = end + startOfs;
+		if (iMe < start) { return -1; }
+	}
+	else 
+	{
+		iMe = start + startOfs;
+		if (iMe >= end) { return -1; }
+	}
+	for (; iMe >= start; iMe--)
 	{
 		if (str[iMe] != c) { return iMe - start; }
 	}
 	return -1;
 }
+
 
 CSubString::CSubString(const CSubString& from, int start_arg, int len_arg)
 {
@@ -329,10 +431,44 @@ int CSubString::atoi()
 	return ret;
 }
 
-CSubString CSubString::substr(int startArg, int lenArg)
+CSubString CSubString::substr(int startArg, int lenArg) const
 {
 	return CSubString(*this, startArg, lenArg);
 }
+
+CSubString CSubString::trim() const
+{
+	int firstNotSpace = find_first_not_of(" \t");
+	if (firstNotSpace == -1) { firstNotSpace = 0; }
+	int lastNotSpace = find_last_of(" \t", firstNotSpace);
+	if (lastNotSpace == -1) { lastNotSpace = length() - 1; }
+	return substr(firstNotSpace, lastNotSpace - firstNotSpace + 1);
+}
+
+bool CSubString::isnumber() const
+{
+	csubstr t = trim();
+	int pm = t.find_first_of("+-");
+	if (pm == 0)
+	{
+		if (t.length() <= 1) { return false; }
+		if (csubstr("0123456789").find_first_of(t[1]) == -1) { return false; }
+	}
+	if (pm > 0)
+	{
+		if (!((t[pm - 1] == 'e') || (t[pm - 1] == 'E'))) { return false; }
+	}
+	return (t.find_first_not_of("0123456789.+-Ee") == -1);
+}
+
+bool CSubString::isint() const
+{
+	csubstr t = trim();
+	if (t.length() == 0) { return false; }
+	if ((t[0] == '+') || (t[0] == '-')) { t = t.substr(1); }
+	return (t.find_first_not_of("0123456789") == -1);
+}
+
 
 
 // Separate CSubString for later maybe

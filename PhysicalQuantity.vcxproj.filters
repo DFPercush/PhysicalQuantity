@@ -27,6 +27,9 @@
     <ClCompile Include="src\csubstr.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\PhysicalUnitDefinitions.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\PhysicalQuantity.h">

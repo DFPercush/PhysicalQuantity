@@ -30,11 +30,19 @@ public:
 	bool copy(char* buf, int size) const;
 	int find_first_of(const CSubString& find, int startOfs = 0) const;
 	int find_first_not_of(const CSubString& find, int startOfs = 0) const;
-	int find_first_of(char c) const;
-	int find_first_not_of(char c) const;
+	int find_first_of(char c, int startOfs = 0) const;
+	int find_first_not_of(char c, int startOfs = 0) const;
+	int find_last_of(const CSubString& find, int startOfs = -1) const;
+	int find_last_not_of(const CSubString& find, int startOfs = -1) const;
+	// TODO: const char* inline
+	int find_last_of(char c, int startOfs = -1) const;
+	int find_last_not_of(char c, int startOfs = -1) const;
 	int atoi();
 	double atof();
-	CSubString substr(int startArg = 0, int lenArg = -1);
+	CSubString substr(int startArg = 0, int lenArg = -1) const;
+	bool isnumber() const;
+	bool isint() const;
+	CSubString trim() const;
 
 #ifdef NO_INLINE
 	char operator[](int index) const;

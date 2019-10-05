@@ -43,85 +43,16 @@ PhysicalQuantity::HeaderConfigException::HeaderConfigException(const char* messa
 
 #endif
 
-const PhysicalQuantity::UnitDefinition PhysicalQuantity::KnownUnits[] = {
-	/*Template
-	//                   M  D Ti Te Ch
-	{"", "",           { 0, 0, 0, 0, 0}, 0, 1.0},
-	*/
-
-	// symbol, longName, { MASS, DISTANCE, TIME, TEMPERATURE, CHARGE }, offset, factor
-	//                   M  D Ti Te Ch
-	{"m", "meter",     {+0,+1,+0,+0,+0}, 0, 1.0},
-	{"ang","angstrom", { 0, 1, 0, 0, 0}, 0, 1.0e-10},
-	{"g", "gram",      { 1, 0, 0, 0, 0}, 0, 0.001},
-	{"s", "second",    { 0, 0, 1, 0, 0}, 0, 1.0},
-	{"Hz", "hertz",    { 0, 0,-1, 0, 0}, 0, 1.0},
-	{"J", "joule",     { 1, 2,-2, 0, 0}, 0, 1.0},
-	{"N", "newton",    { 1, 1,-2, 0, 0}, 0, 1.0},
-	{"lb", "pound",    { 1, 1,-2, 0, 0}, 0, 4.448221615260501},
-	//                   M  D Ti Te Ch
-	{"K","kelvin",     { 0, 0, 0, 1, 0}, 0, 1.0},
-	{"degC","degreeC", { 0, 0, 0, 1, 0}, 273.15, 1.0},
-	{"degF","degreeF", { 0, 0, 0, 1, 0}, 255.37222222222222222222222222222, 0.55555555555555555555555555555556},
-	{"C","coulomb",    { 0, 0, 0, 0, 1}, 0, 1.0},
-	{"A","ampere",     { 0, 0,-1, 0, 1}, 0, 1.0},
-	// Coulombs <==> electron charge
-	// 1C = 6.24150975*10^18e or 1e = 1.60217646*10^-19C
-	//                   M  D Ti Te Ch
-
-};
-const int PhysicalQuantity::KnownUnitsLength = sizeof(PhysicalQuantity::KnownUnits) / sizeof(PhysicalQuantity::UnitDefinition);
-
-#ifndef NO_LITERALS
-// TODO: Also define with all prefixes?
-#define DefineLiteral(symbol) PhysicalQuantity operator ""_##symbol (long double v) { return PhysicalQuantity((PhysicalQuantity::num)v, #symbol); } PhysicalQuantity operator ""_##symbol (unsigned long long v) { return PhysicalQuantity((PhysicalQuantity::num)(v), #symbol); }
-DefineLiteral(m)
-DefineLiteral(g)
-DefineLiteral(s)
-DefineLiteral(Hz)
-DefineLiteral(N)
-DefineLiteral(J)
-DefineLiteral(K)
-DefineLiteral(C)
-DefineLiteral(ang)
-#endif  // !NO_LITERALS
-
-
-
-const PhysicalQuantity::Prefix PhysicalQuantity::KnownPrefixes[] =
-{
-{"y", "yocto", 1e-24},
-{"z", "zepto", 1e-21},
-{"a", "atto", 1e-18},
-{"f", "femto", 1e-15},
-{"p", "pico", 1e-12},
-{"n", "nano", 1e-9},
-{"u", "micro", 1e-6},  // Should I try to make the source files utf-8 for greek letter mu? Ehhhhh...
-{"m", "milli", 1e-3},
-{"c", "centi", 1e-2},
-{"d", "deci", 0.1},
-{"da", "deka", 10.0},
-{"h", "hecto", 100.0},
-{"k", "kilo", 1000.0},
-{"M", "mega", 1e6},
-{"G", "giga", 1e9},
-{"T", "tera", 1e12},
-{"P", "peta", 1e15},
-{"E", "exa", 1e18},
-{"Z", "zetta", 1e21},
-{"Y", "yotta", 1e24}
-};
-const int PhysicalQuantity::KnownPrefixesLength = sizeof(PhysicalQuantity::KnownPrefixes) / sizeof(PhysicalQuantity::Prefix);
-const int dekaIndex = 10; // If any more prefixes are added, this should be the index of {"da", "deka", 10}
-                          // Used to optimize lookups because this is the only prefix longer than 1 char
-                          // If that changes, might need to change findUnit()
-
 
 
 typedef PhysicalQuantity PQ;
 
 void PhysicalQuantity::init()
 {
+	if (!(PQHeaderOptionsMatch))
+	{
+		throw HeaderConfigException("Library code was compiled with different header options.");
+	}
 	value = 0.0;
 	memset(dim, 0, sizeof(dim));
 }
@@ -404,7 +335,7 @@ void PhysicalQuantity::parseUnits(const CSubString& unitStr, signed char (&units
 						errorHandler(errorUserContext, E_INVALID_EXPRESSION);
 						return;
 	#else
-						throw InvalidExpressionException();
+						throw InvalidExpressionException("Unit not found");
 	#endif
 					}
 				
@@ -486,7 +417,7 @@ void PhysicalQuantity::parse(const CSubString& text_arg)
 {
 	CSubString text(text_arg);
 	num newValue = 0.0;
-	int firstNotSpace = (int)text.find_first_not_of(" ");
+	int firstNotSpace = (int)text.find_first_not_of(' ');
 	if (firstNotSpace > 0) { text = text.substr(firstNotSpace); }
 	if (text.length() == 0)
 	{
@@ -497,18 +428,40 @@ void PhysicalQuantity::parse(const CSubString& text_arg)
 		throw InvalidExpressionException("Quantity can not be null."); 
 #endif
 	}
-	int firstNotNumber = (int)text.find_first_not_of("0123456789Ee.-+"); // added Ee
-	if (firstNotNumber == -1)
+	//int firstNotNumber = (int)text.find_first_not_of("0123456789Ee.-+"); // added Ee
+	//if (firstNotNumber == -1)
+	//{
+	//	value = text.atof();
+	//	memset(dim, 0, sizeof(dim));
+	//	return;
+	//}
+	//else
+	//{
+	//}
+	
+	int firstSpace = (int)text.find_first_of(' ');
+	csubstr unitStr;
+	if (text.substr(0, firstSpace).isnumber())
 	{
 		value = text.atof();
-		memset(dim, 0, sizeof(dim));
-		return;
+		if (firstSpace == -1)
+		{
+			unitStr = "";
+		}
+		else
+		{
+			unitStr = text.substr(firstSpace + 1);
+		}
 	}
-	
-	value = text.atof();
+	else
+	{
+		value = 1.0;
+		unitStr = text;
+	}
 	num unitFactor = 1.0;
 	num unitOfs = 0.0;
-	parseUnits(CSubString(text, firstNotNumber), dim, unitFactor, unitOfs);
+	//parseUnits(CSubString(text, firstNotNumber), dim, unitFactor, unitOfs);
+	parseUnits(unitStr, dim, unitFactor, unitOfs);
 	value *= unitFactor;
 	value += unitOfs;
 }
@@ -591,6 +544,7 @@ void PhysicalQuantity::sprintHalfTryUnit(const PhysicalQuantity::UnitDefinition 
 		}
 		r.value /= testunit.factor;
 		mulUnit(r.dim, testunit, reduceExp, true);
+		if (ipre != -1) { r.value /= KnownPrefixes[ipre].factor; }
 		bool goForOutput = false;
 		if (reduceExp < 0)
 		{
@@ -641,7 +595,7 @@ size_t PhysicalQuantity::sprint(char* buf, int size, const PreferredUnitsBase& p
 	// Now, actually print the number
 	// TODO: This is not very portable;
 	// it's also very unsafe...
-	sprintf(buf + outofs, " %g", r.value);
+	sprintf(buf + outofs, "%g", r.value);
 	int numofs = outofs;
 	int numlen = (int)strlen(buf + numofs);
 	outofs += numlen;
@@ -1102,7 +1056,7 @@ void PhysicalQuantity::PreferredUnitsBase::build(const CSubString& unitList, Phy
 	int bufferLen = bufferSizeBytes / sizeof(UnitPref);
 	int storageCapacity = bufferLen; // staticStorageSize;
 	count_ = 0;
-	std::pair<int, int> a;
+	//std::pair<int, int> a; // TODO: remove
 	int wordStart = 0;
 	int wordEnd = 0;
 	csubstr word;
@@ -1136,7 +1090,11 @@ void PhysicalQuantity::PreferredUnitsBase::build(const CSubString& unitList, Phy
 						int newStorageCapacity = int(storageCapacity * 1.5) + 1;
 						//int* tmpArray = new int[newStorageCapacity];
 						UnitPref* tmpArray = new UnitPref[newStorageCapacity];
-						memcpy(tmpArray, unitIndeces, sizeof(UnitPref) * count_);
+						if (unitIndeces)
+						{
+							memcpy(tmpArray, unitIndeces, sizeof(UnitPref) * count_);
+							delete [] unitIndeces;
+						}
 						unitIndeces = tmpArray;
 						storageCapacity = newStorageCapacity;
 					}
@@ -1155,16 +1113,24 @@ void PhysicalQuantity::PreferredUnitsBase::build(const CSubString& unitList, Phy
 	}
 }
 
+PhysicalQuantity::PreferredUnitsBase::~PreferredUnitsBase()
+{
+}
+
 #ifndef NO_NEW
 
 PhysicalQuantity::PreferredUnits_dynamic::PreferredUnits_dynamic(const CSubString& unitList)  //const string& unitList)
 {
+	unitIndeces = nullptr;
 	build(unitList, nullptr, 0, true);
 }
 PhysicalQuantity::PreferredUnits_dynamic::~PreferredUnits_dynamic()
 {
 	//if (unitIndeces != staticStorage) { delete [] unitIndeces; }
-	if (unitIndeces) { delete [] unitIndeces; }
+	if (unitIndeces) 
+	{
+		delete [] unitIndeces; 
+	}
 }
 
 #else // !NO_NEW
@@ -1235,13 +1201,13 @@ PhysicalQuantity PhysicalQuantity::eval(CSubString str)
 			pleft = i;
 			plevel--;
 		}
-		else if (c == '+' && plevel == 0)
+		else if (c == '+' && plevel == 0 && str[i+1] == ' ')
 		{
 			left = eval(str.substr(0, i - 1));
 			right = eval(str.substr(i + 1));
 			return left + right;
 		}
-		else if (c == '-' && plevel == 0)
+		else if (c == '-' && plevel == 0 && str[i+1] == ' ')
 		{
 			left = eval(str.substr(0, i - 1));
 			right = eval(str.substr(i + 1));
@@ -1281,7 +1247,7 @@ PhysicalQuantity PhysicalQuantity::eval(CSubString str)
 		}
 		else if (c == '/' && plevel == 0)
 		{
-			left = eval(str.substr(0, i - 1));
+			left = eval(str.substr(0, i));
 			right = eval(str.substr(i + 1));
 			return left / right;
 		}
@@ -1392,6 +1358,10 @@ PhysicalQuantity PhysicalQuantity::eval(CSubString str)
 	}
 }
 
+size_t PhysicalQuantity::sprint(char* buf, int size, const csubstr& sspu, bool useSlash) const
+{
+	return sprint(buf, size, PreferredUnits(sspu), useSlash);
+}
 
 
 #ifdef NO_INLINE
@@ -1413,5 +1383,23 @@ size_t PhysicalQuantity::sprint(char* buf, int size, const char* pu, bool useSla
 size_t PhysicalQuantity::sprint(char* buf, int size, bool useSlash) const {	return sprint(buf, size, PreferredUnits(""), useSlash); }
 #endif //#ifdef NO_INLINE
 
+
+#ifndef NO_LITERALS
+// TODO: Also define with all prefixes?
+#define DefineLiteral(symbol) PhysicalQuantity operator ""_##symbol (long double v) { return PhysicalQuantity((PhysicalQuantity::num)v, #symbol); } PhysicalQuantity operator ""_##symbol (unsigned long long v) { return PhysicalQuantity((PhysicalQuantity::num)(v), #symbol); }
+DefineLiteral(m)
+DefineLiteral(g)
+DefineLiteral(s)
+DefineLiteral(Hz)
+DefineLiteral(N)
+DefineLiteral(J)
+DefineLiteral(K)
+DefineLiteral(C)
+DefineLiteral(ang)
+DefineLiteral(rad)
+DefineLiteral(deg)
+DefineLiteral(lb)
+
+#endif  // !NO_LITERALS
 
 

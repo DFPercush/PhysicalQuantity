@@ -180,6 +180,7 @@ public:
 			int iUnit;
 			int iPrefix;
 		};
+		virtual ~PreferredUnitsBase();
 	protected:
 		UnitPref* unitIndeces;
 		int count_;
@@ -190,6 +191,8 @@ public:
 #else
 		INLINE_KEYWORD int count() const { return count_; }
 #endif
+	private:
+		bool dynamic;
 	};
 
 #ifndef NO_NEW
@@ -197,7 +200,7 @@ public:
 	{
 	public:
 		PreferredUnits_dynamic(const CSubString& unitList_SpaceDelimited);
-		~PreferredUnits_dynamic();
+		virtual ~PreferredUnits_dynamic();
 	};
 #else
 	class PreferredUnits_static : public PreferredUnitsBase
@@ -228,8 +231,9 @@ public:
 
 	void parse(const CSubString& text);
 	num convert(const CSubString& units) const;
-	void sprintHalf(const PhysicalQuantity::PreferredUnitsBase & pu, int &md, PhysicalQuantity &r, int origmd, bool useSlash, int &outofs, int size, char * buf) const;
 	size_t sprint(char* buf, int size, const PreferredUnitsBase& pu, bool useSlash = true) const;
+	size_t sprint(char* buf, int size, const csubstr& sspu, bool useSlash = true) const; // TODO: inline
+
 #ifndef NO_STD_STRING
 	std::string toString() const;
 	std::string toString(const PreferredUnitsBase&) const;
@@ -261,6 +265,7 @@ public:
 	static const int KnownUnitsLength;
 	static const Prefix KnownPrefixes[];
 	static const int KnownPrefixesLength;
+	static const int dekaIndex;
 #ifndef NO_HASHING
 	// Hash table sizes are defined in hash.cpp
 	static const int hashTableSize_UnitSymbols;
@@ -281,7 +286,8 @@ private:
 	int magdimReduce(const UnitDefinition& unit) const;  // Divide by what power of (unit) to minimize magdim? Used in text output logic.
 
 	// in conjunction with sprint()
-	void sprintHalf(PhysicalQuantity& r, const PhysicalQuantity::PreferredUnitsBase & pu, bool& hasDenom, bool inDenomNow, int &md, int origmd, bool useSlash, int &outofs, int size, char * buf) const;
+	void sprintHalf(PhysicalQuantity& r, const PreferredUnitsBase & pu, bool& hasDenom, bool inDenomNow, int &md, int origmd, bool useSlash, int &outofs, int size, char * buf) const;
+	//void sprintHalf(const PreferredUnitsBase & pu, int &md, PhysicalQuantity &r, int origmd, bool useSlash, int &outofs, int size, char * buf) const;
 	void sprintHalfTryUnit(const PhysicalQuantity::UnitDefinition & testunit, PhysicalQuantity & r, int origmd, bool & hasDenom, bool useSlash, bool inDenomNow, int plen, int & outofs, int size, char * buf, int ipre, int & md) const;
 	void WriteOutputUnit(int plen, int ulen, int reduceExp, int &outofs, int size, char * buf, int ipre, const PhysicalQuantity::UnitDefinition & testunit) const;
 
@@ -323,6 +329,8 @@ public:
 // TODO: Also declare with all prefixes?
 #define DeclareLiteral(symbol) PhysicalQuantity operator ""_##symbol(long double); PhysicalQuantity operator ""_##symbol(unsigned long long);
 
+DeclareLiteral(rad)
+DeclareLiteral(deg)
 DeclareLiteral(m)
 DeclareLiteral(g)
 DeclareLiteral(s)
@@ -332,6 +340,7 @@ DeclareLiteral(J)
 DeclareLiteral(K)
 DeclareLiteral(C)
 DeclareLiteral(ang)
+DeclareLiteral(lb)
 
 #endif // !NO_LITERALS
 // End literals
