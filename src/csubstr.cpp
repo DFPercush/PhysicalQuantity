@@ -1,6 +1,11 @@
 #include <csubstr.h>
 #include <string.h>
 
+#include <PhysicalQuantity.h>
+
+typedef PhysicalQuantity::CSubString csubstr;
+typedef PhysicalQuantity::CSubString CSubString;
+
 CSubString::CSubString(const char* str_arg, int start_arg, int len_arg)
 {
 	str = str_arg;
@@ -17,6 +22,10 @@ CSubString::CSubString(const char* str_arg, int start_arg, int len_arg)
 
 bool CSubString::operator== (const char* cmp) const
 {
+	if (cmp == nullptr && length() == 0) 
+	{
+		return true; 
+	}
 	if ((end - start == 0) && cmp[0] != 0) { return false; }
 	for (int i = start; (i < end) && (*cmp != 0) && (str[i] != 0); i++)
 	{

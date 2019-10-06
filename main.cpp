@@ -7,12 +7,13 @@
 #include <PhysicalQuantity/hash.h>
 using namespace std;
 typedef PhysicalQuantity PQ;
+typedef PQ::CSubString csubstr;
 
 void showHelp()
 {
 	printf("Options:\n" \
 	"-c use convert() and print the numeric result\n" \
-	"-s use sprint() and print the text output\n" \
+	"-s use sprint() and print the text result\n" \
 	"-i interactive mode \n" \
 	"--help\n" \
 	"-?\n" \
@@ -33,6 +34,12 @@ int main(int argc, char** argv)
 	{
 		printf("Error: library code was compiled with different header options.\n");
 		return 1;
+	}
+
+	if (argc <= 1)
+	{
+		showHelp();
+		return 0;
 	}
 
 	bool interactive = false;
@@ -75,17 +82,20 @@ int main(int argc, char** argv)
 			lastOptionArg = iArg;
 			showHelp(); 
 		} 
-#if !defined(NO_HASHING) && !defined(NO_PRINTF)
-		else if (!strcmp(argv[iArg], "hash"))
-		{
-			lastOptionArg = iArg;
-			PhysicalQuantity_dumpHashTable(&PhysicalQuantity::KnownUnits[0], &PhysicalQuantity::KnownUnits[0].symbol, sizeof(PhysicalQuantity::UnitDefinition), PhysicalQuantity::KnownUnitsLength, PhysicalQuantity::hashTableSize_UnitSymbols, "UnitSymbols");
-			PhysicalQuantity_dumpHashTable(&PhysicalQuantity::KnownUnits[0], &PhysicalQuantity::KnownUnits[0].longName, sizeof(PhysicalQuantity::UnitDefinition), PhysicalQuantity::KnownUnitsLength, PhysicalQuantity::hashTableSize_UnitLongNames, "UnitLongNames");
-			PhysicalQuantity_dumpHashTable(&PhysicalQuantity::KnownPrefixes[0], &PhysicalQuantity::KnownPrefixes[0].symbol, sizeof(PhysicalQuantity::Prefix), PhysicalQuantity::KnownPrefixesLength, PhysicalQuantity::hashTableSize_PrefixSymbols, "PrefixSymbols");
-			PhysicalQuantity_dumpHashTable(&PhysicalQuantity::KnownPrefixes[0], &PhysicalQuantity::KnownPrefixes[0].longName, sizeof(PhysicalQuantity::Prefix), PhysicalQuantity::KnownPrefixesLength, PhysicalQuantity::hashTableSize_PrefixLongNames, "PrefixLongNames");
-			return 0;
-		}
-#endif //#ifndef NO_HASHING
+		// If you need to recreate the hash tables, run the 'genhashtables' project, 
+		// using the the main() in genhashtables.cpp
+		// Or in Visual Studio do a full rebuild.
+//#if !defined(NO_HASHING) && !defined(NO_PRINTF)
+//		else if (!strcmp(argv[iArg], "hash"))
+//		{
+//			lastOptionArg = iArg;
+//			PhysicalQuantity_dumpHashTable(&PhysicalQuantity::KnownUnits[0], &PhysicalQuantity::KnownUnits[0].symbol, sizeof(PhysicalQuantity::UnitDefinition), PhysicalQuantity::KnownUnitsLength, PhysicalQuantity::hashTableSize_UnitSymbols, "UnitSymbols");
+//			PhysicalQuantity_dumpHashTable(&PhysicalQuantity::KnownUnits[0], &PhysicalQuantity::KnownUnits[0].longName, sizeof(PhysicalQuantity::UnitDefinition), PhysicalQuantity::KnownUnitsLength, PhysicalQuantity::hashTableSize_UnitLongNames, "UnitLongNames");
+//			PhysicalQuantity_dumpHashTable(&PhysicalQuantity::KnownPrefixes[0], &PhysicalQuantity::KnownPrefixes[0].symbol, sizeof(PhysicalQuantity::Prefix), PhysicalQuantity::KnownPrefixesLength, PhysicalQuantity::hashTableSize_PrefixSymbols, "PrefixSymbols");
+//			PhysicalQuantity_dumpHashTable(&PhysicalQuantity::KnownPrefixes[0], &PhysicalQuantity::KnownPrefixes[0].longName, sizeof(PhysicalQuantity::Prefix), PhysicalQuantity::KnownPrefixesLength, PhysicalQuantity::hashTableSize_PrefixLongNames, "PrefixLongNames");
+//			return 0;
+//		}
+//#endif //#ifndef NO_HASHING
 		else
 		{
 			break;

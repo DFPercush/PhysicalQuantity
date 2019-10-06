@@ -10,6 +10,7 @@ TODO:
 */
 
 #include <PhysicalQuantity.h>
+
 #ifndef NO_HASHING
 #include <PhysicalQuantity/hash.h>
 #ifndef PQ_GENERATING_HASH_TABLES
@@ -19,10 +20,12 @@ struct { int bucketSize; int bucket[1]; } UnitSymbols_HashTable[1];
 struct { int bucketSize; int bucket[1]; } UnitLongNames_HashTable[1];
 struct { int bucketSize; int bucket[1]; } PrefixSymbols_HashTable[1];
 struct { int bucketSize; int bucket[1]; } PrefixLongNames_HashTable[1];
-
-#endif
+#endif //#ifndef PQ_GENERATING_HASH_TABLES
 #endif //#ifndef NO_HASHING
+
 using namespace std;
+
+typedef PhysicalQuantity::CSubString csubstr;
 
 #ifdef _MSC_VER
 #pragma warning(disable:4996)
@@ -53,7 +56,7 @@ void PhysicalQuantity::init()
 {
 	if (!(PQHeaderOptionsMatch))
 	{
-		throw HeaderConfigException("Library code was compiled with different header options.");
+		throw HeaderConfigException("PhysicalQuantity: Module/object was compiled with different header options.");
 	}
 	value = 0.0;
 	memset(dim, 0, sizeof(dim));
@@ -69,7 +72,6 @@ PhysicalQuantity::PhysicalQuantity(const PhysicalQuantity& copy)
 {
 	init();
 	value = copy.value;
-	//units = copy.units;
 	memcpy(dim, copy.dim, sizeof(dim));
 }
 
@@ -853,13 +855,13 @@ bool PhysicalQuantity::findUnit(CSubString name, int& outUnitIndex, int& outPref
 
 #ifndef NO_HASHING
 	static cstrHasherTiny hasher;
-	int iBucket, hashRaw, hashSymbol, hashLongName;
+	unsigned int iBucket, hashRaw, hashSymbol, hashLongName;
 	char firstLetter[2];
 
 	if ((nlen > 2) && (name[0] == 'd') && (name[1] == 'a'))
 	{
 		possibleUnitPart = csubstr(name, 2);
-		hashRaw = (int)hasher(possibleUnitPart);
+		hashRaw = (unsigned int)hasher(possibleUnitPart);
 		hashSymbol = hashRaw % hashTableSize_UnitSymbols;
 		for (iBucket = 0; iBucket < UnitSymbols_HashTable[hashSymbol].bucketSize; iBucket++)
 		{
@@ -884,7 +886,7 @@ bool PhysicalQuantity::findUnit(CSubString name, int& outUnitIndex, int& outPref
 
 	firstLetter[0] = name[0];
 	firstLetter[1] = 0;
-	hashSymbol = hasher(firstLetter) % hashTableSize_PrefixSymbols;
+	hashSymbol = (unsigned int)hasher(firstLetter) % hashTableSize_PrefixSymbols;
 	for (iBucket = 0; iBucket < PrefixSymbols_HashTable[hashSymbol].bucketSize; iBucket++)
 	{
 		if (name[0] == KnownPrefixes[PrefixSymbols_HashTable[hashSymbol].bucket[iBucket]].symbol[0])
@@ -903,7 +905,7 @@ bool PhysicalQuantity::findUnit(CSubString name, int& outUnitIndex, int& outPref
 	// look up unit symbol
 	while(iTryUnitName < 2)
 	{
-		hashRaw = (int)hasher(tryUnitNames[iTryUnitName]);
+		hashRaw = (unsigned int)hasher(tryUnitNames[iTryUnitName]);
 		hashSymbol = hashRaw % hashTableSize_UnitSymbols;
 		for (iBucket = 0; iBucket < UnitSymbols_HashTable[hashSymbol].bucketSize; iBucket++)
 		{

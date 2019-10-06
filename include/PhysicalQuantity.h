@@ -48,10 +48,9 @@
 // End config checking
 //==================================================================================
 
-// csubstr.h is included in the PhysicalQuantity project's include/ directory.
-// This path should be included in project settings or as an -I in makefile
-#include <csubstr.h>
 
+//========================================
+// Standard library dependencies
 #ifndef NO_THROW
 #include <exception>
 #include <stdexcept>
@@ -62,14 +61,78 @@
 #ifndef NO_STD_STRING
 #include <string>
 #endif
+// #nd standard library dependencies
+//========================================
+
 
 class PhysicalQuantity
 {
 public:
 	
+	//======================
 	// Base numeric type
 	typedef double num;
 	//typedef float num;
+	//======================
+
+
+	//==================================================================================
+	// CSubString
+	class CSubString
+	{
+	private:
+		const char* str;
+		int start;
+		int end; // constructor takes a length to emulate standard behavior, but internally end is easier
+	public:
+		CSubString();
+		CSubString(const char* str_arg, int start_arg = 0, int len_arg = -1);
+		CSubString(const CSubString& from, int start_arg = 0, int len_arg = -1);
+		CSubString& operator=(const CSubString& cp);
+		bool operator== (const char* cmp) const;
+		bool operator==(const CSubString& cmp) const;
+		bool begins(const CSubString& test) const;
+		bool ends(const CSubString& test) const;
+		int at(const char* test, int start = 0) const; // where this needle appears in a haystack argument, or -1
+		bool copy(char* buf, int size) const;
+		int find_first_of(const CSubString& find, int startOfs = 0) const;
+		int find_first_not_of(const CSubString& find, int startOfs = 0) const;
+		int find_first_of(char c, int startOfs = 0) const;
+		int find_first_not_of(char c, int startOfs = 0) const;
+		int find_last_of(const CSubString& find, int startOfs = -1) const;
+		int find_last_not_of(const CSubString& find, int startOfs = -1) const;
+		// TODO: const char* inline
+		int find_last_of(char c, int startOfs = -1) const;
+		int find_last_not_of(char c, int startOfs = -1) const;
+		int atoi();
+		double atof();
+		CSubString substr(int startArg = 0, int lenArg = -1) const;
+		bool isnumber() const;
+		bool isint() const;
+		CSubString trim() const;
+
+#ifdef NO_INLINE
+		char operator[](int index) const;
+		bool begins(const char* test) const;
+		bool ends(const char* test) const;
+		int size() const;
+		int length() const;
+		int find_first_of(const char* find, int startOfs = 0) const;
+		int find_first_not_of(const char* find, int startOfs = 0) const;
+#else
+		INLINE_KEYWORD char operator[](int index) const { if (start + index >= end) { return 0; } return str[start + index];}
+		INLINE_KEYWORD bool begins(const char* test) const { return begins(CSubString(test)); }
+		INLINE_KEYWORD bool ends(const char* test) const { return ends(CSubString(test)); }
+		INLINE_KEYWORD int size() const { return end - start; }
+		INLINE_KEYWORD int length() const { return (end - start) >= 0 ? (end-start) : 0 ; }
+		INLINE_KEYWORD int find_first_of(const char* find, int startOfs = 0) const { return find_first_of(CSubString(find), startOfs); }
+		INLINE_KEYWORD int find_first_not_of(const char* find, int startOfs = 0) const { return find_first_not_of(CSubString(find), startOfs); }
+#endif
+	};
+	// End CSubString
+	//==================================================================================
+
+
 
 	//==================================================================================
 	// Unit and dimension stuff
@@ -232,7 +295,7 @@ public:
 	void parse(const CSubString& text);
 	num convert(const CSubString& units) const;
 	size_t sprint(char* buf, int size, const PreferredUnitsBase& pu, bool useSlash = true) const;
-	size_t sprint(char* buf, int size, const csubstr& sspu, bool useSlash = true) const; // TODO: inline
+	size_t sprint(char* buf, int size, const CSubString& sspu, bool useSlash = true) const; // TODO: inline
 
 #ifndef NO_STD_STRING
 	std::string toString() const;
@@ -306,11 +369,11 @@ public:
 #else
 	INLINE_KEYWORD 	PhysicalQuantity(const char* str) { PhysicalQuantity(CSubString(str)); }
 	INLINE_KEYWORD static void parseUnits(const char* unitStr, signed char (&unitsOut)[(int)QuantityType::ENUM_MAX], num& factorOut, num& offsetOut) { return parseUnits(CSubString(unitStr), unitsOut, factorOut, offsetOut); }
-	INLINE_KEYWORD num convert(const char* units) const { return convert(csubstr(units)); }
+	INLINE_KEYWORD num convert(const char* units) const { return convert(CSubString(units)); }
 	INLINE_KEYWORD static bool findUnit(const char* pcharName, int& outUnitIndex, int& outPrefixIndex) { return findUnit(CSubString(pcharName), outUnitIndex, outPrefixIndex); }
 	INLINE_KEYWORD bool sameUnitAs(const PhysicalQuantity& rhs) const { return isLikeQuantity(rhs); }
 	INLINE_KEYWORD bool unitsMatch(const PhysicalQuantity& rhs) const { return isLikeQuantity(rhs); }
-	INLINE_KEYWORD void parse(const char* text) { parse(csubstr(text)); }
+	INLINE_KEYWORD void parse(const char* text) { parse(CSubString(text)); }
 	INLINE_KEYWORD size_t sprint(char* buf, int size, const char* pu, bool useSlash = true) const { return sprint(buf, size, PreferredUnits(pu), useSlash); }
 	INLINE_KEYWORD size_t sprint(char* buf, int size, bool useSlash = true) const { return sprint(buf, size, PreferredUnits(""), useSlash); }
 
