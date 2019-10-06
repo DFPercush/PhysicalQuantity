@@ -3,14 +3,16 @@
 //=================================================================================================================
 // Conditional compilation options:   (See README.txt)
 
+#define CPP11              // Compiler supports C++11
 //#define NO_NEW           // Do not use dynamic memory allocation.
 //#define NO_STD_STRING    // Do not #include <string> or use std::string .
 //#define NO_LITERALS      // Do not define literal operators like 1_kg. Require a C++11 compiler or newer.
 //#define NO_INLINE        // Do not use inline functions, make all functions normal calls.
 //#define INLINE_KEYWORD inline  // default is __inline
-//#define NO_HASHING       // Do not use hash tables for unit string lookups (Tables can be in ROM)
+//#define NO_HASHING       // Do not use hash tables for unit string lookups (Tables can be in ROM). Requires. approx. 1 KB
 //#define NO_THROW         // Do not use 'throw' for errors, instead use an error callback (see errorHandler)
-
+//#define NO_NETWORK       // Do not include socket headers for read/writeNetworkBinary, necessary for endianness conversion
+//TODO: #define NO_CONSTEXPR     // Do not use 'constexpr' keyword. Requires C++11.
 // TODO: NO_SPRINTF, NO_SPRINTF_INT, NO_SPRINTF_FLOAT
 
 // End conditional compilation options
@@ -31,3 +33,4 @@
 // +1 for a small safety margin
 #define MAX_NUM_TEXT_LENGTH 26
 #endif
+

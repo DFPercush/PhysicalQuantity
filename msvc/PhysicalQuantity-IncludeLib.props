@@ -4,7 +4,7 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
     <IncludePath>$(RootDevDir)PhysicalQuantity\include\;$(IncludePath)</IncludePath>
-    <LibraryPath>$(RootDevDir)PhysicalQuantity\$(Platform)\$(Configuration);$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(RootDevDir)PhysicalQuantity\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup>
     <Link>

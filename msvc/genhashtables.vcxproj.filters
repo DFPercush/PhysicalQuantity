@@ -15,16 +15,19 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\hash.cpp">
+    <ClCompile Include="..\src\hash.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\genhashtables.cpp">
+    <ClCompile Include="..\src\genhashtables.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\csubstr.cpp">
+    <ClCompile Include="..\src\csubstr.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\PhysicalUnitDefinitions.cpp">
+    <ClCompile Include="..\src\PhysicalUnitDefinitions.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\PhysicalQuantity.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

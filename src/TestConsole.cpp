@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <iostream>
 #include <PhysicalQuantity.h>
+#include <string>
 using namespace std;
 typedef PhysicalQuantity PQ;
 typedef PQ::CSubString csubstr;
@@ -26,6 +27,11 @@ void runEval(const csubstr& line)
 void runConvert(const char* s)
 {
 }
+
+#ifdef NO_THROW
+PQ::ErrorCode ecode;
+#endif
+
 
 int main(int argc, char** argv)
 {
@@ -135,7 +141,16 @@ int main(int argc, char** argv)
 			units = line.substr(commapos + 1);
 		}
 		csubstr evalexpr = line.substr(0, commapos);
+
+#ifndef NO_THROW
 		try
+#else
+		PQ::SetErrorHandler(
+			[](void* ctx, PQ::ErrorCode err)
+			{
+				ecode = err; 
+			});
+#endif // #ifndef NO_THROW
 		{
 			val = PQ::eval(evalexpr);
 			if (useConvert)
@@ -153,6 +168,7 @@ int main(int argc, char** argv)
 				printf("(parsed ok)\n>");
 			}
 		}
+#ifndef NO_THROW
 		catch (const PQ::InvalidExpressionException& err)
 		{
 			printf("Invalid expression error: %s\n", err.what());
@@ -173,6 +189,34 @@ int main(int argc, char** argv)
 		{
 			printf("General error: %s\n", err.what());
 		}
+#else
+		switch (ecode)
+		{
+		case PQ::E_SUCCESS:
+			break;
+		case PQ::E_HEADER_CONFIG:
+			printf("E_HEADER_CONFIG\n");
+			break;
+		case PQ::E_INVALID_EXPRESSION:
+			printf("E_INVALID_EXPRESSION\n");
+			break;
+		case PQ::E_LOGIC_ERROR:
+			printf("E_LOGIC_ERROR\n");
+			break;
+		case PQ::E_MEMORY:
+			printf("E_MEMORY\n");
+			break;
+		case PQ::E_OVERFLOW:
+			printf("E_OVERFLOW\n");
+			break;
+		case PQ::E_UNIT_MISMATCH:
+			printf("E_UNIT_MISMATCH\n");
+			break;
+		default:
+			printf("Unknown error\n");
+		}
+		ecode = PQ::E_SUCCESS;
+#endif  // #ifndef NO_THROW
 	}
 	return 0;
 }

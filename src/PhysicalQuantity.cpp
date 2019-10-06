@@ -1,6 +1,6 @@
 /*
 TODO: 
-	. convert()
+	/ convert() - UnitListCache
 	. toString(const PreferredUnits& pu)
 	. initializer_list ? {1.23, {0,1,0,0,0}}
 	. constexpr
@@ -10,15 +10,19 @@ TODO:
 */
 
 #include <PhysicalQuantity.h>
+#include <math.h>
+#include <memory.h>
+#include <string.h>
+#include <stdio.h>
 
 #ifndef NO_HASHING
 #ifndef PQ_GENERATING_HASH_TABLES
 #include <PhysicalQuantity/hashTables.h>
 #else
-struct { int bucketSize; int bucket[1]; } UnitSymbols_HashTable[1];
-struct { int bucketSize; int bucket[1]; } UnitLongNames_HashTable[1];
-struct { int bucketSize; int bucket[1]; } PrefixSymbols_HashTable[1];
-struct { int bucketSize; int bucket[1]; } PrefixLongNames_HashTable[1];
+struct { unsigned int bucketSize; unsigned int bucket[1]; } UnitSymbols_HashTable[1];
+struct { unsigned int bucketSize; unsigned int bucket[1]; } UnitLongNames_HashTable[1];
+struct { unsigned int bucketSize; unsigned int bucket[1]; } PrefixSymbols_HashTable[1];
+struct { unsigned int bucketSize; unsigned int bucket[1]; } PrefixLongNames_HashTable[1];
 #endif //#ifndef PQ_GENERATING_HASH_TABLES
 #endif //#ifndef NO_HASHING
 
@@ -55,7 +59,11 @@ void PhysicalQuantity::init()
 {
 	if (!(PQHeaderOptionsMatch))
 	{
+#ifdef NO_THROW
+		errorHandler(errorUserContext, E_HEADER_CONFIG);
+#else
 		throw HeaderConfigException("PhysicalQuantity: Module/object was compiled with different header options.");
+#endif
 	}
 	value = 0.0;
 	memset(dim, 0, sizeof(dim));
@@ -184,6 +192,7 @@ int PhysicalQuantity::magdimReduce(const UnitDefinition& unit) const
 	int lastpow;
 	unsigned int mdlast;
 	after = mdorig;
+	int absi;
 	do
 	{
 		mdlast = after;
@@ -192,7 +201,9 @@ int PhysicalQuantity::magdimReduce(const UnitDefinition& unit) const
 		after = 0;
 		for (int iq = 0; iq < (int)QuantityType::ENUM_MAX; iq++)
 		{
-			after += abs(dim[iq] - (unit.dim[iq] * testpow));
+			absi = dim[iq] - (unit.dim[iq] * testpow);
+			if (absi < 0) { absi *= -1; }
+			after += absi;
 		}
 		if (after < 0) { after = -after; }
 	} while (after < (int)mdlast);
@@ -516,7 +527,7 @@ void PhysicalQuantity::WriteOutputUnit(int plen, int ulen, int reduceExp, int &o
 		outofs += nextLengthNeeded; //plen + ulen + 1;
 	}
 }
-void PhysicalQuantity::sprintHalf(PhysicalQuantity& r, const PhysicalQuantity::PreferredUnitsBase & pu, bool& hasDenom, bool inDenomNow, int &md, int origmd, bool useSlash, int &outofs, int size, char * buf) const
+void PhysicalQuantity::sprintHalf(PhysicalQuantity& r, const PhysicalQuantity::UnitListBase & pu, bool& hasDenom, bool inDenomNow, int &md, int origmd, bool useSlash, int &outofs, int size, char * buf) const
 {
 	//int ulen;
 	//int plen;
@@ -524,27 +535,46 @@ void PhysicalQuantity::sprintHalf(PhysicalQuantity& r, const PhysicalQuantity::P
 	//int reduceExp;
 	//bool goForOutput;
 	hasDenom = false;
-	for (int ipu = 0; ipu < pu.count() && md != 0; ipu++)
+	//for (int ipu = 0; ipu < pu.count() && md != 0; ipu++)
+	for (int ipu = 0; ipu < pu.count(); ipu++)
 	{
 		const UnitDefinition& testunit = KnownUnits[pu[ipu].iUnit];
 		int ipre = pu[ipu].iPrefix;
 		int plen;
 		if (ipre == -1) { plen = 0; }
 		else { plen = (int)strlen(KnownPrefixes[ipre].symbol); }
-		sprintHalfTryUnit(testunit, r, origmd, hasDenom, useSlash, inDenomNow, plen, outofs, size, buf, ipre, md);
+		sprintHalfTryUnit(testunit, r, origmd, hasDenom, useSlash, inDenomNow, plen, outofs, size, buf, ipre, md, true);
 	}
 
 	// That's all the PreferredUnits. Is there anything left over?
 	for (int iu = 0; iu < KnownUnitsLength && md != 0; iu++)
 	{
 		const UnitDefinition& testunit = KnownUnits[iu];
-		sprintHalfTryUnit(testunit, r, origmd, hasDenom, useSlash, inDenomNow, 0, outofs, size, buf, -1, md);
+		sprintHalfTryUnit(testunit, r, origmd, hasDenom, useSlash, inDenomNow, 0, outofs, size, buf, -1, md, false);
 	}
 }
-void PhysicalQuantity::sprintHalfTryUnit(const PhysicalQuantity::UnitDefinition & testunit, PhysicalQuantity & r, int origmd, bool & hasDenom, bool useSlash, bool inDenomNow, int plen, int & outofs, int size, char * buf, int ipre, int & md) const
+void PhysicalQuantity::sprintHalfTryUnit(const PhysicalQuantity::UnitDefinition & testunit, PhysicalQuantity & r, int origmd, bool & hasDenom, bool useSlash, bool inDenomNow, int plen, int & outofs, int size, char * buf, int ipre, int & md, bool preferred) const
 {
 	int ulen = (int)strlen(testunit.symbol);
-	int reduceExp = r.magdimReduce(testunit);
+	
+	bool noDiff = false;
+	if (preferred)
+	{
+		PQ testPref(*this);
+		//testPref.mulUnit()
+		mulUnit(testPref.dim, testunit, 1, false);
+		if (testPref.magdim() == magdim()) { noDiff = true; }
+	}
+
+	int reduceExp;
+	if (noDiff && preferred)
+	{
+		reduceExp = 1;
+	}
+	else
+	{
+		reduceExp = r.magdimReduce(testunit);
+	}
 	if (reduceExp != 0)
 	{
 		// if it reduces the overall dimension of the value, use it.
@@ -573,7 +603,7 @@ void PhysicalQuantity::sprintHalfTryUnit(const PhysicalQuantity::UnitDefinition 
 	}
 	md = r.magdim();
 }
-size_t PhysicalQuantity::sprint(char* buf, int size, const PreferredUnitsBase& pu, bool useSlash) const
+size_t PhysicalQuantity::sprint(char* buf, int size, const UnitListBase& pu, bool useSlash) const
 {
 	PhysicalQuantity r = *this;
 	int md, origmd;
@@ -596,7 +626,7 @@ size_t PhysicalQuantity::sprint(char* buf, int size, const PreferredUnitsBase& p
 	{
 #ifdef NO_THROW
 		errorHandler(errorUserContext, E_LOGIC_ERROR);
-		return outOfs + 1;
+		return outofs + 1;
 #else
 		throw logic_error("units left over after conversion");
 #endif
@@ -728,7 +758,7 @@ std::string PhysicalQuantity::toString() const
 	return ret;
 }
 
-string PhysicalQuantity::toString(const PreferredUnitsBase& pu) const
+string PhysicalQuantity::toString(const UnitListBase& pu) const
 {
 	// TODO: this func
 	string ret;
@@ -961,27 +991,24 @@ bool PhysicalQuantity::findUnit(CSubString name, int& outUnitIndex, int& outPref
 			}
 			foundPrefixLen = 0;
 		}
-		if (iPrefix == -1) { return false; }
-		if (foundPrefixLen + foundUnitLen != nlen)
+
+		for (int i = 0; i < KnownUnitsLength; i++)
 		{
-			for (int i = 0; i < KnownUnitsLength; i++)
+			foundUnitLen = (int)strlen(KnownUnits[i].symbol);
+			ss = csubstr(KnownUnits[i].symbol, 0, foundUnitLen);
+			if (ss.ends(name))
 			{
-				foundUnitLen = (int)strlen(KnownUnits[i].symbol);
-				ss = csubstr(KnownUnits[i].symbol, 0, foundUnitLen);
-				if (ss.ends(name))
-				{
-					iUnit = i;
-					break;
-				}
-				foundUnitLen = (int)strlen(KnownUnits[i].longName);
-				ss = csubstr(KnownUnits[i].longName, 0, foundUnitLen);
-				if (ss.ends(name))
-				{
-					iUnit = i;
-					break;
-				}
-				foundUnitLen = 0;
+				iUnit = i;
+				break;
 			}
+			foundUnitLen = (int)strlen(KnownUnits[i].longName);
+			ss = csubstr(KnownUnits[i].longName, 0, foundUnitLen);
+			if (ss.ends(name))
+			{
+				iUnit = i;
+				break;
+			}
+			foundUnitLen = 0;
 		}
 	}
 #endif  // !NO_HASHING
@@ -1057,7 +1084,7 @@ bool PhysicalQuantity::operator==(const PhysicalQuantity& rhs) const
 //============================================================================================
 // Display and conversion stuff
 
-void PhysicalQuantity::PreferredUnitsBase::build(const CSubString& unitList, PhysicalQuantity::PreferredUnitsBase::UnitPref* buffer, int bufferSizeBytes, bool dynamic)   //(const CSubString& unitList, int* buffer, int bufferLen, bool dynamic)
+void PhysicalQuantity::UnitListBase::build(const CSubString& unitList, PhysicalQuantity::UnitListBase::UnitPref* buffer, int bufferSizeBytes, bool dynamic)   //(const CSubString& unitList, int* buffer, int bufferLen, bool dynamic)
 {
 	//const char* pstr = unitList.c_str();
 	int len = (int)unitList.length();
@@ -1123,18 +1150,18 @@ void PhysicalQuantity::PreferredUnitsBase::build(const CSubString& unitList, Phy
 	}
 }
 
-PhysicalQuantity::PreferredUnitsBase::~PreferredUnitsBase()
+PhysicalQuantity::UnitListBase::~UnitListBase()
 {
 }
 
 #ifndef NO_NEW
 
-PhysicalQuantity::PreferredUnits_dynamic::PreferredUnits_dynamic(const CSubString& unitList)  //const string& unitList)
+PhysicalQuantity::UnitList_dynamic::UnitList_dynamic(const CSubString& unitList)  //const string& unitList)
 {
 	unitIndeces = nullptr;
 	build(unitList, nullptr, 0, true);
 }
-PhysicalQuantity::PreferredUnits_dynamic::~PreferredUnits_dynamic()
+PhysicalQuantity::UnitList_dynamic::~UnitList_dynamic()
 {
 	//if (unitIndeces != staticStorage) { delete [] unitIndeces; }
 	if (unitIndeces) 
@@ -1143,19 +1170,25 @@ PhysicalQuantity::PreferredUnits_dynamic::~PreferredUnits_dynamic()
 	}
 }
 
-#else // !NO_NEW
+#endif // #ifndef NO_NEW
 
-PhysicalQuantity::PreferredUnits_static::PreferredUnits_static(const CSubString& unitList, void* storage, size_t storageSizeBytes)
+PhysicalQuantity::UnitList_static::UnitList_static(const CSubString& unitList, void* storage, size_t storageSizeBytes)
 {
 	count_ = 0;
-	unitIndeces = storage;
-	int capacity = (int)(storageSizeBytes / sizeof(int));
-	build(unitList, storage, capacity, false);
+	unitIndeces = (UnitListBase::UnitPref*)storage;
+	dynamic = false;
+	int capacity = (int)(storageSizeBytes / sizeof(UnitListBase::UnitPref));
+	build(unitList, unitIndeces, capacity, false);
 }
 
-#endif  // !NO_NEW
+PhysicalQuantity::UnitList_static::UnitList_static(const CSubString& unitList_SpaceDelimited)
+{
+	count_ = 0;
+	unitIndeces = nullptr;
+	dynamic = false;
+}
 
-const PhysicalQuantity::PreferredUnitsBase::UnitPref& PhysicalQuantity::PreferredUnitsBase::operator[] (int i) const
+const PhysicalQuantity::UnitListBase::UnitPref& PhysicalQuantity::UnitListBase::operator[] (int i) const
 {
 	return unitIndeces[i]; // KnownUnits[unitIndeces[i]];
 }
@@ -1302,7 +1335,7 @@ PhysicalQuantity PhysicalQuantity::eval(CSubString str)
 				{
 #ifdef NO_THROW
 					errorHandler(errorUserContext, E_INVALID_EXPRESSION);
-					return val;
+					return 0.0;
 #else
 					throw InvalidExpressionException("Exponent must be a scalar");
 #endif
@@ -1332,7 +1365,7 @@ PhysicalQuantity PhysicalQuantity::eval(CSubString str)
 				{
 #ifdef NO_THROW
 					errorHandler(errorUserContext, E_OVERFLOW);
-					return PQ("0");
+					return 0.0;
 #else
 					throw overflow_error("Unit exponent too large");
 #endif
@@ -1350,7 +1383,7 @@ PhysicalQuantity PhysicalQuantity::eval(CSubString str)
 	{
 #ifdef NO_THROW
 		errorHandler(errorUserContext, E_INVALID_EXPRESSION);
-		return val;
+		return 0.0;
 #else
 		throw InvalidExpressionException("Mismatched parentheses");
 #endif
@@ -1368,19 +1401,96 @@ PhysicalQuantity PhysicalQuantity::eval(CSubString str)
 	}
 }
 
-size_t PhysicalQuantity::sprint(char* buf, int size, const csubstr& sspu, bool useSlash) const
+size_t PhysicalQuantity::sprint(char* buf, int size, const PhysicalQuantity::CSubString& sspu, bool useSlash) const
 {
 	return sprint(buf, size, PreferredUnits(sspu), useSlash);
 }
 
+size_t PhysicalQuantity::sprint(char* buf, int size, const CSubString& sspu, void* puBuf, int puBufSize, bool useSlash) const
+{
+	return sprint(buf, size, UnitList_static(sspu, puBuf, puBufSize), useSlash);
+}
+
+
+#ifndef NO_NETWORK
+#ifdef _WIN32
+#include <winsock2.h>
+#else
+#include <socket.h>
+#endif
+
+bool PhysicalQuantity::writeNetworkBinary(void* buf, size_t size)
+{
+#ifdef _MSC_VER
+// float <==> double loss of precision
+#pragma warning(disable:4244)
+#endif
+	if (size < sizeof(num) + (unsigned int)QuantityType::ENUM_MAX) { return false; }
+	if (sizeof(num) == sizeof(double))
+	{
+#ifdef CPP11
+		*(decltype(htond(value))*)buf = htond(value);
+#else
+		*(unsigned long long*)buf = htond(value);
+#endif
+	}
+	else if (sizeof(num) == sizeof(float))
+	{
+#ifdef CPP11
+		*(decltype(htonf(value))*)buf = htonf(value);
+#else
+		*(unsigned int*)buf = htonf(value);
+#endif
+	}
+	else
+	{
+		return false;
+	}
+#ifdef _MSC_VER
+#pragma warning(default:4244)
+#endif
+
+	memcpy((char*)buf + sizeof(num), dim, sizeof(dim));
+	return true;
+}
+
+bool PhysicalQuantity::readNetworkBinary(void* buf)
+{
+	if (sizeof(num) == sizeof(double))
+	{
+		value = ntohd(*(unsigned long long*)buf);
+	}
+	else if (sizeof(num) == sizeof(float))
+	{
+		value = ntohf(*(unsigned int*)buf);
+	}
+	else
+	{
+		return false;
+	}
+	memcpy(dim, (char*)buf + sizeof(num), sizeof(dim));
+	return true;
+}
+#endif //#ifndef NO_NETWORK
+
+
+#ifndef NO_HASHING
+PhysicalQuantity::cstrHasherTiny::cstrHasherTiny()
+{
+	seed = PhysicalQuantity::defaultHashSeed;
+}
+PhysicalQuantity::cstrHasherTiny::cstrHasherTiny(size_t seed_p)
+{
+	seed = seed_p;
+}
+#endif //#ifndef NO_HASHING
 
 #ifdef NO_INLINE
 #ifdef NO_THROW
 void PhysicalQuantity::SetErrorHandler(void (*errorHandler_arg)(void* context, ErrorCode e)) { errorHandler = errorHandler_arg; }
 #endif //#ifdef NO_THROW
 
-int PhysicalQuantity::PreferredUnitsBase::count() const { return count_; }
-size_t PhysicalQuantity::cstrHasherTiny::operator()(const char* s) const { return operator()(CSubString(s)); }
+int PhysicalQuantity::UnitListBase::count() const { return count_; }
 
 PhysicalQuantity::PhysicalQuantity(const char* str) { PhysicalQuantity(CSubString(str)); }
 void PhysicalQuantity::parseUnits(const char* unitStr, signed char (&unitsOut)[(int)QuantityType::ENUM_MAX], num& factorOut, num& offsetOut) { return parseUnits(CSubString(unitStr), unitsOut, factorOut, offsetOut); }
@@ -1389,8 +1499,13 @@ bool PhysicalQuantity::findUnit(const char* pcharName, int& outUnitIndex, int& o
 bool PhysicalQuantity::sameUnitAs(const PhysicalQuantity& rhs) const { return isLikeQuantity(rhs); }
 bool PhysicalQuantity::unitsMatch(const PhysicalQuantity& rhs) const { return isLikeQuantity(rhs); }
 void PhysicalQuantity::parse(const char* text) { parse(csubstr(text)); }
-size_t PhysicalQuantity::sprint(char* buf, int size, const char* pu, bool useSlash) const { return sprint(buf, size, PreferredUnits(pu), useSlash); }
+//size_t PhysicalQuantity::sprint(char* buf, int size, const char* pu, bool useSlash) const { return sprint(buf, size, PreferredUnits(pu), useSlash); }
 size_t PhysicalQuantity::sprint(char* buf, int size, bool useSlash) const {	return sprint(buf, size, PreferredUnits(""), useSlash); }
+
+#ifndef NO_HASHING
+size_t PhysicalQuantity::cstrHasherTiny::operator()(const char* s) const { return operator()(CSubString(s)); }
+#endif //#ifndef NO_HASHING
+
 #endif //#ifdef NO_INLINE
 
 

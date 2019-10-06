@@ -15,13 +15,16 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="include\PhysicalQuantity.h">
+    <ClInclude Include="..\include\PhysicalQuantity.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\TestConsole.cpp">
+    <ClCompile Include="..\src\TestConsole.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Natvis Include="CSubString.natvis" />
   </ItemGroup>
 </Project>

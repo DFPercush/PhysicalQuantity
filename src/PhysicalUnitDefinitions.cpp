@@ -3,13 +3,16 @@
 
 const PhysicalQuantity::UnitDefinition PhysicalQuantity::KnownUnits[] = 
 {
-	// symbol, longName, { MASS, DISTANCE, TIME, TEMPERATURE, CHARGE }, offset, factor
-	//                  Ma Di Ti Te Ch
-	{"rad", "radian",   {0, 0, 0, 0, 0},0,1},
-	{"deg", "degree",   {0, 0, 0, 0, 0},0, 114.59155902616464175359630962821},
+// symbol, longName, { MASS, DISTANCE, TIME, TEMPERATURE, CHARGE }, offset, factor
+//                  Ma Di Ti Te Ch
+{"rad", "radian",  { 0, 0, 0, 0, 0}, 0, 1},
+{"deg", "degree",  { 0, 0, 0, 0, 0}, 0, 0.01745329251994329576923690768489},
+{"pi", "pi",       { 0, 0, 0, 0, 0}, 0, 3.1415926535897932384626433832795},
+{"tau", "tau",     { 0, 0, 0, 0, 0}, 0, 6.283185307179586476925286766559},
+{"e", "e",         { 0, 0, 0, 0, 0}, 0, 2.7182818284590452353602874713527},
 
 {"m", "meter",     {+0,+1,+0,+0,+0}, 0, 1.0},
-{"ang","angstrom", { 0, 1, 0, 0, 0}, 0, 1.0e-10},  // I really don't want to deal with unicode, sorry
+{"ang","angstrom", { 0, 1, 0, 0, 0}, 0, 1.0e-10},  // I really don't want to deal with unicode
 {"g", "gram",      { 1, 0, 0, 0, 0}, 0, 0.001},
 {"s", "second",    { 0, 0, 1, 0, 0}, 0, 1.0},
 {"Hz", "hertz",    { 0, 0,-1, 0, 0}, 0, 1.0},
@@ -22,8 +25,8 @@ const PhysicalQuantity::UnitDefinition PhysicalQuantity::KnownUnits[] =
 {"degF","degreeF", { 0, 0, 0, 1, 0}, 255.37222222222222222222222222222, 0.55555555555555555555555555555556},
 {"C","coulomb",    { 0, 0, 0, 0, 1}, 0, 1.0},
 {"A","ampere",     { 0, 0,-1, 0, 1}, 0, 1.0},
-{"e-","electronChargeMinus", {0,0,0,0,-1},0, -1.6021765314e-19},
-{"e+","FundamentalChargePlus", {0,0,0,0,-1},0, 1.6021765314e-19},
+{"e+","FundamentalChargePositive", {0,0,0,0,1},0, 1.6021765314e-19},
+{"e-","ElectronChargeNegative", {0,0,0,0,1},0, -1.6021765314e-19},
 
 
 // Coulombs <==> electron charge
@@ -63,4 +66,13 @@ const int PhysicalQuantity::KnownPrefixesLength = sizeof(PhysicalQuantity::Known
 const int PhysicalQuantity::dekaIndex = 10; // If any more prefixes are added, this should be the index of {"da", "deka", 10}
 						  // Used to optimize lookups because this is the only prefix longer than 1 char
 						  // If that changes, might need to change findUnit()
+
+
+#ifndef NO_HASHING
+const int PhysicalQuantity::hashTableSize_UnitSymbols = 50;
+const int PhysicalQuantity::hashTableSize_UnitLongNames = 50;
+const int PhysicalQuantity::hashTableSize_PrefixSymbols = 50;
+const int PhysicalQuantity::hashTableSize_PrefixLongNames = 50;
+const size_t PhysicalQuantity::defaultHashSeed = 8;
+#endif
 

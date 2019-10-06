@@ -11,6 +11,7 @@
 // Config checking
 #ifdef NO_NEW
 #define PQ_HAS_NO_NEW 0x01
+#define NO_STD_STRING
 #else
 #define PQ_HAS_NO_NEW 0
 #endif
@@ -39,7 +40,12 @@
 #else
 #define PQ_HAS_NO_THROW 0
 #endif
-#define PQ_HEADER_OPTIONS (PQ_HAS_NO_NEW | PQ_HAS_NO_STD_STRING | PQ_HAS_NO_LITERALS | PQ_HAS_NO_INLINE | PQ_HAS_NO_HASHING | PQ_HAS_NO_THROW)
+#ifdef NO_NETWORK
+#define PQ_HAS_NO_NETWORK 0x40
+#else
+#define PQ_HAS_NO_NETWORK 0
+#endif
+#define PQ_HEADER_OPTIONS (PQ_HAS_NO_NEW | PQ_HAS_NO_STD_STRING | PQ_HAS_NO_LITERALS | PQ_HAS_NO_INLINE | PQ_HAS_NO_HASHING | PQ_HAS_NO_THROW | PQ_HAS_NO_NETWORK)
 // End config checking
 //==================================================================================
 
@@ -62,7 +68,8 @@
 #ifndef NO_STD_STRING
 #include <string>
 #endif
-// #nd standard library dependencies
+
+// end standard library dependencies
 //========================================
 
 
@@ -171,10 +178,14 @@ public:
 	//    originally to be used as a template parameter to unordered_map,
 	//    but that wastes a lot of RAM
 #ifndef NO_HASHING
+	static const size_t defaultHashSeed;
 	struct cstrHasherTiny
 	{
 	public:
+		cstrHasherTiny();
+		cstrHasherTiny(size_t seed_p);
 		size_t operator()(const CSubString& s) const;
+		size_t seed;
 #ifdef NO_INLINE
 		size_t operator()(const char* s) const;
 #else
@@ -207,7 +218,7 @@ public:
 #ifndef NO_INLINE
 	INLINE_KEYWORD static void SetErrorHandler(void (*errorHandler_arg)(void* context, ErrorCode e)) { errorHandler = errorHandler_arg; }
 #else
-	static void SetErrorHandler(void (*errorHandler_arg)(void* context, ErrorCode e)) { errorHandler = errorHandler_arg; }
+	static void SetErrorHandler(void (*errorHandler_arg)(void* context, ErrorCode e));
 #endif
 #else
 	class UnitMismatchException : public std::exception
@@ -235,16 +246,17 @@ public:
 
 	//==================================================================================
 	// Formatting stuff 
-	class PreferredUnitsBase
+	class UnitListBase
 	{
 		friend class PhysicalQuantity;
 	public:
 		struct UnitPref
 		{
-			int iUnit;
-			int iPrefix;
+			unsigned short iUnit;
+			signed char iPrefix;
+			signed char power; // TODO
 		};
-		virtual ~PreferredUnitsBase();
+		virtual ~UnitListBase();
 	protected:
 		UnitPref* unitIndeces;
 		int count_;
@@ -260,23 +272,23 @@ public:
 	};
 
 #ifndef NO_NEW
-	class PreferredUnits_dynamic : public PreferredUnitsBase
+	class UnitList_dynamic : public UnitListBase
 	{
 	public:
-		PreferredUnits_dynamic(const CSubString& unitList_SpaceDelimited);
-		virtual ~PreferredUnits_dynamic();
+		UnitList_dynamic(const CSubString& unitList_SpaceDelimited);
+		virtual ~UnitList_dynamic();
 	};
-#else
-	class PreferredUnits_static : public PreferredUnitsBase
+#endif //#ifndef NO_NEW
+	class UnitList_static : public UnitListBase
 	{
 	public:
-		PreferredUnits_static(const CSubString& unitList_SpaceDelimited, void* storage, size_t storageSizeBytes);
+		UnitList_static(const CSubString& unitList_SpaceDelimited, void* storage, size_t storageSizeBytes);
+		UnitList_static(const CSubString& unitList_SpaceDelimited);
 	};
-#endif
 #ifdef NO_NEW
-	typedef PreferredUnits_static PreferredUnits;
+	typedef UnitList_static PreferredUnits;
 #else
-	typedef PreferredUnits_dynamic PreferredUnits;
+	typedef UnitList_dynamic PreferredUnits;
 #endif
 	// End formatting stuff
 	//==================================================================================
@@ -295,12 +307,13 @@ public:
 
 	void parse(const CSubString& text);
 	num convert(const CSubString& units) const;
-	size_t sprint(char* buf, int size, const PreferredUnitsBase& pu, bool useSlash = true) const;
+	size_t sprint(char* buf, int size, const UnitListBase& pu, bool useSlash = true) const;
 	size_t sprint(char* buf, int size, const CSubString& sspu, bool useSlash = true) const; // TODO: inline
+	size_t sprint(char* buf, int size, const CSubString& sspu, void* puBuf, int puBufSize, bool useSlash = true) const;
 
 #ifndef NO_STD_STRING
 	std::string toString() const;
-	std::string toString(const PreferredUnitsBase&) const;
+	std::string toString(const UnitListBase&) const;
 #endif
 
 	PhysicalQuantity operator* (const PhysicalQuantity& rhs) const;
@@ -318,6 +331,10 @@ public:
 	
 	bool isLikeQuantity(const PhysicalQuantity& rhs) const;
 
+#ifndef NO_NETWORK
+	bool writeNetworkBinary(void* buf, size_t size);
+	bool readNetworkBinary(void* buf);
+#endif
 
 	static bool findUnit(CSubString name, int& outUnitIndex, int& outPrefixIndex);
 	static bool feq(num a, num b, num toleranceFactor);
@@ -350,9 +367,9 @@ private:
 	int magdimReduce(const UnitDefinition& unit) const;  // Divide by what power of (unit) to minimize magdim? Used in text output logic.
 
 	// in conjunction with sprint()
-	void sprintHalf(PhysicalQuantity& r, const PreferredUnitsBase & pu, bool& hasDenom, bool inDenomNow, int &md, int origmd, bool useSlash, int &outofs, int size, char * buf) const;
-	//void sprintHalf(const PreferredUnitsBase & pu, int &md, PhysicalQuantity &r, int origmd, bool useSlash, int &outofs, int size, char * buf) const;
-	void sprintHalfTryUnit(const PhysicalQuantity::UnitDefinition & testunit, PhysicalQuantity & r, int origmd, bool & hasDenom, bool useSlash, bool inDenomNow, int plen, int & outofs, int size, char * buf, int ipre, int & md) const;
+	void sprintHalf(PhysicalQuantity& r, const UnitListBase & pu, bool& hasDenom, bool inDenomNow, int &md, int origmd, bool useSlash, int &outofs, int size, char * buf) const;
+	//void sprintHalf(const UnitListBase & pu, int &md, PhysicalQuantity &r, int origmd, bool useSlash, int &outofs, int size, char * buf) const;
+	void sprintHalfTryUnit(const PhysicalQuantity::UnitDefinition & testunit, PhysicalQuantity & r, int origmd, bool & hasDenom, bool useSlash, bool inDenomNow, int plen, int & outofs, int size, char * buf, int ipre, int & md, bool preferred) const;
 	void WriteOutputUnit(int plen, int ulen, int reduceExp, int &outofs, int size, char * buf, int ipre, const PhysicalQuantity::UnitDefinition & testunit) const;
 
 public:
@@ -364,7 +381,7 @@ public:
 	bool sameUnitAs(const PhysicalQuantity& rhs) const;
 	bool unitsMatch(const PhysicalQuantity& rhs) const;
 	void parse(const char* text);
-	size_t sprint(char* buf, int size, const char* pu, bool useSlash = true) const;
+	//size_t sprint(char* buf, int size, const char* pu, bool useSlash = true) const;
 	size_t sprint(char* buf, int size, bool useSlash = true) const;
 
 #else
@@ -375,7 +392,7 @@ public:
 	INLINE_KEYWORD bool sameUnitAs(const PhysicalQuantity& rhs) const { return isLikeQuantity(rhs); }
 	INLINE_KEYWORD bool unitsMatch(const PhysicalQuantity& rhs) const { return isLikeQuantity(rhs); }
 	INLINE_KEYWORD void parse(const char* text) { parse(CSubString(text)); }
-	INLINE_KEYWORD size_t sprint(char* buf, int size, const char* pu, bool useSlash = true) const { return sprint(buf, size, PreferredUnits(pu), useSlash); }
+	//INLINE_KEYWORD size_t sprint(char* buf, int size, const char* pu, bool useSlash = true) const { return sprint(buf, size, PreferredUnits(pu), useSlash); }
 	INLINE_KEYWORD size_t sprint(char* buf, int size, bool useSlash = true) const { return sprint(buf, size, PreferredUnits(""), useSlash); }
 
 #endif

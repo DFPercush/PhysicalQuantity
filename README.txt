@@ -9,42 +9,105 @@ allows direct arithmetic operations on values including the basic units of
 distance, mass, time, temperature, and charge (or current), as well as
 any other units derived from these quantities. This allows different teams 
 working on a project to operate in their preferred units without things going boom.
-It keeps track of the dimensions of a value during all calculations, and 
+	It keeps track of the dimensions of a value during all calculations, and 
 handles multiplication and division of units, conversion factors, and dimension checking
-during addition and subtraction, as well as scalar operations. 
+during addition and subtraction, as well as scalar operations.  It includes a
+.eval() function for parsing whole math expressions* as well as .sprint() for 
+generating text output, and .convert() for extraction of numeric values in code.
+Test console included. 
+	You also get CSubString, a non-allocating c-style char* string parsing
+helper class for free!
+
+* whitespace between values is important!
+	Bad: (1m+2km)/s
+	Bad: (1m + 2km ) / s
+	Good: (1 m + 2 km) / s
+	... for now. It's an area for improvement.
 
 
+
+===================================================================================================
 System requirements:
-	All you really need is a rudimentary C++ compiler that can handle classes with 
-overloaded operators. There are several preprocessor options for compilers 
-and target systems which lack certain features e.g. 'new'.
-Some of the nice features you can use if you have them are:
 
-	- (optional) literal operators (C++11), with preprocessor option 
-		e.g. 12_km
-		#define NO_LITERALS to disable
+	- A C++ compiler. Preferably C++11 or newer, but older will work with some config.
 
-	- (optional) 'new' dynamic memory allocation can be utilized for convenience
-		during text output / toString(), but is not strictly required
-		#define NO_NEW to disable
+	- log10()
 
-	- (optional) try/throw/catch exception handling
-		See "Error handling" below
-		#define NO_THROW to use error callback instead
+	- 
 
-	- (optional) approx. 1KB of ROM space for hash tables.
-	    This speeds up parsing and output.
+	- approx. 1KB of ROM space for hash tables. This speeds up parsing and output.
 		#define NO_HASHING to disable.
 
-	- Does not require templates or STL support. 
-	
-	- std::string is optional. makes .toString() available.
-	   Can write text output to a static buffer via .sprint(buf, len);
+	- eval() is recursive, stack usage depends on input.
 
-	- Comes with a CSubString class which has a lot of the functionality of
-	  std::strings without the memory overhead. It stores a pointer and offsets 
-	  to a single immutable source (const char*) string, and can be useful for
-	  read only operations like parsing, chopping, slicing and dicing.
+What is NOT required:
+	- Templates
+	- STL
+	- new/delete/malloc/free
+	- std::string
+	- try/catch
+
+ppOptions.h contains some conditional compilation options for limited systems:
+	CPP11            // Compiler supports C++11
+	NO_NEW           // Do not use dynamic memory allocation.
+	NO_STD_STRING    // Do not #include <string> or use std::string. Implied by NO_NEW.
+	NO_LITERALS      // Do not define literal operators like 1_kg. Require a C++11 compiler or newer.
+	NO_INLINE        // Do not use inline functions, make all functions normal calls.
+	INLINE_KEYWORD inline  // default is __inline
+	NO_HASHING       // Do not use hash tables for unit string lookups (Tables can be in ROM).
+	NO_THROW         // Do not 'throw' errors, instead use an error callback (see errorHandler)
+	NO_NETWORK       // Do not include read/writeNetworkBinary functions, depends on socket header
+
+	TODO: NO_CONSTEXPR, NO_SPRINTF, NO_SPRINTF_INT, NO_SPRINTF_FLOAT
+
+
+
+===================================================================================================
+Installation/setup:
+	If all you want to do is build the library and use the test console, MSBuild / F7
+or 'make' should get you a binary without much effort. 
+	For Visual Studio builds, msvc/RootDevDir.props contains the path to the
+directory above this file, i.e. where you (I assume) put most new projects. 
+If you always put your projects in the default path of C:\Users\you\Source\Repos,
+it will work out of the box.
+The Library and Include paths are based on $(RootDevDir), so it's important to
+set that correctly.
+Using a text editor to modify RootDevDir.props might be easier than trying to
+navigate visual studio's property pages, but it will be in the user macros section.
+ These property pages exist so that you can start a new
+project in another directory, import these settings, and have your include and library
+paths all set and ready to go. So basically you can do this:
+#include <PhysicalQuantity.h>
+... instead of this
+#include "../../somewhere/only/you/put/stuff/PhysicalQuantity.h"
+... which can save headaches when working on shared repositories.
+
+	For embedded use, you will need to build and run the 'genhashtables' binary on a 
+PC first, before you try to cross compile for the target system, because the
+unit lookup hash tables are not included in the repo, for space reasons.
+Does not apply if using NO_HASHING.
+The output of genhashtables should be copied or piped to
+	include\PhysicalQuantity\hashTables.h
+If building with Visual Studio, a custom build step will handle this automatically.
+
+	If you think you might be creating new commits and pull requests,
+you will need to tell git not to track changes to certain config files. 
+Please run the following commands:
+
+	git update-index --skip-worktree msvc/RootDevDir.props
+	git update-index --skip-worktree include/PhysicalQuantity/ppOptions.h
+
+	Likewise for any other files you change that reflect only your local setup.
+
+	If you need to change project configuration, it's a good idea to create a new
+property sheet in visual studio and put the settings there, so you're not committing
+your personal settings in the shared git repo.
+
+
+
+
+===================================================================================================
+Conditional compilation
 
 	For any of these #define options, you can either uncomment the related line
 in the header, you can #define the option in your source file before #including 
@@ -68,37 +131,47 @@ this operation is a simple comparison between a literal/immediate value and a
 static const stored at a particular address, probably in ROM if you have it.
 
 
+===================================================================================================
 Performance:
 	Internal math operations are very fast (as long as you have floating point
 hardware), but when you want to parse a value in, or print one out, some lookups
 are necessary to convert between units. A lot of the preprocessor options deal
 with how this particular aspect is handled. You can have a hash table in ROM to
 make unit lookups faster, or use a slower linear search for minimum memory 
-overhead.
+overhead. There is also a cache mechanism for storing parsed unit strings:
+See PhysicalQuantity::UnitList
+	Performing arithmetic with these objects, once parsed, basically
+involves one floating point operation and 5 integer additions/comparisons.
+In the case of eval()'ing an exponentiation, that's 5 integer multiplies and a pow().
+But eval() has its own overhead anyway. There's no built in exponent operator,
+but you can use sprint() + eval() to accomplish this. A word of caution, though:
+values with units can only be raised to integer exponents. 1 meter ^ 2.3  will
+throw an error.
+
 
 Q: Can a PhysicalQuantity be binary-copied with memcpy() or DMA?
-A: Yes, but beware of invalid values resulting from parsing errors
-    during construction. 
+A: Yes.
 
 Q: Can it be sent over a network in binary?
-A: Sort of. I would recommend using the htond() or htonf() function from 
-   socket.h / winsock.h to ensure that you don't have problems with endianness,
-   but if you know for sure that both machines use the same byte order, you could
-   just dump (&x, sizeof(x)) to the send buffer, if you don't mind the extra overhead
-   of padding bytes taking up bandwidth. To do things properly for the
-   general case, you will need to declare a friend function in the header to have 
-   access to the raw value, then send htond(x.value), and raw copy x.dim.
+A: I wrote a long answer for this, then I wrote readNetworkBinary() and
+   writeNetworkBinary(). These depend on socket.h or winsock2.h to provide
+   the hton* and ntoh* functions. NO_NETWORK disables them.
 
 Q: Does the structure store references or pointers to any external buffers?
-A: No, but the PreferredUnits class which is used for formatting text output 
-   requires some buffer storage. The main PhysicalQuantity class that stores
-   and manipulates physical values is self-contained.
+A: Not the main PhysicalQuantity type. No pointers there.
+   But the UnitList class which is used for formatting text output 
+   requires some buffer storage. In static mode (NO_NEW), you will need
+   to supply this buffer. You can choose to explicitly use UnitList_static
+   any time, but UnitList_dynamic is only available #ifndef NO_NEW.
+   UnitList is a typedef that conditionally aliases to either the static
+   or dynamic version.
 
 
+===================================================================================================
 Memory usage:
-	A low memory footprint is paramount to this design, with options to reduce
-memory usage even further. The precision of values is governed by the typedef 
-'num' in the main header file. By default, this is 'double'.
+	Aside from the size of the binary generated by your compiler which can vary,
+the data does not take much memory at all. The precision of values is governed by
+the typedef 'num' in the main header file. By default, this is 'double'.
 Each value currently requires space for a 'num' plus 5 bytes,
 so a total of 13 bytes per value, out of the box. Changing the 'num' typedef
 to 'float' would bring that down to 9.
@@ -111,15 +184,17 @@ Bit fields would make calculations slightly slower, requiring an extra
 fetch/shift/or operation on every read/write, and speed is also
 important. But if you really need to save space, it might be worth looking into.
 That is, if your compiler supports it. This would involve modifying code, a little
-more involved than a simple preprocessor option. I didn't see the need, but
+more involved than a simple preprocessor option. There are a lot of places where
+memcmp() is used to check these bytes, and that might not work so well if there are
+extra undefined bits. I didn't see the need to cram bits like that, but
 that's how I would go about it if I had to.
-	STL containers and dynamic memory allocation are strictly avoided if you
-#define NO_NEW. The main place memory buffers are required is the PreferredUnits
-class. It can operate in dynamic or static mode. PreferredUnits 
+	STL containers are strictly avoided, and dynamic memory allocation can be turned 
+off with NO_NEW. The main place memory buffers are required is the UnitList
+class. It can operate in dynamic or static mode. UnitList 
 is how you specify the units of text output. It is basically a cache of unit 
 lookups which you can reuse in subsequent toString() calls, rather than having
 to parse the units each time.
-	In the static case, you need to give PreferredUnits 
+	In the static case, you need to give UnitList 
 a storage buffer of (int[however many units you tell it * 2]) when constructed. 
 Note that the size parameter is specified in bytes, not elements.
 A buffer which is too small will not generate an error, but it may cause 
@@ -179,8 +254,8 @@ Exception safety:
 	If an error occurs during an operation such as adding two dissimilar values,
 the original value (left hand side) will remain unmodified. If a parsing error
 occurs during the construction of an object, its value will be a scalar 0.
-Errors during toString/sprint will not modify the value, but you may not get
-the correct / any output.
+Errors during toString/sprint/convert will not modify the value, but you may not 
+get the correct / any output.
 	
 
 Error handling:
@@ -264,10 +339,17 @@ How to add more units:
 	
 	5. Examine the generated file to see if the bucket size is obnoxious, i.e. lots of 
 		hashing collisions.
-		If so, you may want to increase the hash table size for the offender in hash.h.
+		If so, there is a method for reducing that size:
+			a) Recompile and run genhashtables with --find-seed
+			b) In PhysicalUnitDefinitions.cpp (bottom), change PhysicalQuantity::defaultHashSeed 
+			   to that value.
+			c) Run genhashtables again with no arguments, replacing hashTables.h,
+			   or just do a full rebuild of the genhashtables project in VS.
+			d) If the bucket size / collision rate is still too high, increase the hash
+			   table size, also in PhysicalUnitDefinitions.cpp at the bottom.
+			   Repeat from a) until satisfied.
 		It may also be beneficial to modify the hashing function in hash.cpp, but this will
-		have to run on your embedded hardware, so don't make it too complicated.
-		If your directory structure is different, move this file into the proper include path.
+		have to run on embedded hardware, so don't make it too complicated.
 		
 	6. Recompile with the new hashTables.h. The updated data is now available on the target system.
 

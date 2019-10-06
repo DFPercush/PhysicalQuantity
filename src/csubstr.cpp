@@ -52,7 +52,9 @@ bool CSubString::operator==(const CSubString& cmp) const
 
 bool CSubString::ends(const CSubString& test) const
 {
-	int iTest = 0;
+	int tlen = test.end - test.start;
+	if (tlen < (end - start)) { return false; }
+	int iTest = tlen - (end - start);
 	for (int i = start; i < end; i++)
 	{
 		if (str[i] != test[iTest]) { return false; }
@@ -63,15 +65,14 @@ bool CSubString::ends(const CSubString& test) const
 }
 bool CSubString::begins(const CSubString& test) const
 {
-	int iTest = 0;
-	int tlen = test.length(); // (int)strlen(test);
+	int tlen = test.end - test.start; //test.length();
 	if (tlen < (end - start)) { return false; }
-	int ti = tlen - (end - start);
+	int iTest = test.start; //tlen - (end - start);
 	for (int i = start; i < end; i++)
 	{
-		if (str[i] != test[ti]) { return false; }
+		if (str[i] != test.str[iTest]) { return false; }
 		if (str[i] == 0) { return true; }
-		ti++;
+		iTest++;
 	}
 	return true;
 }

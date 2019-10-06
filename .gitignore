@@ -1,6 +1,8 @@
-Debug/
 *.i
-.vs/
 *.7z
 include/PhysicalQuantity/hashTables.h
-x64/
+*.exe
+*.lib
+*.so
+*.o
+*.obj
