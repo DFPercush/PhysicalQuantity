@@ -252,9 +252,7 @@
     <ClCompile Include="src\PhysicalUnitDefinitions.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="include\csubstr.h" />
     <ClInclude Include="include\PhysicalQuantity.h" />
-    <ClInclude Include="include\PhysicalQuantity\hash.h" />
     <ClInclude Include="include\PhysicalQuantity\hashTables.h" />
     <ClInclude Include="include\PhysicalQuantity\ppOptions.h" />
   </ItemGroup>

@@ -17,7 +17,7 @@ during addition and subtraction, as well as scalar operations.
 System requirements:
 	All you really need is a rudimentary C++ compiler that can handle classes with 
 overloaded operators. There are several preprocessor options for compilers 
-and target systems which lack certain features like 'new' and 'printf'.
+and target systems which lack certain features e.g. 'new'.
 Some of the nice features you can use if you have them are:
 
 	- (optional) literal operators (C++11), with preprocessor option 
@@ -38,13 +38,13 @@ Some of the nice features you can use if you have them are:
 
 	- Does not require templates or STL support. 
 	
-	- std::string toString() is optional. Can write text output to a static buffer 
-	   via sprint(buf, len);
+	- std::string is optional. makes .toString() available.
+	   Can write text output to a static buffer via .sprint(buf, len);
 
-	- Comes with a CSubString class (alias csubstr) which has a lot of the
-	  functionality of std::strings without the memory overhead. It stores
-	  a pointer and offsets to a single immutable source string, and can be
-	  useful for read only operations like parsing, chopping, slicing and dicing.
+	- Comes with a CSubString class which has a lot of the functionality of
+	  std::strings without the memory overhead. It stores a pointer and offsets 
+	  to a single immutable source (const char*) string, and can be useful for
+	  read only operations like parsing, chopping, slicing and dicing.
 
 	For any of these #define options, you can either uncomment the related line
 in the header, you can #define the option in your source file before #including 
@@ -62,6 +62,10 @@ for this purpose called 'PQHeaderOptionsMatch'.  Here's an example:
 		...
 	}
 
+	This check is performed every time you try to instantiate a PhysicalQuantity 
+object. If the options do not match, an error will be generated. The overhead for
+this operation is a simple comparison between a literal/immediate value and a
+static const stored at a particular address, probably in ROM if you have it.
 
 
 Performance:

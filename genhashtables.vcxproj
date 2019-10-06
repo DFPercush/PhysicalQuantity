@@ -127,6 +127,7 @@
     <CustomBuildStep>
       <Outputs>$(ProjectDir)include\PhysicalQuantity\hashTables.h;%(Outputs)</Outputs>
       <Command>$(OutputPath)genhashtables.exe &gt; $(ProjectDir)include\PhysicalQuantity\hashTables.h</Command>
+      <Inputs>$(ProjectDir)src\hash.cpp;$(ProjectDir)src\PhysicalUnitDefinitions.cpp;%(Inputs)</Inputs>
     </CustomBuildStep>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='interactive|x64'">
@@ -143,6 +144,7 @@
     <CustomBuildStep>
       <Outputs>$(ProjectDir)include\PhysicalQuantity\hashTables.h;%(Outputs)</Outputs>
       <Command>$(OutputPath)genhashtables.exe &gt; $(ProjectDir)include\PhysicalQuantity\hashTables.h</Command>
+      <Inputs>$(ProjectDir)src\hash.cpp;$(ProjectDir)src\PhysicalUnitDefinitions.cpp;%(Inputs)</Inputs>
     </CustomBuildStep>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -195,6 +197,7 @@
     <CustomBuildStep>
       <Outputs>$(ProjectDir)include\PhysicalQuantity\hashTables.h;%(Outputs)</Outputs>
       <Command>$(OutputPath)genhashtables.exe &gt; $(ProjectDir)include\PhysicalQuantity\hashTables.h</Command>
+      <Inputs>$(ProjectDir)src\hash.cpp;$(ProjectDir)src\PhysicalUnitDefinitions.cpp;%(Inputs)</Inputs>
     </CustomBuildStep>
   </ItemDefinitionGroup>
   <ItemGroup>

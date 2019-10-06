@@ -12,7 +12,6 @@ TODO:
 #include <PhysicalQuantity.h>
 
 #ifndef NO_HASHING
-#include <PhysicalQuantity/hash.h>
 #ifndef PQ_GENERATING_HASH_TABLES
 #include <PhysicalQuantity/hashTables.h>
 #else
@@ -596,14 +595,14 @@ size_t PhysicalQuantity::sprint(char* buf, int size, const PreferredUnitsBase& p
 #endif
 	}
 
-	// Now, actually print the number
-	// TODO: This is not very portable;
-	// it's also very unsafe...
+	// TODO: Some systems do not support sprintf("%g...");
+	if (outofs + MAX_NUM_TEXT_LENGTH > size) { return outofs + MAX_NUM_TEXT_LENGTH; }
 	sprintf(buf + outofs, "%g", r.value);
 	int numofs = outofs;
 	int numlen = (int)strlen(buf + numofs);
 	outofs += numlen;
 	// Now shuffle the number to the beginning
+	// TODO: Possible speed improvement if we have some extra padding at the end of the buffer
 	char c;
 	for (int isubpos = 0; isubpos < numlen; isubpos++)
 	{

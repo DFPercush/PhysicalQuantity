@@ -39,14 +39,15 @@
 #else
 #define PQ_HAS_NO_THROW 0
 #endif
-#ifdef NO_PRINTF
-#define PQ_HAS_NO_PRINTF 0x40
-#else
-#define PQ_HAS_NO_PRINTF 0
-#endif
-#define PQ_HEADER_OPTIONS (PQ_HAS_NO_NEW | PQ_HAS_NO_STD_STRING | PQ_HAS_NO_LITERALS | PQ_HAS_NO_INLINE | PQ_HAS_NO_HASHING | PQ_HAS_NO_THROW | PQ_HAS_NO_PRINTF)
+#define PQ_HEADER_OPTIONS (PQ_HAS_NO_NEW | PQ_HAS_NO_STD_STRING | PQ_HAS_NO_LITERALS | PQ_HAS_NO_INLINE | PQ_HAS_NO_HASHING | PQ_HAS_NO_THROW)
 // End config checking
 //==================================================================================
+
+
+// Should be getting this from ppOptions.h, but it really, *really* needs to be defined for sure
+#ifndef MAX_NUM_TEXT_LENGTH
+#define MAX_NUM_TEXT_LENGTH 26
+#endif
 
 
 //========================================
@@ -120,7 +121,7 @@ public:
 		int find_first_of(const char* find, int startOfs = 0) const;
 		int find_first_not_of(const char* find, int startOfs = 0) const;
 #else
-		INLINE_KEYWORD char operator[](int index) const { if (start + index >= end) { return 0; } return str[start + index];}
+		INLINE_KEYWORD char operator[](int index) const { if (index < 0 || start + index >= end) { return 0; } return str[start + index];}
 		INLINE_KEYWORD bool begins(const char* test) const { return begins(CSubString(test)); }
 		INLINE_KEYWORD bool ends(const char* test) const { return ends(CSubString(test)); }
 		INLINE_KEYWORD int size() const { return end - start; }

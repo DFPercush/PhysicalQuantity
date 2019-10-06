@@ -1,7 +1,6 @@
-#include <csubstr.h>
+#include <PhysicalQuantity.h>
 #include <string.h>
 
-#include <PhysicalQuantity.h>
 
 typedef PhysicalQuantity::CSubString csubstr;
 typedef PhysicalQuantity::CSubString CSubString;
@@ -482,7 +481,7 @@ bool CSubString::isint() const
 
 // Separate CSubString for later maybe
 #ifdef NO_INLINE
-char CSubString::operator[](int index) const { if (start + index >= end) { return 0; } return str[start + index];}
+char CSubString::operator[](int index) const { if (index < 0 || start + index >= end) { return 0; } return str[start + index];}
 bool CSubString::begins(const char* test) const { return begins(CSubString(test)); }
 bool CSubString::ends(const char* test) const { return ends(CSubString(test)); }
 int CSubString::size() const { return end - start; }
