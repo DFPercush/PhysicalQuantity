@@ -7,6 +7,7 @@ typedef PhysicalQuantity::CSubString csubstr;
 #ifndef NO_HASHING
 
 // If you change these values or add new units, rebuild hashTables.h
+// In Visual Studio, a Rebuild All / Rebuild Solution will do this.
 // The main() for this is in genhashtables.cpp
 // See README.txt for instructions on adding new units.
 
