@@ -18,7 +18,7 @@
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='interactive|x64'">
-    <LocalDebuggerCommandArguments>-i -s --help</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>-i -s</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='hash|x64'">

@@ -5,7 +5,10 @@
 // It's not enough to declare it here. Some source .cpp files also need it.
 
 #include <PhysicalQuantity.h>
+#include <stdio.h>
 //#include <PhysicalQuantity/hash.h>
+
+#ifndef NO_HASHING
 
 typedef PhysicalQuantity::CSubString csubstr;
 
@@ -81,3 +84,11 @@ int main()
 #endif
 	return 0;
 }
+
+#else //#ifndef NO_HASHING
+int main()
+{
+	fprintf(stderr, "Warning: Compiled without hashing, I can do nothing!\n");
+	return 1;
+}
+#endif //#ifndef NO_HASHING

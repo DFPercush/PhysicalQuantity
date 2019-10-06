@@ -120,13 +120,20 @@ PhysicalQuantity& PhysicalQuantity::operator=(const PhysicalQuantity& cp)
 
 PhysicalQuantity::num PhysicalQuantity::convert(const CSubString& units) const
 {
-	// TODO: here
+	signed char tdim[(int)QuantityType::ENUM_MAX];
+	num factor;
+	num offset;
+	parseUnits(units, tdim, factor, offset);
+	if (memcmp(dim, tdim, sizeof(dim)) != 0)
+	{
 #ifdef NO_THROW
-	errorHandler(errorUserContext, E_LOGIC_ERROR);
+		errorHandler(errorUserContext, E_UNIT_MISMATCH);
+		return 0.0;
 #else
-	throw exception("incomplete function");
+		throw UnitMismatchException("");
 #endif //#ifdef NO_THROW
-	return 0.0;
+	}
+	return (value - offset) / factor;
 }
 
 bool PhysicalQuantity::isLikeQuantity(const PhysicalQuantity& rhs) const

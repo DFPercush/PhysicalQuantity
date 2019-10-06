@@ -92,19 +92,34 @@ int main(int argc, char** argv)
 	if (!interactive) { return 0; }
 	if (!useSprint && !useConvert)
 	{
-		printf("Warning: You are in interactive mode without setting any action, use -e or -c.\nYou may want to just 'exit' now.\n");
+		printf("Warning: You are in interactive mode without setting any output method.\n");
 	}
-	printf("expression [ , unitsOut ] | 'quit' | 'exit'\n");
+	printf("expression [ , unitsOut ] | 'sprint' | 'convert' | 'quit' | 'exit'\n");
 	string line_std_string;
 	csubstr line;
 	while (true)
 	{
-		printf("\n> ");
+		if (useConvert) { printf("\nconvert> "); }
+		else if (useSprint) { printf("sprint> "); }
+		else { printf(">"); }
+
 		getline(cin, line_std_string);
 		line = line_std_string.c_str();
 		line = line.trim();
 		if (line_std_string == "quit" || line_std_string == "exit") { break; }
 		else if (line_std_string == "help") { showHelp(); continue; }
+		else if (line_std_string == "sprint")
+		{
+			useSprint = true;
+			useConvert = false;
+			continue;
+		}
+		else if (line_std_string == "convert")
+		{
+			useConvert = true;
+			useSprint = false;
+			continue;
+		}
 
 		PQ val;
 		csubstr units;
@@ -135,7 +150,7 @@ int main(int argc, char** argv)
 			}
 			else
 			{
-				printf("(parsed ok)\n");
+				printf("(parsed ok)\n>");
 			}
 		}
 		catch (const PQ::InvalidExpressionException& err)
@@ -144,19 +159,19 @@ int main(int argc, char** argv)
 		}
 		catch (const PQ::UnitMismatchException& err)
 		{
-			printf("Unit mismatch error: %s", err.what());
+			printf("Unit mismatch error: %s\n", err.what());
 		}
 		catch (const logic_error& err)
 		{
-			printf("Logic error: %s", err.what());
+			printf("Logic error: %s\n", err.what());
 		}
 		catch (const overflow_error& err)
 		{
-			printf("Overflow error: %s", err.what());
+			printf("Overflow error: %s\n", err.what());
 		}
 		catch (const exception& err)
 		{
-			printf("General error: %s", err.what());
+			printf("General error: %s\n", err.what());
 		}
 	}
 	return 0;
