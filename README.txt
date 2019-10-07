@@ -66,12 +66,10 @@ ppOptions.h contains some conditional compilation options for limited systems:
 Installation/setup:
 	If all you want to do is build the library and use the test console, MSBuild / F7
 or 'make' should get you a binary without much effort. 
-	For Visual Studio builds, msvc/RootDevDir.props contains the path to the
-directory above this file, i.e. where you (I assume) put most new projects. 
-If you always put your projects in the default path of C:\Users\you\Source\Repos,
-it will work out of the box.
-The Library and Include paths are based on $(RootDevDir), so it's important to
-set that correctly.
+	For Visual Studio builds, msvc/RootDevDir.props contains the path where you
+put most new projects. If you always put your projects in the default path of
+C:\Users\you\Source\Repos, you can put that path in this property file to make it easier
+to include PhysicalQuantity in other projects later.
 Using a text editor to modify RootDevDir.props might be easier than trying to
 navigate visual studio's property pages, but it will be in the user macros section.
  These property pages exist so that you can start a new
@@ -85,10 +83,10 @@ paths all set and ready to go. So basically you can do this:
 	For embedded use, you will need to build and run the 'genhashtables' binary on a 
 PC first, before you try to cross compile for the target system, because the
 unit lookup hash tables are not included in the repo, for space reasons.
-Does not apply if using NO_HASHING.
+Does not apply if using NO_HASHING. Users who plan on using this code on a
+PC will still have to do this, but it's set up as part of the build process.
 The output of genhashtables should be copied or piped to
 	include\PhysicalQuantity\hashTables.h
-If building with Visual Studio, a custom build step will handle this automatically.
 
 	If you think you might be creating new commits and pull requests,
 you will need to tell git not to track changes to certain config files. 
@@ -110,7 +108,7 @@ your personal settings in the shared git repo.
 Conditional compilation
 
 	For any of these #define options, you can either uncomment the related line
-in the header, you can #define the option in your source file before #including 
+in ppOptions.h, you can #define the option in your source file before #including 
 the header, or you can pass the #define as an argument to the compiler. All this 
 flexibility does makes it necessary, however, to check that various modules are 
 compiled with the same configuration as their dependencies. There is an easy macro 
