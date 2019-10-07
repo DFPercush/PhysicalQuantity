@@ -241,15 +241,18 @@ public:
 
 	//==================================================================================
 	// Formatting stuff 
+	typedef unsigned short unitIndex_t;
+	typedef signed char prefixIndex_t;
+	typedef signed char unitPower_t;
 	class UnitListBase
 	{
 		friend class PhysicalQuantity;
 	public:
 		struct UnitPref
 		{
-			unsigned short iUnit;
-			signed char iPrefix;
-			signed char power; // TODO
+			unitIndex_t iUnit;
+			prefixIndex_t iPrefix;
+			unitPower_t power; // TODO
 		};
 		virtual ~UnitListBase();
 	protected:
@@ -281,9 +284,9 @@ public:
 		UnitList_static(const CSubString& unitList_SpaceDelimited);
 	};
 #ifdef NO_NEW
-	typedef UnitList_static PreferredUnits;
+	typedef UnitList_static UnitList;
 #else
-	typedef UnitList_dynamic PreferredUnits;
+	typedef UnitList_dynamic UnitList;
 #endif
 	// End formatting stuff
 	//==================================================================================
@@ -324,14 +327,14 @@ public:
 	bool operator==(const PhysicalQuantity& rhs) const;
 	// TODO: boolean comparison operators
 	
-	bool isLikeQuantity(const PhysicalQuantity& rhs) const;
+	bool like(const PhysicalQuantity& rhs) const; // Same kind of quantity.
 
 #ifndef NO_NETWORK
 	bool writeNetworkBinary(void* buf, size_t size);
 	bool readNetworkBinary(void* buf);
 #endif
 
-	static bool findUnit(CSubString name, int& outUnitIndex, int& outPrefixIndex);
+	static bool findUnit(CSubString name, unitIndex_t& outUnitIndex, prefixIndex_t& outPrefixIndex);
 	static bool feq(num a, num b, num toleranceFactor);
 	static PhysicalQuantity eval(CSubString str);
 
@@ -341,7 +344,7 @@ public:
 	static const int KnownUnitsLength;
 	static const Prefix KnownPrefixes[];
 	static const int KnownPrefixesLength;
-	static const int dekaIndex;
+	static const prefixIndex_t dekaIndex;
 #ifndef NO_HASHING
 	// Hash table sizes are defined in hash.cpp
 	static const int hashTableSize_UnitSymbols;
@@ -356,25 +359,25 @@ private:
 	signed char dim[(int)QuantityType::ENUM_MAX];
 
 	void init();
-	static void parseUnits(const CSubString& unitStr, signed char (&unitsOut)[(int)QuantityType::ENUM_MAX], num& factorOut, num& offsetOut); // throws if unknown/invalid unit
-	static void mulUnit(signed char (&unitsOut)[(int)QuantityType::ENUM_MAX], const UnitDefinition& unit, signed int power, bool invert = false); // deals only with quantity dimension, conversion factors are handled elsewhere
+	static void parseUnits(const CSubString& unitStr, signed char (&dimOut)[(int)QuantityType::ENUM_MAX], num& factorOut, num& offsetOut); // throws if unknown/invalid unit
+	static void mulUnit(signed char (&dimOut)[(int)QuantityType::ENUM_MAX], const UnitDefinition& unit, signed int power, bool invert = false); // deals only with quantity dimension, conversion factors are handled elsewhere
 	unsigned int magdim() const; // Magnitude of dimension = sum(abs(dim[x]))
 	int magdimReduce(const UnitDefinition& unit) const;  // Divide by what power of (unit) to minimize magdim? Used in text output logic.
 
 	// in conjunction with sprint()
 	void sprintHalf(PhysicalQuantity& r, const UnitListBase & pu, bool& hasDenom, bool inDenomNow, int &md, int origmd, bool useSlash, size_t &outofs, size_t size, char * buf) const;
 	//void sprintHalf(const UnitListBase & pu, int &md, PhysicalQuantity &r, int origmd, bool useSlash, int &outofs, int size, char * buf) const;
-	void sprintHalfTryUnit(const PhysicalQuantity::UnitDefinition & testunit, PhysicalQuantity & r, int origmd, bool & hasDenom, bool useSlash, bool inDenomNow, int plen, size_t & outofs, size_t size, char * buf, int ipre, int & md, bool preferred) const;
-	void WriteOutputUnit(int plen, int ulen, int reduceExp, size_t &outofs, size_t size, char * buf, int ipre, const PhysicalQuantity::UnitDefinition & testunit) const;
+	void sprintHalfTryUnit(const PhysicalQuantity::UnitDefinition & testunit, PhysicalQuantity & r, int origmd, bool & hasDenom, bool useSlash, bool inDenomNow, int plen, size_t & outofs, size_t size, char * buf, prefixIndex_t ipre, int & md, bool preferred) const;
+	void WriteOutputUnit(int plen, int ulen, int reduceExp, size_t &outofs, size_t size, char * buf, prefixIndex_t ipre, const PhysicalQuantity::UnitDefinition & testunit) const;
 
 public:
 #ifdef NO_INLINE
 	PhysicalQuantity(const char* str);
 	static void parseUnits(const char* unitStr, signed char(&unitsOut)[(int)QuantityType::ENUM_MAX], num& factorOut, num& offsetOut);
 	num convert(const char* units) const;
-	static bool findUnit(const char* pcharName, int& outUnitIndex, int& outPrefixIndex);
-	bool sameUnitAs(const PhysicalQuantity& rhs) const;
-	bool unitsMatch(const PhysicalQuantity& rhs) const;
+	static bool findUnit(const char* pcharName, unitIndex_t& outUnitIndex, prefixIndex_t& outPrefixIndex);
+	//bool sameUnitAs(const PhysicalQuantity& rhs) const;
+	//bool unitsMatch(const PhysicalQuantity& rhs) const;
 	void parse(const char* text);
 	//size_t sprint(char* buf, size_t size, const char* pu, bool useSlash = true) const;
 	size_t sprint(char* buf, size_t size, bool useSlash = true) const;
@@ -383,12 +386,12 @@ public:
 	INLINE_KEYWORD 	PhysicalQuantity(const char* str) { PhysicalQuantity(CSubString(str)); }
 	INLINE_KEYWORD static void parseUnits(const char* unitStr, signed char (&unitsOut)[(int)QuantityType::ENUM_MAX], num& factorOut, num& offsetOut) { return parseUnits(CSubString(unitStr), unitsOut, factorOut, offsetOut); }
 	INLINE_KEYWORD num convert(const char* units) const { return convert(CSubString(units)); }
-	INLINE_KEYWORD static bool findUnit(const char* pcharName, int& outUnitIndex, int& outPrefixIndex) { return findUnit(CSubString(pcharName), outUnitIndex, outPrefixIndex); }
-	INLINE_KEYWORD bool sameUnitAs(const PhysicalQuantity& rhs) const { return isLikeQuantity(rhs); }
-	INLINE_KEYWORD bool unitsMatch(const PhysicalQuantity& rhs) const { return isLikeQuantity(rhs); }
+	INLINE_KEYWORD static bool findUnit(const char* pcharName, unitIndex_t& outUnitIndex, prefixIndex_t& outPrefixIndex) { return findUnit(CSubString(pcharName), outUnitIndex, outPrefixIndex); }
+	//INLINE_KEYWORD bool sameUnitAs(const PhysicalQuantity& rhs) const { return isLikeQuantity(rhs); }
+	//INLINE_KEYWORD bool unitsMatch(const PhysicalQuantity& rhs) const { return isLikeQuantity(rhs); }
 	INLINE_KEYWORD void parse(const char* text) { parse(CSubString(text)); }
-	//INLINE_KEYWORD size_t sprint(char* buf, int size, const char* pu, bool useSlash = true) const { return sprint(buf, size, PreferredUnits(pu), useSlash); }
-	INLINE_KEYWORD size_t sprint(char* buf, size_t size, bool useSlash = true) const { return sprint(buf, size, PreferredUnits(""), useSlash); }
+	//INLINE_KEYWORD size_t sprint(char* buf, int size, const char* pu, bool useSlash = true) const { return sprint(buf, size, UnitList(pu), useSlash); }
+	INLINE_KEYWORD size_t sprint(char* buf, size_t size, bool useSlash = true) const { return sprint(buf, size, UnitList(""), useSlash); }
 
 #endif
 	// End main class members

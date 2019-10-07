@@ -19,10 +19,16 @@ Test console included.
 helper class for free!
 
 * whitespace between values is important!
-	Bad: (1m+2km)/s
-	Bad: (1m + 2km ) / s
+	Bad: 2km
+	Good: 2 km
+	Bad: 1+2
+	Good: 1 + 2
+	Bad: (1 m+2 km)/s
 	Good: (1 m + 2 km) / s
-	... for now. It's an area for improvement.
+		Note: You can add different units as long as they are like quantities.
+	"3 m^2"   !=   ("3 m ^ 2" == "(3 m) ^ 2" == "9 m^2")
+	"5 * m^2" == "5 m^2"
+	... for now anyway.
 
 
 

@@ -4,7 +4,7 @@ StaticHeaders=include/PhysicalQuantity.h include/PhysicalQuantity/ppOptions.h
 AllHeaders=$(StaticHeaders) include/PhysicalQuantity/hashTables.h
 
 all: $(BinPath)genhashtables $(LibPath)PhysicalQuantity.a $(BinPath)TestConsole
-
+	echo Up to date.
 
 #-----------------------------------------------------------------
 # Binaries

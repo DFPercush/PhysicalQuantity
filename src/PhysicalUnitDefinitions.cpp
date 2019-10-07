@@ -63,7 +63,7 @@ const PhysicalQuantity::Prefix PhysicalQuantity::KnownPrefixes[] =
 {"Y", "yotta", 1e24}
 };
 const int PhysicalQuantity::KnownPrefixesLength = sizeof(PhysicalQuantity::KnownPrefixes) / sizeof(PhysicalQuantity::Prefix);
-const int PhysicalQuantity::dekaIndex = 10; // If any more prefixes are added, this should be the index of {"da", "deka", 10}
+const PhysicalQuantity::prefixIndex_t PhysicalQuantity::dekaIndex = 10; // If any more prefixes are added, this should be the index of {"da", "deka", 10}
 						  // Used to optimize lookups because this is the only prefix longer than 1 char
 						  // If that changes, might need to change findUnit()
 
