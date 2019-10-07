@@ -1,6 +1,8 @@
 *.i
 *.7z
 include/PhysicalQuantity/hashTables.h
+include/PhysicalQuantity/literals.h
+src/literals.cpp
 *.exe
 *.lib
 *.so

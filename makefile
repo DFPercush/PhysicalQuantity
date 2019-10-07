@@ -31,14 +31,17 @@ $(LibPath)PhysicalQuantity.a: $(pqObj)
 
 #-----------------------------------------------------------------
 # Generated files
-include/PhysicalQuantity/hashTables.h: $(BinPath)genhashtables
-	$(BinPath)genhashtables > include/PhysicalQuantity/hashTables.h
+#include/PhysicalQuantity/hashTables.h: $(BinPath)genhashtables
+#	$(BinPath)genhashtables > include/PhysicalQuantity/hashTables.h
+include/PhysicalQuantity/hashTables.h include/PhysicalQuantity/literals.h src/literals.cpp: $(BinPath)genhashtables
+	$(BinPath)genhashtables --rootpath ./
+
 
 #---------------------------------------------------------------
 # Intermediate objects
-CommonIntCompile=$(compile) $(SharedCompileFlags) $(IncludePathFlag)$(IncludePath) $(OutputFlag) $(ObjPath)
+CommonIntCompile=$(compile) $(SharedCompileFlags) $(Defines) $(IncludePathFlag)$(IncludePath) $(OutputFlag) $(ObjPath)
 $(ObjPath)PhysicalQuantity-gen.o: src/PhysicalQuantity.cpp $(StaticHeaders)
-	$(CommonIntCompile)PhysicalQuantity-gen.o src/PhysicalQuantity.cpp $(DefineFlag)PQ_GENERATING_HASH_TABLES
+	$(CommonIntCompile)PhysicalQuantity-gen.o src/PhysicalQuantity.cpp $(DefineFlag)PQ_BUILD_TOOL
 
 $(ObjPath)PhysicalQuantity.o: src/PhysicalQuantity.cpp $(AllHeaders)
 	$(CommonIntCompile)PhysicalQuantity.o src/PhysicalQuantity.cpp

@@ -40,7 +40,12 @@
 #else
 #define PQ_HAS_NO_THROW 0
 #endif
-#define PQ_HEADER_OPTIONS (PQ_HAS_NO_NEW | PQ_HAS_NO_STD_STRING | PQ_HAS_NO_LITERALS | PQ_HAS_NO_INLINE | PQ_HAS_NO_HASHING | PQ_HAS_NO_THROW)
+#ifdef CPP11
+#define PQ_HAS_CPP11 0x80
+#else
+#define PQ_HAS_CPP11 0
+#endif
+#define PQ_HEADER_OPTIONS (PQ_HAS_NO_NEW | PQ_HAS_NO_STD_STRING | PQ_HAS_NO_LITERALS | PQ_HAS_NO_INLINE | PQ_HAS_NO_HASHING | PQ_HAS_NO_THROW | PQ_HAS_CPP11)
 // End config checking
 //==================================================================================
 
@@ -156,7 +161,13 @@ public:
 		const signed char dim[(int)QuantityType::ENUM_MAX];
 		num offset; // temperature is a special snowflake
 		num factor;
+		int flags; // canPrefix = true; // TODO: use in findUnit(). sprint?
 	};
+#define NOPREFIX  0x01
+#define CANPREFIX 0
+#define NOLITERAL 0x02
+#define MAKELITERAL 0
+
 
 	struct Prefix
 	{
@@ -291,6 +302,7 @@ public:
 	// End formatting stuff
 	//==================================================================================
 
+
 	//==================================================================================
 	// Main class members
 	PhysicalQuantity();
@@ -299,6 +311,12 @@ public:
 	PhysicalQuantity(num value, const char* unit);
 	PhysicalQuantity(num value);
 	PhysicalQuantity(CSubString str);
+#if defined(CPP11) && !defined(NO_INLINE)
+	constexpr PhysicalQuantity(num value_p, signed char dim_p[(int)QuantityType::ENUM_MAX])
+		: value(value_p), dim {dim_p[0], dim_p[1], dim_p[2], dim_p[3], dim_p[4]} {}
+#else
+	PhysicalQuantity(num value_p, signed char dim_p[(int)QuantityType::ENUM_MAX]);
+#endif
 	PhysicalQuantity& operator=(num value);
 	PhysicalQuantity& operator=(const PhysicalQuantity& cp);
 	~PhysicalQuantity() = default;
@@ -314,13 +332,69 @@ public:
 	std::string toString(const UnitListBase&) const;
 #endif
 
+#if defined(CPP11) && !defined(NO_INLINE)
+	constexpr PhysicalQuantity operator* (const PhysicalQuantity& rhs) const 
+	{
+		signed char d[(int)QuantityType::ENUM_MAX]
+		{
+			dim[0] + rhs.dim[0],  
+			dim[1] + rhs.dim[1],  
+			dim[2] + rhs.dim[2],  
+			dim[3] + rhs.dim[3],  
+			dim[4] + rhs.dim[4]
+		};
+		return PhysicalQuantity(value * rhs.value, d);
+	}
+	constexpr PhysicalQuantity operator/ (const PhysicalQuantity& rhs) const 
+	{
+		signed char d[(int)QuantityType::ENUM_MAX]
+		{
+			dim[0] - rhs.dim[0],  
+			dim[1] - rhs.dim[1],  
+			dim[2] - rhs.dim[2],  
+			dim[3] - rhs.dim[3],  
+			dim[4] - rhs.dim[4]
+		};
+		return PhysicalQuantity(value / rhs.value, d);
+	}
+#else
+//#endif //#if defined(CPP11) && !defined(NO_INLINE)
 	PhysicalQuantity operator* (const PhysicalQuantity& rhs) const;
 	PhysicalQuantity operator/ (const PhysicalQuantity& rhs) const;
+#endif //#if defined(CPP11) && !defined(NO_INLINE)
+
 	PhysicalQuantity operator+ (const PhysicalQuantity& rhs) const;
 	PhysicalQuantity operator- (const PhysicalQuantity& rhs) const;
 
+#if defined(CPP11) && !defined(NO_INLINE)
+	constexpr PhysicalQuantity operator* (num rhs)
+	{
+		signed char d[(int)QuantityType::ENUM_MAX]
+		{
+			dim[0],
+			dim[1],  
+			dim[2],  
+			dim[3],  
+			dim[4]
+		};
+		return PhysicalQuantity(value * rhs, d);
+	}
+	constexpr PhysicalQuantity operator/ (num rhs)
+	{
+		signed char d[(int)QuantityType::ENUM_MAX]
+		{
+			dim[0],
+			dim[1],  
+			dim[2],  
+			dim[3],  
+			dim[4]
+		};
+		return PhysicalQuantity(value * rhs, d);
+	}
+#else //#if defined(CPP11) && !defined(NO_INLINE)
 	PhysicalQuantity operator* (num rhs) const;
 	PhysicalQuantity operator/ (num rhs) const;
+#endif //#if defined(CPP11) && !defined(NO_INLINE)
 	PhysicalQuantity operator+ (num rhs) const;
 	PhysicalQuantity operator- (num rhs) const;
 
@@ -404,23 +478,144 @@ public:
 //==================================================================================
 // Literals
 #ifndef NO_LITERALS
-// Declare literals
-// TODO: Also declare with all prefixes?
-#define DeclareLiteral(symbol) PhysicalQuantity operator ""_##symbol(long double); PhysicalQuantity operator ""_##symbol(unsigned long long);
 
-DeclareLiteral(rad)
-DeclareLiteral(deg)
-DeclareLiteral(m)
-DeclareLiteral(g)
-DeclareLiteral(s)
-DeclareLiteral(Hz)
-DeclareLiteral(N)
-DeclareLiteral(J)
-DeclareLiteral(K)
-DeclareLiteral(C)
-DeclareLiteral(ang)
-DeclareLiteral(lb)
+// Use these in a header.
+#define DeclareLiteral(symbol_no_quotes) PhysicalQuantity operator ""_##symbol_no_quotes(long double); PhysicalQuantity operator ""_##symbol_no_quotes(unsigned long long);
+#define DeclareLiteralWithPrefixes(symbol_no_quotes) \
+	DeclareLiteral(  ##symbol_no_quotes) \
+	DeclareLiteral( c##symbol_no_quotes) \
+	DeclareLiteral( k##symbol_no_quotes) \
+	DeclareLiteral( m##symbol_no_quotes) \
+	DeclareLiteral( M##symbol_no_quotes) \
+	DeclareLiteral( u##symbol_no_quotes) \
+	DeclareLiteral( G##symbol_no_quotes) \
+	DeclareLiteral( n##symbol_no_quotes) \
+	DeclareLiteral( T##symbol_no_quotes) \
+	DeclareLiteral( p##symbol_no_quotes) \
+	DeclareLiteral( P##symbol_no_quotes) \
+	DeclareLiteral(da##symbol_no_quotes) \
+	DeclareLiteral( f##symbol_no_quotes) \
+	DeclareLiteral( d##symbol_no_quotes) \
+	DeclareLiteral( h##symbol_no_quotes) \
+	DeclareLiteral( E##symbol_no_quotes) \
+	DeclareLiteral( a##symbol_no_quotes) \
+	DeclareLiteral( z##symbol_no_quotes) \
+	DeclareLiteral( Z##symbol_no_quotes) \
+	DeclareLiteral( y##symbol_no_quotes) \
+	DeclareLiteral( Y##symbol_no_quotes)
+
+// Use these in a compiled .cpp file
+#define DefineLiteralBase(symbol_no_quotes, factor) \
+	PhysicalQuantity operator ""_##symbol_no_quotes (long double v) \
+	{ \
+		return PhysicalQuantity((PhysicalQuantity::num)v * factor, #symbol_no_quotes); \
+	} \
+	PhysicalQuantity operator ""_##symbol_no_quotes (unsigned long long v) \
+	{ \
+		return PhysicalQuantity((PhysicalQuantity::num)(v * factor), #symbol_no_quotes); \
+	}
+#define DefineLiteral(symbol_no_quotes) DefineLiteralBase(##symbol_no_quotes, 1.0)
+#define DefineLiteralWithPrefixes(symbol_no_quotes) \
+	DefineLiteralBase(  ##symbol_no_quotes, 1.0   ) \
+	DefineLiteralBase( c##symbol_no_quotes, 1e-2  ) \
+	DefineLiteralBase( k##symbol_no_quotes, 1e3   ) \
+	DefineLiteralBase( m##symbol_no_quotes, 1e-3  ) \
+	DefineLiteralBase( M##symbol_no_quotes, 1e6   ) \
+	DefineLiteralBase( u##symbol_no_quotes, 1e-6  ) \
+	DefineLiteralBase( G##symbol_no_quotes, 1e9   ) \
+	DefineLiteralBase( n##symbol_no_quotes, 1e-9  ) \
+	DefineLiteralBase( T##symbol_no_quotes, 1e12  ) \
+	DefineLiteralBase( p##symbol_no_quotes, 1e-12 ) \
+	DefineLiteralBase( P##symbol_no_quotes, 1e15  ) \
+	DefineLiteralBase(da##symbol_no_quotes, 10.0  ) \
+	DefineLiteralBase( f##symbol_no_quotes, 1e-15 ) \
+	DefineLiteralBase( d##symbol_no_quotes, 0.1   ) \
+	DefineLiteralBase( h##symbol_no_quotes, 100.0 ) \
+	DefineLiteralBase( E##symbol_no_quotes, 1e18  ) \
+	DefineLiteralBase( a##symbol_no_quotes, 1e-18 ) \
+	DefineLiteralBase( z##symbol_no_quotes, 1e-21 ) \
+	DefineLiteralBase( Z##symbol_no_quotes, 1e21  ) \
+	DefineLiteralBase( y##symbol_no_quotes, 1e-24 ) \
+	DefineLiteralBase( Y##symbol_no_quotes, 1e24  ) \
+
+
+#if defined(CPP11) && !defined(NO_INLINE)
+// Implement the fundamental SI units of each quantity as compile time constants
+
+// Use these in a header
+#define CxLiteral(symbol_no_quotes, Ma, Di, Ti, Te, Cu, factor) \
+	constexpr PhysicalQuantity operator ""_##symbol_no_quotes(long double v) \
+	{ \
+		signed char d[(int)PhysicalQuantity::QuantityType::ENUM_MAX]  \
+		{Ma, Di, Ti, Te, Cu}; \
+		return PhysicalQuantity((PhysicalQuantity::num)factor * (PhysicalQuantity::num)v, d); \
+	} \
+	constexpr PhysicalQuantity operator ""_##symbol_no_quotes(unsigned long long v) \
+	{ \
+		signed char d[(int)PhysicalQuantity::QuantityType::ENUM_MAX]  \
+		{Ma, Di, Ti, Te, Cu}; \
+		return PhysicalQuantity((PhysicalQuantity::num)factor * (PhysicalQuantity::num)v, d); \
+	}
+
+//----------------------------------------------------------------------------
+#define CxLiteralWithPrefixes(symbol_no_quotes, Ma, Di, Ti, Te, Cu, factor) \
+	CxLiteral(  ##symbol_no_quotes,  Ma, Di, Ti, Te, Cu, factor) \
+	CxLiteral( c##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e-2  ) \
+	CxLiteral( k##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e3   ) \
+	CxLiteral( m##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e-3  ) \
+	CxLiteral( M##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e6   ) \
+	CxLiteral( u##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e-6  ) \
+	CxLiteral( G##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e9   ) \
+	CxLiteral( n##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e-9  ) \
+	CxLiteral( T##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e12  ) \
+	CxLiteral( p##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e-12 ) \
+	CxLiteral( P##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e15  ) \
+	CxLiteral(da##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 10.0  ) \
+	CxLiteral( f##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e-15 ) \
+	CxLiteral( d##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 0.1   ) \
+	CxLiteral( h##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 100.0 ) \
+	CxLiteral( E##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e18  ) \
+	CxLiteral( a##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e-18 ) \
+	CxLiteral( z##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e-21 ) \
+	CxLiteral( Z##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e21  ) \
+	CxLiteral( y##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e-24 ) \
+	CxLiteral( Y##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e24  ) \
+//----------------------------------------------------------------------------
+
+////       sym  Ma Di Ti Te Cu
+//CxLiteral(mi, 0, 1, 0, 0, 0, 5280.0 / 0.010)
+////                  sym Ma Di Ti Te Cu fac
+//CxLiteralWithPrefixes(g, 1, 0, 0, 0, 0, 0.001)
+//CxLiteralWithPrefixes(m, 0, 1, 0, 0, 0, 1.0 )
+//CxLiteralWithPrefixes(s, 0, 0, 1, 0, 0, 1.0 )
+//CxLiteralWithPrefixes(K, 0, 0, 0, 1, 0, 1.0 )
+//CxLiteralWithPrefixes(A, 0, 0, 0, 0, 1, 1.0 )
+
+#else // defined(CPP11) && !defined(NO_INLINE)
+#define CxLiteral(DISABLED, CPP11, NOT, DEFINED, OR, NO_INLINE, ppOptions_h)
+//DeclareLiteral(s)
+//DeclareLiteral(K)
+//DeclareLiteral(m)
+//DeclareLiteral(g)
+//DeclareLiteral(A)
+
+#endif //#if defined(CPP11) && !defined(NO_INLINE)
+
+//DeclareLiteral(rad)
+//DeclareLiteral(deg)
+//DeclareLiteral(Hz)
+//DeclareLiteral(N)
+//DeclareLiteral(J)
+//DeclareLiteral(C)
+//DeclareLiteral(ang)
+//DeclareLiteral(lb)
+// ***********************************************************/
+
 
 #endif // !NO_LITERALS
 // End literals
 //==================================================================================
+
+#ifndef PQ_BUILD_TOOL
+#include <PhysicalQuantity/literals.h>
+#endif

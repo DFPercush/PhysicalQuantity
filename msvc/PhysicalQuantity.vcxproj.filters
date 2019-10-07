@@ -27,6 +27,9 @@
     <ClCompile Include="..\src\PhysicalUnitDefinitions.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\literals.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\PhysicalQuantity.h">
@@ -36,6 +39,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\include\PhysicalQuantity\ppOptions.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\PhysicalQuantity\literals.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

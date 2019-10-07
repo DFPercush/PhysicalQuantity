@@ -16,14 +16,14 @@ TODO:
 #include <stdio.h>
 
 #ifndef NO_HASHING
-#ifndef PQ_GENERATING_HASH_TABLES
+#ifndef PQ_BUILD_TOOL
 #include <PhysicalQuantity/hashTables.h>
-#else
+#else //#ifndef PQ_BUILD_TOOL
 struct { unsigned int bucketSize; unsigned int bucket[1]; } UnitSymbols_HashTable[1];
 struct { unsigned int bucketSize; unsigned int bucket[1]; } UnitLongNames_HashTable[1];
 struct { unsigned int bucketSize; unsigned int bucket[1]; } PrefixSymbols_HashTable[1];
 //struct { unsigned int bucketSize; unsigned int bucket[1]; } PrefixLongNames_HashTable[1];
-#endif //#ifndef PQ_GENERATING_HASH_TABLES
+#endif //#ifndef PQ_BUILD_TOOL
 #endif //#ifndef NO_HASHING
 
 using namespace std;
@@ -112,6 +112,21 @@ PhysicalQuantity::PhysicalQuantity(PhysicalQuantity::num valueArg)
 	value = valueArg;
 	memset(dim, 0, sizeof(dim));
 }
+
+#if !defined(CPP11) || defined(NO_INLINE)
+PhysicalQuantity::PhysicalQuantity(PhysicalQuantity::num value_p, signed char dim_p[5]) //(int)PhysicalQuantity::QuantityType::ENUM_MAX])
+	: value(value_p),
+	  dim {dim_p[0], dim_p[1], dim_p[2], dim_p[3], dim_p[4]}
+	{}
+#endif
+
+//{
+//	value = value_p;
+//	for (int i = 0; i < (int)QuantityType::ENUM_MAX; i++)
+//	{
+//		dim[i] = dim_p[i];
+//	}
+//}
 
 PhysicalQuantity& PhysicalQuantity::operator=(PhysicalQuantity::num valueArg)
 {
@@ -799,6 +814,7 @@ string PhysicalQuantity::toString(const UnitListBase& pu) const
 
 #endif //#if !defined(NO_STD_STRING) && !defined(NO_PRINTF)
 
+#if !defined(CPP11) || defined(NO_INLINE)
 PhysicalQuantity PhysicalQuantity::operator* (const PhysicalQuantity& rhs) const
 {
 	PhysicalQuantity ret;
@@ -820,6 +836,8 @@ PhysicalQuantity PhysicalQuantity::operator/ (const PhysicalQuantity& rhs) const
 	}
 	return ret;
 }
+#endif //#if !defined(CPP11) || defined(NO_INLINE)
+// Otherwise * and / are constexpr in header
 
 PhysicalQuantity PhysicalQuantity::operator+ (const PhysicalQuantity& rhs) const
 {
@@ -853,6 +871,7 @@ PhysicalQuantity PhysicalQuantity::operator- (const PhysicalQuantity& rhs) const
 	return ret;
 }
 
+#if !defined(CPP11) || defined(NO_INLINE)
 PhysicalQuantity PhysicalQuantity::operator* (num rhs) const
 {
 	PhysicalQuantity ret(*this);
@@ -866,6 +885,7 @@ PhysicalQuantity PhysicalQuantity::operator/ (num rhs) const
 	ret.value = value / rhs;
 	return ret;
 }
+#endif //#if !defined(CPP11) || defined(NO_INLINE)
 
 PhysicalQuantity PhysicalQuantity::operator+ (num rhs) const
 {
@@ -907,6 +927,7 @@ PhysicalQuantity PhysicalQuantity::operator- (num rhs) const
 
 bool PhysicalQuantity::findUnit(CSubString name, PhysicalQuantity::unitIndex_t& outUnitIndex, PhysicalQuantity::prefixIndex_t& outPrefixIndex)
 {
+	// TODO: canPrefix
 	prefixIndex_t iPrefix = -1;
 	unitIndex_t iUnit = 0;
 	int nlen = name.length();
@@ -1532,24 +1553,5 @@ size_t PhysicalQuantity::cstrHasherTiny::operator()(const char* s) const { retur
 #endif //#ifndef NO_HASHING
 
 #endif //#ifdef NO_INLINE
-
-
-#ifndef NO_LITERALS
-// TODO: Also define with all prefixes?
-#define DefineLiteral(symbol) PhysicalQuantity operator ""_##symbol (long double v) { return PhysicalQuantity((PhysicalQuantity::num)v, #symbol); } PhysicalQuantity operator ""_##symbol (unsigned long long v) { return PhysicalQuantity((PhysicalQuantity::num)(v), #symbol); }
-DefineLiteral(m)
-DefineLiteral(g)
-DefineLiteral(s)
-DefineLiteral(Hz)
-DefineLiteral(N)
-DefineLiteral(J)
-DefineLiteral(K)
-DefineLiteral(C)
-DefineLiteral(ang)
-DefineLiteral(rad)
-DefineLiteral(deg)
-DefineLiteral(lb)
-
-#endif  // !NO_LITERALS
 
 

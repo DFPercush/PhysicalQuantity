@@ -137,14 +137,14 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <PreprocessorDefinitions>PQ_GENERATING_HASH_TABLES;BEEP_IF_HASH_TABLES_REBUILT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>PQ_BUILD_TOOL;BEEP_IF_HASH_TABLES_REBUILT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <CustomBuildStep>
       <Message>generating hashTables.h</Message>
     </CustomBuildStep>
     <CustomBuildStep>
       <Outputs>$(ProjectDir)..\include\PhysicalQuantity\hashTables.h;%(Outputs)</Outputs>
-      <Command>$(OutputPath)genhashtables.exe &gt; $(ProjectDir)..\include\PhysicalQuantity\hashTables.h</Command>
+      <Command>$(OutputPath)genhashtables.exe --rootpath $(SolutionDir)..\</Command>
       <Inputs>$(ProjectDir)..\src\hash.cpp;$(ProjectDir)..\src\PhysicalUnitDefinitions.cpp;%(Inputs)</Inputs>
     </CustomBuildStep>
     <PostBuildEvent>
@@ -157,14 +157,14 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <PreprocessorDefinitions>PQ_GENERATING_HASH_TABLES;BEEP_IF_HASH_TABLES_REBUILT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>PQ_BUILD_TOOL;BEEP_IF_HASH_TABLES_REBUILT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <CustomBuildStep>
       <Message>generating hashTables.h</Message>
     </CustomBuildStep>
     <CustomBuildStep>
       <Outputs>$(ProjectDir)..\include\PhysicalQuantity\hashTables.h;%(Outputs)</Outputs>
-      <Command>$(OutputPath)genhashtables.exe &gt; $(ProjectDir)..\include\PhysicalQuantity\hashTables.h</Command>
+      <Command>$(OutputPath)genhashtables.exe --rootpath $(SolutionDir)..\</Command>
       <Inputs>$(ProjectDir)..\src\hash.cpp;$(ProjectDir)..\src\PhysicalUnitDefinitions.cpp;%(Inputs)</Inputs>
     </CustomBuildStep>
     <PostBuildEvent>
@@ -177,10 +177,10 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <PreprocessorDefinitions>PQ_GENERATING_HASH_TABLES;BEEP_IF_HASH_TABLES_REBUILT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>PQ_BUILD_TOOL;BEEP_IF_HASH_TABLES_REBUILT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <CustomBuildStep>
-      <Command>$(OutputPath)genhashtables.exe &gt; $(ProjectDir)..\include\PhysicalQuantity\hashTables.h</Command>
+      <Command>$(OutputPath)genhashtables.exe --rootpath $(SolutionDir)..\</Command>
       <Message>generating hashTables.h</Message>
       <Outputs>$(ProjectDir)..\include\PhysicalQuantity\hashTables.h;%(Outputs)</Outputs>
       <Inputs>$(ProjectDir)..\src\hash.cpp;$(ProjectDir)..\src\PhysicalUnitDefinitions.cpp;%(Inputs)</Inputs>
@@ -195,10 +195,10 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <PreprocessorDefinitions>PQ_GENERATING_HASH_TABLES;BEEP_IF_HASH_TABLES_REBUILT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>PQ_BUILD_TOOL;BEEP_IF_HASH_TABLES_REBUILT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <CustomBuildStep>
-      <Command>$(OutputPath)genhashtables.exe &gt; $(ProjectDir)..\include\PhysicalQuantity\hashTables.h</Command>
+      <Command>$(OutputPath)genhashtables.exe --rootpath $(SolutionDir)..\</Command>
       <Message>generating hashTables.h</Message>
       <Outputs>$(ProjectDir)..\include\PhysicalQuantity\hashTables.h;%(Outputs)</Outputs>
       <Inputs>$(ProjectDir)..\src\hash.cpp;$(ProjectDir)..\src\PhysicalUnitDefinitions.cpp;%(Inputs)</Inputs>
@@ -215,14 +215,14 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <PreprocessorDefinitions>PQ_GENERATING_HASH_TABLES;BEEP_IF_HASH_TABLES_REBUILT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>PQ_BUILD_TOOL;BEEP_IF_HASH_TABLES_REBUILT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
     <CustomBuildStep>
-      <Command>$(OutputPath)genhashtables.exe &gt; $(ProjectDir)..\include\PhysicalQuantity\hashTables.h</Command>
+      <Command>$(OutputPath)genhashtables.exe --rootpath $(SolutionDir)..\</Command>
       <Message>generating hashTables.h</Message>
       <Outputs>$(ProjectDir)..\include\PhysicalQuantity\hashTables.h;%(Outputs)</Outputs>
       <Inputs>$(ProjectDir)..\src\hash.cpp;$(ProjectDir)..\src\PhysicalUnitDefinitions.cpp;%(Inputs)</Inputs>
@@ -239,7 +239,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <PreprocessorDefinitions>PQ_GENERATING_HASH_TABLES;BEEP_IF_HASH_TABLES_REBUILT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>PQ_BUILD_TOOL;BEEP_IF_HASH_TABLES_REBUILT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -250,7 +250,7 @@
     </CustomBuildStep>
     <CustomBuildStep>
       <Outputs>$(ProjectDir)..\include\PhysicalQuantity\hashTables.h;%(Outputs)</Outputs>
-      <Command>$(OutputPath)genhashtables.exe &gt; $(ProjectDir)..\include\PhysicalQuantity\hashTables.h</Command>
+      <Command>$(OutputPath)genhashtables.exe --rootpath $(SolutionDir)..\</Command>
       <Inputs>$(ProjectDir)..\src\hash.cpp;$(ProjectDir)..\src\PhysicalUnitDefinitions.cpp;%(Inputs)</Inputs>
     </CustomBuildStep>
     <PostBuildEvent>
