@@ -22,7 +22,7 @@ TODO:
 struct { unsigned int bucketSize; unsigned int bucket[1]; } UnitSymbols_HashTable[1];
 struct { unsigned int bucketSize; unsigned int bucket[1]; } UnitLongNames_HashTable[1];
 struct { unsigned int bucketSize; unsigned int bucket[1]; } PrefixSymbols_HashTable[1];
-struct { unsigned int bucketSize; unsigned int bucket[1]; } PrefixLongNames_HashTable[1];
+//struct { unsigned int bucketSize; unsigned int bucket[1]; } PrefixLongNames_HashTable[1];
 #endif //#ifndef PQ_GENERATING_HASH_TABLES
 #endif //#ifndef NO_HASHING
 
@@ -42,12 +42,12 @@ const int PhysicalQuantity::compiledHeaderOptions = PQ_HEADER_OPTIONS;
 void (*PhysicalQuantity::errorHandler)(void* userContext, ErrorCode e);
 void* PhysicalQuantity::errorUserContext;
 #else
-PhysicalQuantity::UnitMismatchException::UnitMismatchException() : std::exception() {}
-PhysicalQuantity::UnitMismatchException::UnitMismatchException(const char* message) : std::exception(message) {}
-PhysicalQuantity::InvalidExpressionException::InvalidExpressionException() : std::exception() {}
-PhysicalQuantity::InvalidExpressionException::InvalidExpressionException(const char* message) : std::exception(message) {}
-PhysicalQuantity::HeaderConfigException::HeaderConfigException() : std::exception() {}
-PhysicalQuantity::HeaderConfigException::HeaderConfigException(const char* message) : std::exception(message) {}
+PhysicalQuantity::UnitMismatchException::UnitMismatchException() : std::runtime_error("") {}
+PhysicalQuantity::UnitMismatchException::UnitMismatchException(const char* message) : std::runtime_error(message) {}
+PhysicalQuantity::InvalidExpressionException::InvalidExpressionException() : std::runtime_error("") {}
+PhysicalQuantity::InvalidExpressionException::InvalidExpressionException(const char* message) : std::runtime_error(message) {}
+PhysicalQuantity::HeaderConfigException::HeaderConfigException() : std::runtime_error("") {}
+PhysicalQuantity::HeaderConfigException::HeaderConfigException(const char* message) : std::runtime_error(message) {}
 
 #endif
 
@@ -437,7 +437,7 @@ void PhysicalQuantity::mulUnit(signed char(&unitsOut)[(int)QuantityType::ENUM_MA
 void PhysicalQuantity::parse(const CSubString& text_arg)
 {
 	CSubString text(text_arg);
-	num newValue = 0.0;
+	//num newValue = 0.0;
 	int firstNotSpace = (int)text.find_first_not_of(' ');
 	if (firstNotSpace > 0) { text = text.substr(firstNotSpace); }
 	if (text.length() == 0)
@@ -487,10 +487,10 @@ void PhysicalQuantity::parse(const CSubString& text_arg)
 	value += unitOfs;
 }
 
-void PhysicalQuantity::WriteOutputUnit(int plen, int ulen, int reduceExp, int &outofs, int size, char * buf, int ipre, const PhysicalQuantity::UnitDefinition & testunit) const
+void PhysicalQuantity::WriteOutputUnit(int plen, int ulen, int reduceExp, size_t &outofs, size_t size, char * buf, int ipre, const PhysicalQuantity::UnitDefinition & testunit) const
 {
-	int reduceExpLen = 0;
-	int nextLengthNeeded = plen + ulen + 1;
+	size_t reduceExpLen = 0;
+	size_t nextLengthNeeded = plen + ulen + 1;
 	if (reduceExp > 1) 
 	{
 		reduceExpLen = (int)log10(reduceExp) + 1;
@@ -527,7 +527,7 @@ void PhysicalQuantity::WriteOutputUnit(int plen, int ulen, int reduceExp, int &o
 		outofs += nextLengthNeeded; //plen + ulen + 1;
 	}
 }
-void PhysicalQuantity::sprintHalf(PhysicalQuantity& r, const PhysicalQuantity::UnitListBase & pu, bool& hasDenom, bool inDenomNow, int &md, int origmd, bool useSlash, int &outofs, int size, char * buf) const
+void PhysicalQuantity::sprintHalf(PhysicalQuantity& r, const PhysicalQuantity::UnitListBase & pu, bool& hasDenom, bool inDenomNow, int &md, int origmd, bool useSlash, size_t &outofs, size_t size, char * buf) const
 {
 	//int ulen;
 	//int plen;
@@ -553,7 +553,7 @@ void PhysicalQuantity::sprintHalf(PhysicalQuantity& r, const PhysicalQuantity::U
 		sprintHalfTryUnit(testunit, r, origmd, hasDenom, useSlash, inDenomNow, 0, outofs, size, buf, -1, md, false);
 	}
 }
-void PhysicalQuantity::sprintHalfTryUnit(const PhysicalQuantity::UnitDefinition & testunit, PhysicalQuantity & r, int origmd, bool & hasDenom, bool useSlash, bool inDenomNow, int plen, int & outofs, int size, char * buf, int ipre, int & md, bool preferred) const
+void PhysicalQuantity::sprintHalfTryUnit(const PhysicalQuantity::UnitDefinition & testunit, PhysicalQuantity & r, int origmd, bool & hasDenom, bool useSlash, bool inDenomNow, int plen, size_t & outofs, size_t size, char * buf, int ipre, int & md, bool preferred) const
 {
 	int ulen = (int)strlen(testunit.symbol);
 	
@@ -603,13 +603,13 @@ void PhysicalQuantity::sprintHalfTryUnit(const PhysicalQuantity::UnitDefinition 
 	}
 	md = r.magdim();
 }
-size_t PhysicalQuantity::sprint(char* buf, int size, const UnitListBase& pu, bool useSlash) const
+size_t PhysicalQuantity::sprint(char* buf, size_t size, const UnitListBase& pu, bool useSlash) const
 {
 	PhysicalQuantity r = *this;
 	int md, origmd;
 	origmd = magdim();
 	md = origmd;
-	int outofs = 0;
+	size_t outofs = 0;
 	bool hasDenom = false;
 
 	sprintHalf(r, pu, hasDenom, false, md, origmd, useSlash, outofs, size, buf);
@@ -635,16 +635,16 @@ size_t PhysicalQuantity::sprint(char* buf, int size, const UnitListBase& pu, boo
 	// TODO: Some systems do not support sprintf("%g...");
 	if (outofs + MAX_NUM_TEXT_LENGTH > size) { return outofs + MAX_NUM_TEXT_LENGTH; }
 	sprintf(buf + outofs, "%g", r.value);
-	int numofs = outofs;
-	int numlen = (int)strlen(buf + numofs);
+	size_t numofs = outofs;
+	size_t numlen = strlen(buf + numofs);
 	outofs += numlen;
 	// Now shuffle the number to the beginning
 	// TODO: Possible speed improvement if we have some extra padding at the end of the buffer
 	char c;
-	for (int isubpos = 0; isubpos < numlen; isubpos++)
+	for (size_t isubpos = 0; isubpos < numlen; isubpos++)
 	{
 		c = buf[numofs + isubpos];
-		for (int iBubble = numofs + isubpos; iBubble > isubpos; iBubble--)
+		for (size_t iBubble = numofs + isubpos; iBubble > isubpos; iBubble--)
 		{
 			buf[iBubble] = buf[iBubble - 1];
 		}
@@ -760,15 +760,20 @@ std::string PhysicalQuantity::toString() const
 
 string PhysicalQuantity::toString(const UnitListBase& pu) const
 {
-	// TODO: this func
 	string ret;
-	
-#ifdef NO_THROW
-	errorHandler(errorUserContext, E_LOGIC_ERROR);
-	return "";
-#else
-	throw exception("Incomplete function");
-#endif
+	size_t buflen = pu.count() * 12 + 32;
+	size_t needbuflen = buflen;
+	char* buf = nullptr;
+	while (needbuflen >= buflen)
+	{
+		if (buf) delete [] buf;
+		buf = new char[needbuflen];
+		buflen = needbuflen;
+		needbuflen = sprint(buf, buflen, pu);
+	}	
+	ret = buf;
+	delete [] buf;
+	return ret;
 }
 
 #endif //#if !defined(NO_STD_STRING) && !defined(NO_PRINTF)
@@ -883,7 +888,6 @@ bool PhysicalQuantity::findUnit(CSubString name, int& outUnitIndex, int& outPref
 {
 	int iPrefix = -1;
 	int iUnit = -1;
-	const char* daStr = "da";
 	int nlen = name.length();
 	csubstr possibleUnitPart;
 	int foundPrefixLen = 0;
@@ -967,7 +971,22 @@ bool PhysicalQuantity::findUnit(CSubString name, int& outUnitIndex, int& outPref
 		iTryUnitName++;
 	}
 
-#else
+
+	if (foundUnitLen == nlen)
+	{
+		outPrefixIndex = -1;
+		outUnitIndex = iUnit;
+		return true;
+	}
+	else if (foundPrefixLen + foundUnitLen == nlen)
+	{
+		outPrefixIndex = iPrefix;
+		outUnitIndex = iUnit;
+		return true;
+	}
+
+
+#endif // #else //#ifndef NO_HASHING
 
 	csubstr ss(nullptr, 0, 0);
 	if (iUnit == -1 || (foundUnitLen < nlen))
@@ -1011,7 +1030,7 @@ bool PhysicalQuantity::findUnit(CSubString name, int& outUnitIndex, int& outPref
 			foundUnitLen = 0;
 		}
 	}
-#endif  // !NO_HASHING
+// #endif  //#ifndef NO_HASHING
 
 	if (iUnit == -1) { return false; }
 	if (foundUnitLen == nlen)
@@ -1217,7 +1236,7 @@ PhysicalQuantity PhysicalQuantity::eval(CSubString str)
 	PQ left;
 	PQ right;
 	//PQ val;
-	char prev = 0;
+	//char prev = 0;
 	char c;
 	int len = str.length();
 	//for (int i = 0; i < len; i++)
@@ -1256,7 +1275,7 @@ PhysicalQuantity PhysicalQuantity::eval(CSubString str)
 			right = eval(str.substr(i + 1));
 			return left - right;
 		}
-		prev = c;
+		//prev = c;
 	}
 
 	plevel = 0;
@@ -1294,7 +1313,7 @@ PhysicalQuantity PhysicalQuantity::eval(CSubString str)
 			right = eval(str.substr(i + 1));
 			return left / right;
 		}
-		prev = c;
+		//prev = c;
 	}
 
 	plevel = 0;
@@ -1322,6 +1341,7 @@ PhysicalQuantity PhysicalQuantity::eval(CSubString str)
 		}
 		// Exponent operator ^ is parsed if previous character is not a letter,
 		// in which case it's considered part of a unit
+		// TODO: We got bugs
 		else if (c == '^' && plevel == 0 &&
 			(!(str[i - 1] >= 'a' && str[i - 1] <= 'z')) &&
 			(!(str[i - 1] >= 'A' && str[i - 1] <= 'Z'))
@@ -1373,7 +1393,7 @@ PhysicalQuantity PhysicalQuantity::eval(CSubString str)
 			}
 			return mant;
 		}
-		prev = c;
+		//prev = c;
 	}
 
 
@@ -1401,77 +1421,49 @@ PhysicalQuantity PhysicalQuantity::eval(CSubString str)
 	}
 }
 
-size_t PhysicalQuantity::sprint(char* buf, int size, const PhysicalQuantity::CSubString& sspu, bool useSlash) const
+size_t PhysicalQuantity::sprint(char* buf, size_t size, const PhysicalQuantity::CSubString& sspu, bool useSlash) const
 {
 	return sprint(buf, size, PreferredUnits(sspu), useSlash);
 }
 
-size_t PhysicalQuantity::sprint(char* buf, int size, const CSubString& sspu, void* puBuf, int puBufSize, bool useSlash) const
+size_t PhysicalQuantity::sprint(char* buf, size_t size, const CSubString& sspu, void* puBuf, size_t puBufSize, bool useSlash) const
 {
 	return sprint(buf, size, UnitList_static(sspu, puBuf, puBufSize), useSlash);
 }
 
-
-#ifndef NO_NETWORK
-#ifdef _WIN32
-#include <winsock2.h>
-#else
-#include <socket.h>
-#endif
-
 bool PhysicalQuantity::writeNetworkBinary(void* buf, size_t size)
 {
-#ifdef _MSC_VER
-// float <==> double loss of precision
-#pragma warning(disable:4244)
-#endif
-	if (size < sizeof(num) + (unsigned int)QuantityType::ENUM_MAX) { return false; }
-	if (sizeof(num) == sizeof(double))
+	short endianTest = 1;
+	if (*(char*)(&endianTest) == 1)
 	{
-#ifdef CPP11
-		*(decltype(htond(value))*)buf = htond(value);
-#else
-		*(unsigned long long*)buf = htond(value);
-#endif
-	}
-	else if (sizeof(num) == sizeof(float))
-	{
-#ifdef CPP11
-		*(decltype(htonf(value))*)buf = htonf(value);
-#else
-		*(unsigned int*)buf = htonf(value);
-#endif
+		// Little endian
+		for (size_t i = 0; i < sizeof(num); i++)
+		{
+			*((char*)(buf) + i) = *((char*)(&value) + (sizeof(num) - i - 1));
+		}
 	}
 	else
 	{
-		return false;
+		// Big endian
+		*(num*)buf = value;
 	}
-#ifdef _MSC_VER
-#pragma warning(default:4244)
-#endif
-
 	memcpy((char*)buf + sizeof(num), dim, sizeof(dim));
 	return true;
 }
 
 bool PhysicalQuantity::readNetworkBinary(void* buf)
 {
-	if (sizeof(num) == sizeof(double))
+	short endianTest = 1;
+	if (*(char*)(&endianTest) == 1)
 	{
-		value = ntohd(*(unsigned long long*)buf);
-	}
-	else if (sizeof(num) == sizeof(float))
-	{
-		value = ntohf(*(unsigned int*)buf);
-	}
-	else
-	{
-		return false;
+		for (size_t i = 0; i < sizeof(num); i++)
+		{
+			*((char*)(&value) + i) = *((char*)(buf) + sizeof(num) - i - 1);
+		}
 	}
 	memcpy(dim, (char*)buf + sizeof(num), sizeof(dim));
 	return true;
 }
-#endif //#ifndef NO_NETWORK
 
 
 #ifndef NO_HASHING

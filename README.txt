@@ -154,8 +154,7 @@ A: Yes.
 
 Q: Can it be sent over a network in binary?
 A: I wrote a long answer for this, then I wrote readNetworkBinary() and
-   writeNetworkBinary(). These depend on socket.h or winsock2.h to provide
-   the hton* and ntoh* functions. NO_NETWORK disables them.
+   writeNetworkBinary(). IP uses big endian numbers basically.
 
 Q: Does the structure store references or pointers to any external buffers?
 A: Not the main PhysicalQuantity type. No pointers there.
@@ -259,7 +258,7 @@ get the correct / any output.
 	
 
 Error handling:
-	The class can throw a few exceptions, all based on std::exception. Here's what they mean:
+	The class can throw a few exceptions, all based on std::runtime_error. Here's what they mean:
 		- UnitMismatchException - Units do not match during add, subtract, or convert()
 		- InvalidExpressionException - There was a parsing error.
 		- HeaderConfigException - The #define options are different between your code and

@@ -142,7 +142,6 @@ int CSubString::find_first_of(const CSubString& find, int startOfs) const
 
 int CSubString::find_first_not_of(const CSubString& find, int startOfs) const
 {
-	int ret = -1;
 	for (int iMe = start + startOfs; iMe < end; iMe++)
 	{
 		bool found;
@@ -305,7 +304,6 @@ double CSubString::atof()
 	bool pastDecimal = false;
 	bool pastExp = false;
 	bool expNeg = false;
-	int decimalPlace = 0;
 	int exp = 0;
 	double digitMul = 1.0;
 	char prev;
@@ -320,11 +318,13 @@ double CSubString::atof()
 		else if (pastExp)
 		{
 			exp = substr(i - start).atoi();
+			if (expNeg) { exp *= -1; }
 			break;
 		}
 		else if (c == '.')
 		{
 			pastDecimal = true;
+			haveSeenFirst = true;
 		}
 		else if (c >= '0' && c <= '9')
 		{
@@ -342,10 +342,14 @@ double CSubString::atof()
 		}
 		else if (c == '-')
 		{
-			if (haveSeenFirst) { break; }
+			if (prev == 'e' || prev == 'E')
+			{
+				expNeg = true;
+			}
+			else if (haveSeenFirst) { break; }
 			else 
 			{
-				if (pastExp) { expNeg = true; }
+				//if (pastExp) { expNeg = true; }
 
 				neg = true; 
 			}
@@ -353,10 +357,18 @@ double CSubString::atof()
 		}
 		else if (c == '+')
 		{
+			if (prev != 'e' && prev != 'E' && haveSeenFirst) { break; }
+			haveSeenFirst = true;
 		}
 		else if (c == 'e' || c == 'E')
 		{
-			pastExp = true;
+			if (!haveSeenFirst) { break;}
+			if (prev >= '0' && prev <= '9')
+			{
+				pastExp = true;
+			}
+			else { break; }
+			haveSeenFirst = true;
 		}
 		else { break; }
 	}

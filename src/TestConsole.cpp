@@ -5,6 +5,7 @@
 #include <iostream>
 #include <PhysicalQuantity.h>
 #include <string>
+#include <string.h>
 using namespace std;
 typedef PhysicalQuantity PQ;
 typedef PQ::CSubString csubstr;
@@ -32,6 +33,100 @@ void runConvert(const char* s)
 PQ::ErrorCode ecode;
 #endif
 
+char buf[1000];
+
+void runLine(csubstr &line, bool useConvert, bool useSprint)
+{
+	PQ val;
+	csubstr units;
+	int commapos = line.find_first_of(',');
+
+	if (commapos == -1)
+	{
+		units = "";
+	}
+	else
+	{
+		units = line.substr(commapos + 1);
+	}
+	csubstr evalexpr = line.substr(0, commapos);
+
+#ifndef NO_THROW
+	try
+#else
+	PQ::SetErrorHandler(
+		[](void* ctx, PQ::ErrorCode err)
+		{
+			ecode = err;
+		});
+#endif // #ifndef NO_THROW
+	{
+		val = PQ::eval(evalexpr);
+		if (useConvert)
+		{
+			double cval = val.convert(units);
+			printf("%g\n", cval);
+		}
+		else if (useSprint)
+		{
+			val.sprint(buf, 1000, units);
+			printf("%s\n", buf);
+		}
+		else
+		{
+			printf("(parsed ok)\n>");
+		}
+	}
+#ifndef NO_THROW
+	catch (const PQ::InvalidExpressionException& err)
+	{
+		printf("Invalid expression error: %s\n", err.what());
+	}
+	catch (const PQ::UnitMismatchException& err)
+	{
+		printf("Unit mismatch error: %s\n", err.what());
+	}
+	catch (const logic_error& err)
+	{
+		printf("Logic error: %s\n", err.what());
+	}
+	catch (const overflow_error& err)
+	{
+		printf("Overflow error: %s\n", err.what());
+	}
+	catch (const exception& err) // runtime_error ?
+	{
+		printf("General error: %s\n", err.what());
+	}
+#else
+	switch (ecode)
+	{
+	case PQ::E_SUCCESS:
+		break;
+	case PQ::E_HEADER_CONFIG:
+		printf("E_HEADER_CONFIG\n");
+		break;
+	case PQ::E_INVALID_EXPRESSION:
+		printf("E_INVALID_EXPRESSION\n");
+		break;
+	case PQ::E_LOGIC_ERROR:
+		printf("E_LOGIC_ERROR\n");
+		break;
+	case PQ::E_MEMORY:
+		printf("E_MEMORY\n");
+		break;
+	case PQ::E_OVERFLOW:
+		printf("E_OVERFLOW\n");
+		break;
+	case PQ::E_UNIT_MISMATCH:
+		printf("E_UNIT_MISMATCH\n");
+		break;
+	default:
+		printf("Unknown error\n");
+	}
+	ecode = PQ::E_SUCCESS;
+#endif  // #ifndef NO_THROW
+}
 
 int main(int argc, char** argv)
 {
@@ -95,14 +190,28 @@ int main(int argc, char** argv)
 		}
 	}
 
-	if (!interactive) { return 0; }
+	string arg;
+	for (int i = lastOptionArg; i < argc; i++)
+	{
+		if (i != lastOptionArg) arg += " ";
+		arg += argv[i];
+	}
+	csubstr line;
+	if (!interactive)
+	{
+		line = arg.c_str();
+		runLine(line, useConvert, useSprint);
+		return 0; 
+	}
+
+	//=================================================================
+	// Begin interactive mode
 	if (!useSprint && !useConvert)
 	{
 		printf("Warning: You are in interactive mode without setting any output method.\n");
 	}
 	printf("expression [ , unitsOut ] | 'sprint' | 'convert' | 'quit' | 'exit'\n");
 	string line_std_string;
-	csubstr line;
 	while (true)
 	{
 		if (useConvert) { printf("\nconvert> "); }
@@ -127,96 +236,7 @@ int main(int argc, char** argv)
 			continue;
 		}
 
-		PQ val;
-		csubstr units;
-		int commapos = line.find_first_of(',');
-		char buf[1000];
-
-		if (commapos == -1) 
-		{
-			units = "";
-		}
-		else 
-		{
-			units = line.substr(commapos + 1);
-		}
-		csubstr evalexpr = line.substr(0, commapos);
-
-#ifndef NO_THROW
-		try
-#else
-		PQ::SetErrorHandler(
-			[](void* ctx, PQ::ErrorCode err)
-			{
-				ecode = err; 
-			});
-#endif // #ifndef NO_THROW
-		{
-			val = PQ::eval(evalexpr);
-			if (useConvert)
-			{
-				double cval = val.convert(units);
-				printf("%g\n", cval);
-			}
-			else if (useSprint)
-			{
-				val.sprint(buf, 1000, units);
-				printf("%s\n", buf);
-			}
-			else
-			{
-				printf("(parsed ok)\n>");
-			}
-		}
-#ifndef NO_THROW
-		catch (const PQ::InvalidExpressionException& err)
-		{
-			printf("Invalid expression error: %s\n", err.what());
-		}
-		catch (const PQ::UnitMismatchException& err)
-		{
-			printf("Unit mismatch error: %s\n", err.what());
-		}
-		catch (const logic_error& err)
-		{
-			printf("Logic error: %s\n", err.what());
-		}
-		catch (const overflow_error& err)
-		{
-			printf("Overflow error: %s\n", err.what());
-		}
-		catch (const exception& err)
-		{
-			printf("General error: %s\n", err.what());
-		}
-#else
-		switch (ecode)
-		{
-		case PQ::E_SUCCESS:
-			break;
-		case PQ::E_HEADER_CONFIG:
-			printf("E_HEADER_CONFIG\n");
-			break;
-		case PQ::E_INVALID_EXPRESSION:
-			printf("E_INVALID_EXPRESSION\n");
-			break;
-		case PQ::E_LOGIC_ERROR:
-			printf("E_LOGIC_ERROR\n");
-			break;
-		case PQ::E_MEMORY:
-			printf("E_MEMORY\n");
-			break;
-		case PQ::E_OVERFLOW:
-			printf("E_OVERFLOW\n");
-			break;
-		case PQ::E_UNIT_MISMATCH:
-			printf("E_UNIT_MISMATCH\n");
-			break;
-		default:
-			printf("Unknown error\n");
-		}
-		ecode = PQ::E_SUCCESS;
-#endif  // #ifndef NO_THROW
+		runLine(line, useConvert, useSprint);
 	}
 	return 0;
 }

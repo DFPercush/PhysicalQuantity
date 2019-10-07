@@ -88,8 +88,8 @@ unsigned int findSeed()
 		if (r2 > r) { r = r2; }
 		r2 = dumpHashTable(&PhysicalQuantity::KnownPrefixes[0], &PhysicalQuantity::KnownPrefixes[0].symbol, sizeof(PhysicalQuantity::Prefix), PhysicalQuantity::KnownPrefixesLength, PhysicalQuantity::hashTableSize_PrefixSymbols, "PrefixSymbols", seed, false);
 		if (r2 > r) { r = r2; }
-		r2 = dumpHashTable(&PhysicalQuantity::KnownPrefixes[0], &PhysicalQuantity::KnownPrefixes[0].longName, sizeof(PhysicalQuantity::Prefix), PhysicalQuantity::KnownPrefixesLength, PhysicalQuantity::hashTableSize_PrefixLongNames, "PrefixLongNames", seed, false);
-		if (r2 > r) { r = r2; }
+		//r2 = dumpHashTable(&PhysicalQuantity::KnownPrefixes[0], &PhysicalQuantity::KnownPrefixes[0].longName, sizeof(PhysicalQuantity::Prefix), PhysicalQuantity::KnownPrefixesLength, PhysicalQuantity::hashTableSize_PrefixLongNames, "PrefixLongNames", seed, false);
+		//if (r2 > r) { r = r2; }
 		if (r < minSize)
 		{
 			minSize = r;
@@ -120,7 +120,7 @@ int main(int argc, char** argv)
 		dumpHashTable(&PhysicalQuantity::KnownUnits[0], &PhysicalQuantity::KnownUnits[0].symbol, sizeof(PhysicalQuantity::UnitDefinition), PhysicalQuantity::KnownUnitsLength, PhysicalQuantity::hashTableSize_UnitSymbols, "UnitSymbols");
 		dumpHashTable(&PhysicalQuantity::KnownUnits[0], &PhysicalQuantity::KnownUnits[0].longName, sizeof(PhysicalQuantity::UnitDefinition), PhysicalQuantity::KnownUnitsLength, PhysicalQuantity::hashTableSize_UnitLongNames, "UnitLongNames");
 		dumpHashTable(&PhysicalQuantity::KnownPrefixes[0], &PhysicalQuantity::KnownPrefixes[0].symbol, sizeof(PhysicalQuantity::Prefix), PhysicalQuantity::KnownPrefixesLength, PhysicalQuantity::hashTableSize_PrefixSymbols, "PrefixSymbols");
-		dumpHashTable(&PhysicalQuantity::KnownPrefixes[0], &PhysicalQuantity::KnownPrefixes[0].longName, sizeof(PhysicalQuantity::Prefix), PhysicalQuantity::KnownPrefixesLength, PhysicalQuantity::hashTableSize_PrefixLongNames, "PrefixLongNames");
+		//dumpHashTable(&PhysicalQuantity::KnownPrefixes[0], &PhysicalQuantity::KnownPrefixes[0].longName, sizeof(PhysicalQuantity::Prefix), PhysicalQuantity::KnownPrefixesLength, PhysicalQuantity::hashTableSize_PrefixLongNames, "PrefixLongNames");
 
 #if defined(_MSC_VER) && defined(BEEP_IF_HASH_TABLES_REBUILT)
 		if (beep)
@@ -130,21 +130,21 @@ int main(int argc, char** argv)
 		}
 #endif
 	}
-	catch (const std::exception& e)
+	catch (const std::runtime_error& e)
 	{
 		fprintf(stderr, "%s", e.what());
 		ret = 1;
-#if defined(_MSC_VER) && defined(BEEP_IF_HASH_TABLES_REBUILT)
 		if (beep)
 		{
+#if defined(_MSC_VER) && defined(BEEP_IF_HASH_TABLES_REBUILT)
 			Beep(350, 100);
 			Beep(300, 100);
 			Beep(350, 100);
 			Beep(300, 100);
 			Beep(350, 100);
 			Beep(300, 100);
-		}
 #endif
+		}
 
 	}
 	return ret;

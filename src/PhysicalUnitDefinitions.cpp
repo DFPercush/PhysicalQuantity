@@ -72,7 +72,7 @@ const int PhysicalQuantity::dekaIndex = 10; // If any more prefixes are added, t
 const int PhysicalQuantity::hashTableSize_UnitSymbols = 50;
 const int PhysicalQuantity::hashTableSize_UnitLongNames = 50;
 const int PhysicalQuantity::hashTableSize_PrefixSymbols = 50;
-const int PhysicalQuantity::hashTableSize_PrefixLongNames = 50;
+//const int PhysicalQuantity::hashTableSize_PrefixLongNames = 50;
 const size_t PhysicalQuantity::defaultHashSeed = 8;
 #endif
 

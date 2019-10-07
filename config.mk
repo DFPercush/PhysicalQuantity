@@ -1,0 +1,14 @@
+Compiler=g++
+CompilerOptions=-Wall -Werror
+IncludePath=include/
+LibPath=lib/
+ObjPath=intermediate/
+BinPath=bin/
+OutputFlag=-o
+SharedFlag=-shared
+SharedCompileFlags=-fpic -c
+SharedLinkFlags=
+LibPathFlag=-L
+IncludePathFlag=-I
+LibDepFlag=-l
+DefineFlag=-D
