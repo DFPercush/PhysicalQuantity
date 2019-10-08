@@ -20,7 +20,7 @@ $(BinPath)TestConsole: $(TestConsoleObj)
 
 #-----------------------------------------------------------------
 # Shared library
-libPqObj=$(ObjPath)csubstr.o $(ObjPath)hash.o $(ObjPath)PhysicalQuantity.o $(ObjPath)PhysicalUnitDefinitions.o $(ObjPath)literals.o
+libPqObj=$(ObjPath)csubstr.o $(ObjPath)hash.o $(ObjPath)PhysicalQuantity.o $(ObjPath)PhysicalUnitDefinitions.o $(ObjPath)literals.o $(ObjPath)hashParams.o
 #$(LibPath)libPhysicalQuantity.so: $(libPqObj)
 $(LibPath)PhysicalQuantity.a: $(libPqObj)
 	ar rvs $(LibPath)PhysicalQuantity.a $(libPqObj)
@@ -32,8 +32,8 @@ $(LibPath)PhysicalQuantity.a: $(libPqObj)
 # Generated files
 #include/PhysicalQuantity/hashTables.ah: $(BinPath)gencode
 #	$(BinPath)gencode > include/PhysicalQuantity/hashTables.ah
-include/PhysicalQuantity/hashTables.ah include/PhysicalQuantity/literals.ah src/literals.acpp: $(BinPath)gencode
-	$(BinPath)gencode generate --rootpath ./
+include/PhysicalQuantity/hashTables.ah include/PhysicalQuantity/literals.ah src/literals.acpp src/hashParams.acpp: $(BinPath)gencode
+	$(BinPath)gencode generate --rootpath ./ optimize --max-seed 255 --max-table-size 100 --min-bucket-size 2
 
 
 #---------------------------------------------------------------
@@ -60,7 +60,7 @@ $(ObjPath)PhysicalUnitDefinitions.o: src/PhysicalUnitDefinitions.cpp $(StaticHea
 $(ObjPath)gencode.o: src/gencode.cpp $(StaticHeaders)
 	$(CommonIntCompile)gencode.o src/gencode.cpp $(DefineFlag)PQ_GENCODE
 
-$(ObjPath)literals.o: src/literals.acpp $(StaticHeaders)
+$(ObjPath)literals.o: src/literals.acpp $(StaticHeaders) bin/gencode
 	$(CommonIntCompile)literals.o $(ExplicitCppFile) src/literals.acpp
 
 # Now these two really do need everything generated and built before them.
@@ -70,6 +70,8 @@ $(ObjPath)PhysicalQuantity.o: src/PhysicalQuantity.cpp $(AllHeaders)
 $(ObjPath)TestConsole.o: src/TestConsole.cpp $(AllHeaders)
 	$(CommonIntCompile)TestConsole.o src/TestConsole.cpp
 
+$(ObjPath)hashParams.o: src/hashParams.acpp bin/gencode
+	$(CommonIntCompile)hashParams.o $(ExplicitCppFile) src/hashParams.acpp
 
 clean:
 	rm -f $(BinPath)*

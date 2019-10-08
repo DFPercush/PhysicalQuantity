@@ -170,8 +170,11 @@ public:
 		const char* longName;
 		const signed char dim[(int)QuantityType::ENUM_MAX];
 		num offset; // temperature is a special snowflake
+		// TODO: put all offset units at the beginning and have a unitsWithOffsetCount,
+		//      and put the offsets in a separate array
 		num factor;
-		unsigned char flags = 0; // canPrefix = true; // TODO: use in findUnit(). sprint?
+		unsigned short flags = 0;
+		//  TODO: implement NOPREFIX in findUnit()
 	};
 #define NOPREFIX  0x01
 #define CANPREFIX 0
@@ -195,6 +198,23 @@ public:
 	//    but that wastes a lot of RAM
 #ifndef NO_HASHING
 	typedef unsigned short bucketSize_t;
+
+#ifdef PQ_GENCODE
+	// Default hash table params are defined in hash.cpp
+	// Primarily used by gencode if used without "optimize"
+	static const int default_hashTableSize_UnitSymbols;
+	static const int default_hashTableSize_UnitLongNames;
+	static const int default_hashTableSize_PrefixSymbols;
+#else //PQ_GENCODE
+	// Actual values are written by gencode to hashParams.acpp
+	static const int hashTableSize_UnitSymbols;
+	static const int hashTableSize_UnitLongNames;
+	static const int hashTableSize_PrefixSymbols;
+	static const int hashTableSeed_UnitSymbols;
+	static const int hashTableSeed_UnitLongNames;
+	static const int hashTableSeed_PrefixSymbols;
+#endif //PQ_GENCODE
+
 	static const size_t defaultHashSeed;
 	struct cstrHasherTiny
 	{
@@ -430,13 +450,6 @@ public:
 	static const Prefix KnownPrefixes[];
 	static const int KnownPrefixesLength;
 	static const prefixIndex_t dekaIndex;
-#ifndef NO_HASHING
-	// Hash table sizes are defined in hash.cpp
-	static const int hashTableSize_UnitSymbols;
-	static const int hashTableSize_UnitLongNames;
-	static const int hashTableSize_PrefixSymbols;
-	//static const int hashTableSize_PrefixLongNames;
-#endif //#ifndef NO_HASHING
 	static num equalityToleranceFactor;
 
 private:

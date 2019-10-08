@@ -12,11 +12,13 @@ typedef PhysicalQuantity::CSubString csubstr;
 // The main() for this is in gencode.cpp
 // See README.txt for instructions on adding new units.
 
-const int PhysicalQuantity::hashTableSize_UnitSymbols = 50;
-const int PhysicalQuantity::hashTableSize_UnitLongNames = 50;
-const int PhysicalQuantity::hashTableSize_PrefixSymbols = 50;
 const size_t PhysicalQuantity::defaultHashSeed = 8;
 
+#ifdef PQ_GENCODE
+const int PhysicalQuantity::default_hashTableSize_UnitSymbols = 50;
+const int PhysicalQuantity::default_hashTableSize_UnitLongNames = 50;
+const int PhysicalQuantity::default_hashTableSize_PrefixSymbols = 50;
+#endif
 
 
 // If you really need some serious hashing power from a proven algorithm....
@@ -43,7 +45,7 @@ size_t PhysicalQuantity::cstrHasherTiny::operator()(const CSubString& s) const
 	return ret;
 }
 
-/*
+/*************************************************************************
 // A bit much for such short strings, I think....
 uint32_t murmur3_32(const unsigned char* key, size_t len, uint32_t seed)
 {
@@ -82,7 +84,7 @@ uint32_t murmur3_32(const unsigned char* key, size_t len, uint32_t seed)
 	h ^= h >> 16;
 	return h;
 }
-// */
+// **********************************************************/
 
 
 #endif //#ifndef NO_HASHING

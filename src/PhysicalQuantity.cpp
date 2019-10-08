@@ -17,11 +17,11 @@ TODO:
 #ifndef NO_HASHING
 #ifndef PQ_GENCODE
 #include <PhysicalQuantity/hashTables.ah>
-#else //#ifndef PQ_GENCODE
-struct { unsigned int bucketSize; unsigned int bucket[1]; } UnitSymbols_HashTable[1];
-struct { unsigned int bucketSize; unsigned int bucket[1]; } UnitLongNames_HashTable[1];
-struct { unsigned int bucketSize; unsigned int bucket[1]; } PrefixSymbols_HashTable[1];
-//struct { unsigned int bucketSize; unsigned int bucket[1]; } PrefixLongNames_HashTable[1];
+//#else //#ifndef PQ_GENCODE
+//struct { unsigned int bucketSize; unsigned int bucket[1]; } UnitSymbols_HashTable[1];
+//struct { unsigned int bucketSize; unsigned int bucket[1]; } UnitLongNames_HashTable[1];
+//struct { unsigned int bucketSize; unsigned int bucket[1]; } PrefixSymbols_HashTable[1];
+////struct { unsigned int bucketSize; unsigned int bucket[1]; } PrefixLongNames_HashTable[1];
 #endif //#ifndef PQ_GENCODE
 #endif //#ifndef NO_HASHING
 
@@ -924,6 +924,7 @@ PhysicalQuantity PhysicalQuantity::operator- (num rhs) const
 	return ret;
 }
 
+#ifndef PQ_GENCODE
 bool PhysicalQuantity::findUnit(CSubString name, PhysicalQuantity::unitIndex_t& outUnitIndex, PhysicalQuantity::prefixIndex_t& outPrefixIndex)
 {
 	// TODO: canPrefix
@@ -936,7 +937,7 @@ bool PhysicalQuantity::findUnit(CSubString name, PhysicalQuantity::unitIndex_t& 
 	int foundUnitLen = 0;
 
 #ifndef NO_HASHING
-	static cstrHasherTiny hasher;
+	static cstrHasherTiny hasher; // TODO: Different ones for each table
 	unsigned int iBucket, hashRaw, hashSymbol, hashLongName;
 	char firstLetter[2];
 
@@ -1094,7 +1095,17 @@ bool PhysicalQuantity::findUnit(CSubString name, PhysicalQuantity::unitIndex_t& 
 	}
 	return false;
 }
-
+#else //#ifndef PQ_GENCODE
+bool PhysicalQuantity::findUnit(CSubString name, PhysicalQuantity::unitIndex_t& outUnitIndex, PhysicalQuantity::prefixIndex_t& outPrefixIndex)
+{
+#ifdef NO_THROW
+	errorHandler(errorUserContext, E_HEADER_CONFIG);
+#else
+	throw HeaderConfigException("findUnit() is undefined while PQ_GENCODE is defined");
+#endif
+	return false;
+}
+#endif //#else of #ifndef PQ_GENCODE
 
 /**********************
 signed int PhysicalQuantity::findUnit(const string& name)

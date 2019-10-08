@@ -144,7 +144,7 @@
     </CustomBuildStep>
     <CustomBuildStep>
       <Outputs>$(ProjectDir)..\include\PhysicalQuantity\hashTables.h;%(Outputs)</Outputs>
-      <Command>$(OutputPath)gencode.exe --rootpath $(SolutionDir)..\ generate</Command>
+      <Command>$(OutputPath)gencode.exe --rootpath $(SolutionDir)..\ generate optimize</Command>
       <Inputs>$(ProjectDir)..\src\hash.cpp;$(ProjectDir)..\src\PhysicalUnitDefinitions.cpp;%(Inputs)</Inputs>
     </CustomBuildStep>
     <PostBuildEvent>
@@ -164,7 +164,7 @@
     </CustomBuildStep>
     <CustomBuildStep>
       <Outputs>$(ProjectDir)..\include\PhysicalQuantity\hashTables.h;%(Outputs)</Outputs>
-      <Command>$(OutputPath)gencode.exe --rootpath $(SolutionDir)..\ generate</Command>
+      <Command>$(OutputPath)gencode.exe --rootpath $(SolutionDir)..\ generate optimize</Command>
       <Inputs>$(ProjectDir)..\src\hash.cpp;$(ProjectDir)..\src\PhysicalUnitDefinitions.cpp;%(Inputs)</Inputs>
     </CustomBuildStep>
     <PostBuildEvent>
@@ -180,7 +180,7 @@
       <PreprocessorDefinitions>PQ_GENCODE;BEEP_IF_HASH_TABLES_REBUILT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <CustomBuildStep>
-      <Command>$(OutputPath)gencode.exe --rootpath $(SolutionDir)..\ generate</Command>
+      <Command>$(OutputPath)gencode.exe --rootpath $(SolutionDir)..\ generate optimize</Command>
       <Message>gencode: auto generating dependencies</Message>
       <Outputs>$(ProjectDir)..\include\PhysicalQuantity\hashTables.h;%(Outputs)</Outputs>
       <Inputs>$(ProjectDir)..\src\hash.cpp;$(ProjectDir)..\src\PhysicalUnitDefinitions.cpp;%(Inputs)</Inputs>
@@ -198,7 +198,7 @@
       <PreprocessorDefinitions>PQ_GENCODE;BEEP_IF_HASH_TABLES_REBUILT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <CustomBuildStep>
-      <Command>$(OutputPath)gencode.exe --rootpath $(SolutionDir)..\ generate</Command>
+      <Command>$(OutputPath)gencode.exe --rootpath $(SolutionDir)..\ generate optimize</Command>
       <Message>gencode: auto generating dependencies</Message>
       <Outputs>$(ProjectDir)..\include\PhysicalQuantity\hashTables.h;%(Outputs)</Outputs>
       <Inputs>$(ProjectDir)..\src\hash.cpp;$(ProjectDir)..\src\PhysicalUnitDefinitions.cpp;%(Inputs)</Inputs>
@@ -222,7 +222,7 @@
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
     <CustomBuildStep>
-      <Command>$(OutputPath)gencode.exe --rootpath $(SolutionDir)..\ generate</Command>
+      <Command>$(OutputPath)gencode.exe --rootpath $(SolutionDir)..\ generate optimize</Command>
       <Message>gencode: auto generating dependencies</Message>
       <Outputs>$(ProjectDir)..\include\PhysicalQuantity\hashTables.h;%(Outputs)</Outputs>
       <Inputs>$(ProjectDir)..\src\hash.cpp;$(ProjectDir)..\src\PhysicalUnitDefinitions.cpp;%(Inputs)</Inputs>
@@ -250,7 +250,7 @@
     </CustomBuildStep>
     <CustomBuildStep>
       <Outputs>$(ProjectDir)..\include\PhysicalQuantity\hashTables.h;%(Outputs)</Outputs>
-      <Command>$(OutputPath)gencode.exe --rootpath $(SolutionDir)..\ generate</Command>
+      <Command>$(OutputPath)gencode.exe --rootpath $(SolutionDir)..\ generate optimize</Command>
       <Inputs>$(ProjectDir)..\src\hash.cpp;$(ProjectDir)..\src\PhysicalUnitDefinitions.cpp;%(Inputs)</Inputs>
     </CustomBuildStep>
     <PostBuildEvent>

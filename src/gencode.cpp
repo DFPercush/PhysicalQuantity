@@ -127,9 +127,10 @@ void dumpLiterals(string rootpath)
 
 #ifndef NO_HASHING
 
-unsigned int dumpHashTable(string rootpath, const void* pArray, const char * const* pcstrMember, int elementSize, int arrayLen, int hashTableSize, const char* arrayName, const char* indexTypeName, size_t seed_p = 0, bool print = true)
+unsigned int dumpHashTable(string rootpath, int& out_bucketSize, float& out_coverage, const void* pArray, const char * const* pcstrMember, int elementSize, int arrayLen, int hashTableSize, const char* arrayName, const char* indexTypeName, size_t seed_p = 0, bool print = true)
 {
 	ofstream hh ;
+	int coverCount = 0;
 	if (rootpath[rootpath.length()] != '/' && rootpath[rootpath.length()] != '\\')
 	{
 		rootpath += "/";
@@ -181,6 +182,7 @@ unsigned int dumpHashTable(string rootpath, const void* pArray, const char * con
 		//if (iTable != 0) { if (print) printf(","); }
 		if ((iTable != 0) && print) { hh << ","; }
 		//if (print) printf("\n{%u,{", counts[iTable]);
+		if (counts[iTable] > 0) { coverCount++; }
 		if (print) { hh << "\n{" << counts[iTable] << ",{"; }
 		for (int iu = 0; iu < arrayLen; iu++)
 		{
@@ -205,19 +207,28 @@ unsigned int dumpHashTable(string rootpath, const void* pArray, const char * con
 		if (print) { hh << "}}"; }
 	}
 	//if (print) printf("\n};\n");
-	if (print) { hh << "\n};\n"; }
+	if (print) 
+	{
+		hh << "\n};\n"; 
+		hh.close();
+	}
 
 	delete[] hashes;
 	delete[] counts;
+	out_bucketSize = maxCount;
+	out_coverage = (float)coverCount / (float)hashTableSize;
 	return maxCount;
 }
 
+/*****************************************************************************
 unsigned int findSeed(string rootpath)
 {
 	unsigned int minSize = 0xFFFF;
 	unsigned int minSeed = 0;
 	time_t then, now;
 	time(&then);
+	int trash;
+	float ftrash;
 	for (unsigned int seed = 0; seed < 0xFFFF; seed++)
 	{
 		time(&now);
@@ -226,10 +237,10 @@ unsigned int findSeed(string rootpath)
 			fprintf(stderr, "Trying %u\n", seed);
 			then = now;
 		}
-		unsigned int r = dumpHashTable(rootpath, &PhysicalQuantity::KnownUnits[0], &PhysicalQuantity::KnownUnits[0].symbol, sizeof(PhysicalQuantity::UnitDefinition), PhysicalQuantity::KnownUnitsLength, PhysicalQuantity::hashTableSize_UnitSymbols, "UnitSymbols", "PhysicalQuantity::unitIndex_t", seed, false);
-		unsigned int r2 = dumpHashTable(rootpath, &PhysicalQuantity::KnownUnits[0], &PhysicalQuantity::KnownUnits[0].longName, sizeof(PhysicalQuantity::UnitDefinition), PhysicalQuantity::KnownUnitsLength, PhysicalQuantity::hashTableSize_UnitLongNames, "UnitLongNames", "PhysicalQuantity::unitIndex_t", seed,  false);
+		unsigned int r = dumpHashTable(rootpath, trash, ftrash, &PhysicalQuantity::KnownUnits[0], &PhysicalQuantity::KnownUnits[0].symbol, sizeof(PhysicalQuantity::UnitDefinition), PhysicalQuantity::KnownUnitsLength, PhysicalQuantity::hashTableSize_UnitSymbols, "UnitSymbols", "PhysicalQuantity::unitIndex_t", seed, false);
+		unsigned int r2 = dumpHashTable(rootpath, trash, ftrash, &PhysicalQuantity::KnownUnits[0], &PhysicalQuantity::KnownUnits[0].longName, sizeof(PhysicalQuantity::UnitDefinition), PhysicalQuantity::KnownUnitsLength, PhysicalQuantity::hashTableSize_UnitLongNames, "UnitLongNames", "PhysicalQuantity::unitIndex_t", seed,  false);
 		if (r2 > r) { r = r2; }
-		r2 = dumpHashTable(rootpath, &PhysicalQuantity::KnownPrefixes[0], &PhysicalQuantity::KnownPrefixes[0].symbol, sizeof(PhysicalQuantity::Prefix), PhysicalQuantity::KnownPrefixesLength, PhysicalQuantity::hashTableSize_PrefixSymbols, "PrefixSymbols", "PhysicalQuantity::prefixIndex_t", seed, false);
+		r2 = dumpHashTable(rootpath, trash, ftrash, &PhysicalQuantity::KnownPrefixes[0], &PhysicalQuantity::KnownPrefixes[0].symbol, sizeof(PhysicalQuantity::Prefix), PhysicalQuantity::KnownPrefixesLength, PhysicalQuantity::hashTableSize_PrefixSymbols, "PrefixSymbols", "PhysicalQuantity::prefixIndex_t", seed, false);
 		if (r2 > r) { r = r2; }
 		//r2 = dumpHashTable(&PhysicalQuantity::KnownPrefixes[0], &PhysicalQuantity::KnownPrefixes[0].longName, sizeof(PhysicalQuantity::Prefix), PhysicalQuantity::KnownPrefixesLength, PhysicalQuantity::hashTableSize_PrefixLongNames, "PrefixLongNames", seed, false);
 		//if (r2 > r) { r = r2; }
@@ -241,11 +252,179 @@ unsigned int findSeed(string rootpath)
 	}
 	return minSeed;
 }
+*****************************************************************************/
+
+
+bool optimizeHashes(int maxTableSize, int maxSeed, int minBucketSize,
+	int& out_tableSize_unitSymbols, int& out_seed_unitSymbols, int& out_unitSymbolsBucketSize, float& out_unitsymbolsCoverage,
+	int& out_tableSize_unitLongNames, int& out_seed_unitLongNames, int& out_unitLongNamesBucketSize, float& out_unitLongNames_coverage,
+	int& out_tableSize_prefixSymbols, int& out_seed_prefixSymbols, int& out_prefixSymbolsBucketSize, float& out_prefixSymbols_coverage
+	)
+{
+	if (minBucketSize < 1) { minBucketSize = 1; }
+	// results of each attempt
+	int rBucketSize;
+	float rCoverage;
+	int bestTlen;
+	int bestSeed;
+	int bestBucketSize;
+	float bestCoverage = 0;
+	//float bestRank;
+	time_t then, now;
+	time(&now);
+	then = now;
+	cout << "Finding optimal hash parameters with\n"
+		<< "  maxTableSize = " << maxTableSize 
+		<< "  maxSeed = " << maxSeed << hex << "(0x" << maxSeed  << ")" << dec
+		<< "\n  This might take a while...";
+	cout.flush();
+
+	//--------------------------------------------------------------------
+	// Unit symbols
+	bestBucketSize = 9999;
+	bestCoverage = 0;
+	for (int tlen = 1; tlen < maxTableSize && bestBucketSize > minBucketSize; tlen++)
+	{
+		for (int seed = 0; seed <= maxSeed && bestBucketSize > minBucketSize; seed++)
+		{
+			time(&now);
+			if (difftime(now, then) >= 10)
+			{
+				float progress = (1/3.0f) * ((((float)tlen / maxTableSize) * maxSeed) + maxSeed) / (float)(maxTableSize * maxSeed);
+				cout << " ... " << setprecision(3) << (progress + (0/3.0f)) * 100 << "%";
+				cout.flush();
+				then = now;
+			}
+			dumpHashTable("", rBucketSize, rCoverage, 
+				&PhysicalQuantity::KnownUnits[0], 
+				&PhysicalQuantity::KnownUnits[0].symbol, 
+				sizeof(PhysicalQuantity::UnitDefinition),
+				PhysicalQuantity::KnownUnitsLength,
+				tlen,
+				"UnitSymbols", "PhysicalQuantity::unitIndex_t",
+				seed, false);
+			// if (rankHash(rBucketSize, tlen, rCoverage) < ...
+			if (rBucketSize < bestBucketSize)
+			{
+				bestBucketSize = rBucketSize;
+				bestCoverage = rCoverage;
+				bestSeed = seed;
+				bestTlen = tlen;
+			}
+			else if ((rBucketSize == bestBucketSize) && (rCoverage > bestCoverage))
+			{
+				bestBucketSize = rBucketSize;
+				bestCoverage = rCoverage;
+				bestSeed = seed;
+				bestTlen = tlen;
+			}
+		}
+	}
+	out_tableSize_unitSymbols = bestTlen;
+	out_seed_unitSymbols = bestSeed;
+	out_unitSymbolsBucketSize = bestBucketSize;
+	out_unitsymbolsCoverage = bestCoverage;
+
+	//--------------------------------------------------------------------
+	// Unit long names
+	bestBucketSize = 9999;
+	bestCoverage = 0;
+	for (int tlen = 1; tlen < maxTableSize && bestBucketSize > minBucketSize; tlen++)
+	{
+		for (int seed = 0; seed <= maxSeed && bestBucketSize > minBucketSize; seed++)
+		{
+			time(&now);
+			if (difftime(now, then) >= 10)
+			{
+				float progress = (1/3.0f) + (0.33f * ((((float)tlen / maxTableSize) * maxSeed) + maxSeed) / (float)(maxTableSize * maxSeed));
+				cout << " ... " << setprecision(3) << (progress + (1/3.0f)) * 100 << "%";
+				cout.flush();
+				then = now;
+			}
+			dumpHashTable("", rBucketSize, rCoverage,
+				&PhysicalQuantity::KnownUnits[0],
+				&PhysicalQuantity::KnownUnits[0].longName,
+				sizeof(PhysicalQuantity::UnitDefinition),
+				PhysicalQuantity::KnownUnitsLength,
+				tlen,
+				"UnitLongNames", "PhysicalQuantity::unitIndex_t",
+				seed, false);
+			if (rBucketSize < bestBucketSize)
+			{
+				bestBucketSize = rBucketSize;
+				bestCoverage = rCoverage;
+				bestSeed = seed;
+				bestTlen = tlen;
+			}
+			else if ((rBucketSize == bestBucketSize) && (rCoverage > bestCoverage))
+			{
+				bestBucketSize = rBucketSize;
+				bestCoverage = rCoverage;
+				bestSeed = seed;
+				bestTlen = tlen;
+			}
+		}
+	}
+	out_tableSize_unitLongNames = bestTlen;
+	out_seed_unitLongNames = bestSeed;
+	out_unitLongNamesBucketSize = bestBucketSize;
+	out_unitLongNames_coverage = bestCoverage;
+
+	//--------------------------------------------------------------------
+	// Prefix symbols
+	bestBucketSize = 9999;
+	bestCoverage = 0;
+	for (int tlen = 1; tlen < maxTableSize && bestBucketSize > minBucketSize; tlen++)
+	{
+		for (int seed = 0; seed <= maxSeed && bestBucketSize > minBucketSize; seed++)
+		{
+			time(&now);
+			if (difftime(now, then) >= 10)
+			{
+				float progress = (2/3.0f) + ((1/3.0f) * ((((float)tlen / maxTableSize) * maxSeed) + maxSeed) / (float)(maxTableSize * maxSeed));
+				cout << " ... " << setprecision(3) << (progress + (2/3.0f)) * 100 << "%";
+				cout.flush();
+				then = now;
+			}
+			dumpHashTable("", rBucketSize, rCoverage,
+				&PhysicalQuantity::KnownPrefixes[0],
+				&PhysicalQuantity::KnownPrefixes[0].symbol,
+				sizeof(PhysicalQuantity::Prefix),
+				PhysicalQuantity::KnownPrefixesLength,
+				tlen,
+				"PrefixSymbols", "PhysicalQuantity::prefixIndex_t",
+				seed, false);
+			if (rBucketSize < bestBucketSize)
+			{
+				bestBucketSize = rBucketSize;
+				bestCoverage = rCoverage;
+				bestSeed = seed;
+				bestTlen = tlen;
+			}
+			else if ((rBucketSize == bestBucketSize) && (rCoverage > bestCoverage))
+			{
+				bestBucketSize = rBucketSize;
+				bestCoverage = rCoverage;
+				bestSeed = seed;
+				bestTlen = tlen;
+			}
+		}
+	}
+	out_tableSize_prefixSymbols = bestTlen;
+	out_seed_prefixSymbols = bestSeed;
+	out_prefixSymbolsBucketSize = bestBucketSize;
+	out_prefixSymbols_coverage = bestCoverage;
+
+	cout << "\n  Optimization finished!\n";
+	cout.flush();
+	return true;
+}
+
 #endif //#ifndef NO_HASHING
 
-void showinfo()
+void showinfo(string rootpath = "")
 {
-	cout << "gencode info:\n\n\tPQ_HEADER_OPTIONS = 0x" << hex << PQ_HEADER_OPTIONS;
+	cout << "gencode info:\n\n  PQ_HEADER_OPTIONS = 0x" << hex << PQ_HEADER_OPTIONS;
 	if (PQHeaderOptionsMatch)
 	{
 		cout << " OK\n";
@@ -258,16 +437,16 @@ void showinfo()
 
 	size_t totalRom = 0;
 	size_t tmp;
-	cout << "\tsizeof(PQ) = " << sizeof(PQ) << endl;
-	cout << "\tsizeof(PQ::CSubString) = " << sizeof(PQ::CSubString) << endl;
-	cout << "\tsizeof(PQ::UnitList) = " << sizeof(PQ::UnitList) << endl;
-	cout <<"\tsizeof(PQ::UnitListBase::UnitPref) = " << sizeof(PhysicalQuantity::UnitListBase::UnitPref) << endl;
+	cout << "  sizeof(PQ) = " << sizeof(PQ) << endl;
+	cout << "  sizeof(PQ::CSubString) = " << sizeof(PQ::CSubString) << endl;
+	cout << "  sizeof(PQ::UnitList) = " << sizeof(PQ::UnitList) << endl;
+	cout <<"  sizeof(PQ::UnitListBase::UnitPref) = " << sizeof(PhysicalQuantity::UnitListBase::UnitPref) << endl;
 	cout << endl;
 
-	cout << "\tsizeof(PQ::UnitDefinition) = " << sizeof(PQ::UnitDefinition) << endl;
+	cout << "  sizeof(PQ::UnitDefinition) = " << sizeof(PQ::UnitDefinition) << endl;
 	tmp = PQ::KnownUnitsLength * sizeof(PQ::UnitDefinition);
 	totalRom += tmp;
-	cout <<	"\tPQ::KnownUnits[" << PQ::KnownUnitsLength << "]: " << tmp << " bytes\n";
+	cout <<	"  PQ::KnownUnits[" << PQ::KnownUnitsLength << "]: " << tmp << " bytes\n";
 		//<< " (" << PQ::KnownUnitsLength << " elements)\n";
 	size_t uslen = 0;
 	for (int iu = 0; iu < PQ::KnownUnitsLength;iu++)
@@ -277,13 +456,13 @@ void showinfo()
 		uslen += strlen(PQ::KnownUnits[iu].longName) + sizeof(char);
 	}
 	totalRom += uslen;
-	cout << "\tStrings in KnownUnits[]: " << uslen << " bytes\n";
+	cout << "  Strings in KnownUnits[]: " << uslen << " bytes\n";
 	cout << endl;
 
-	cout << "\tsizeof(PQ::Prefix) = " << sizeof(PQ::Prefix) << endl;
+	cout << "  sizeof(PQ::Prefix) = " << sizeof(PQ::Prefix) << endl;
 	tmp = sizeof(PQ::Prefix) * PQ::KnownPrefixesLength;
 	totalRom += tmp;
-	cout << "\tPQ::KnownPrefixes[" << PQ::KnownPrefixesLength << "]: " << tmp << " bytes\n";
+	cout << "  PQ::KnownPrefixes[" << PQ::KnownPrefixesLength << "]: " << tmp << " bytes\n";
 		//<< " (" << PQ::KnownPrefixesLength << " elements)\n";
 	size_t pslen = 0;
 	for (int ip = 0; ip < PQ::KnownPrefixesLength; ip++)
@@ -292,47 +471,103 @@ void showinfo()
 		pslen += strlen(PQ::KnownPrefixes[ip].longName) + sizeof(char);
 	}
 	totalRom += pslen;
-	cout << "\tStrings in KnownPrefixes[]: " << pslen << " bytes\n";
+	cout << "  Strings in KnownPrefixes[]: " << pslen << " bytes\n";
 	cout << endl;
 
 #ifndef NO_HASHING
-	cout << "\tPQ::defaultHashSeed = " << PhysicalQuantity::defaultHashSeed << endl;
-	int us = dumpHashTable("", &PhysicalQuantity::KnownUnits[0], &PhysicalQuantity::KnownUnits[0].symbol, sizeof(PhysicalQuantity::UnitDefinition), PhysicalQuantity::KnownUnitsLength, PhysicalQuantity::hashTableSize_UnitSymbols, "UnitSymbols", "PhysicalQuantity::unitIndex_t", PhysicalQuantity::defaultHashSeed, false);
-	int ul = dumpHashTable("", &PhysicalQuantity::KnownUnits[0], &PhysicalQuantity::KnownUnits[0].longName, sizeof(PhysicalQuantity::UnitDefinition), PhysicalQuantity::KnownUnitsLength, PhysicalQuantity::hashTableSize_UnitLongNames, "UnitLongNames", "PhysicalQuantity::unitIndex_t", PhysicalQuantity::defaultHashSeed, false);
-	int ps = dumpHashTable("", &PhysicalQuantity::KnownPrefixes[0], &PhysicalQuantity::KnownPrefixes[0].symbol, sizeof(PhysicalQuantity::Prefix), PhysicalQuantity::KnownPrefixesLength, PhysicalQuantity::hashTableSize_PrefixSymbols, "PrefixSymbols", "PhysicalQuantity::prefixIndex_t", PhysicalQuantity::defaultHashSeed, false);
+	cout << "  PQ::defaultHashSeed = " << PhysicalQuantity::defaultHashSeed << endl;
+	int iTrash;
+	float fTrash;
 
-	tmp = (sizeof(PQ::bucketSize_t) + (sizeof(PQ::prefixIndex_t) * ps)) * PQ::hashTableSize_PrefixSymbols;
-	totalRom += tmp;
-	cout << "\tPrefixSymbols_HashTable[" << PQ::hashTableSize_PrefixSymbols << "]: " 
-	     << "bucketSize " << ps << ", "
-		 << tmp << " bytes*\n";
+	// Read back the hash params from auto generated source
+	ifstream hashParamsFileIn;
+	size_t unitSymbolsSize = PQ::default_hashTableSize_UnitSymbols;
+	size_t unitLongNamesSize = PQ::default_hashTableSize_UnitLongNames;
+	size_t prefixSymbolsSize = PQ::default_hashTableSize_PrefixSymbols;
+	size_t unitSymbolsSeed = PQ::defaultHashSeed;
+	size_t unitLongNamesSeed = PQ::defaultHashSeed;
+	size_t prefixSymbolsSeed = PQ::defaultHashSeed;
+	hashParamsFileIn.open(rootpath + "src/hashParams.acpp");
+	if (hashParamsFileIn.is_open())
+	{
+		string line;
+		while (!hashParamsFileIn.eof())
+		{
+			getline(hashParamsFileIn, line);
+			if (line.find("hashTableSize_UnitSymbols"  ) != string::npos) { unitSymbolsSize    = atoi(line.substr(line.find_first_of("=") + 1).c_str()); }
+			if (line.find("hashTableSize_UnitLongNames") != string::npos) { unitLongNamesSize  = atoi(line.substr(line.find_first_of("=") + 1).c_str()); }
+			if (line.find("hashTableSize_PrefixSymbols") != string::npos) { prefixSymbolsSize  = atoi(line.substr(line.find_first_of("=") + 1).c_str()); }
+			if (line.find("hashTableSeed_UnitSymbols"  ) != string::npos) { unitSymbolsSeed    = atoi(line.substr(line.find_first_of("=") + 1).c_str()); }
+			if (line.find("hashTableSeed_UnitLongNames") != string::npos) { unitLongNamesSeed  = atoi(line.substr(line.find_first_of("=") + 1).c_str()); }
+			if (line.find("hashTableSeed_PrefixSymbols") != string::npos) { prefixSymbolsSeed  = atoi(line.substr(line.find_first_of("=") + 1).c_str()); }
+		}
+		hashParamsFileIn.close();
+	}
+	else
+	{
+		cout << "  *** Warning: Can not read hash parameters from src/hashParams.acpp. Using defaults.\n";
+	}
 
-	tmp = (sizeof(PQ::bucketSize_t) + (sizeof(PQ::unitIndex_t) * us)) * PQ::hashTableSize_UnitSymbols;
+	int us = dumpHashTable("", iTrash, fTrash, 
+		&PhysicalQuantity::KnownUnits[0],
+		&PhysicalQuantity::KnownUnits[0].symbol,
+		sizeof(PhysicalQuantity::UnitDefinition),
+		PhysicalQuantity::KnownUnitsLength,
+		(int)unitSymbolsSize,
+		"UnitSymbols", "PhysicalQuantity::unitIndex_t",
+		unitSymbolsSeed, false);
+	int ul = dumpHashTable("", iTrash, fTrash,
+		&PhysicalQuantity::KnownUnits[0],
+		&PhysicalQuantity::KnownUnits[0].longName,
+		sizeof(PhysicalQuantity::UnitDefinition),
+		PhysicalQuantity::KnownUnitsLength,
+		(int)unitLongNamesSize,
+		"UnitLongNames", "PhysicalQuantity::unitIndex_t",
+		unitLongNamesSeed, false);
+	int ps = dumpHashTable("", iTrash, fTrash,
+		&PhysicalQuantity::KnownPrefixes[0],
+		&PhysicalQuantity::KnownPrefixes[0].symbol,
+		sizeof(PhysicalQuantity::Prefix),
+		PhysicalQuantity::KnownPrefixesLength,
+		(int)prefixSymbolsSize,
+		"PrefixSymbols", "PhysicalQuantity::prefixIndex_t",
+		prefixSymbolsSeed, false);
+
+	tmp = (sizeof(PQ::bucketSize_t) + (sizeof(PQ::prefixIndex_t) * ps)) * prefixSymbolsSize;
 	totalRom += tmp;
-	cout << "\tUnitSymbols_HashTable[" << PQ::hashTableSize_UnitSymbols << "]: "
+	cout << "  PrefixSymbols_HashTable[" << prefixSymbolsSize << "]: " 
+			<< "bucketSize " << ps << ", "
+			<< tmp << " bytes*\n";
+
+	tmp = (sizeof(PQ::bucketSize_t) + (sizeof(PQ::unitIndex_t) * us)) * unitSymbolsSize;
+	totalRom += tmp;
+	cout << "  UnitSymbols_HashTable[" << unitSymbolsSize << "]: "
 		<< "bucketSize " << us << ", "
 		<< tmp << " bytes*\n";
 
-	tmp = (sizeof(PQ::bucketSize_t) + (sizeof(PQ::unitIndex_t) * ul)) * PQ::hashTableSize_UnitLongNames;
+	tmp = (sizeof(PQ::bucketSize_t) + (sizeof(PQ::unitIndex_t) * ul)) * unitLongNamesSize;
 	totalRom += tmp;
-	cout << "\tUnitLongNames_HashTable[" << PQ::hashTableSize_UnitLongNames << "]: "
+	cout << "  UnitLongNames_HashTable[" << unitLongNamesSize << "]: "
 		<< "bucketSize " << ul << ", "
 		<< tmp << " bytes*\n";
 
-	cout << "\t  * Padding may introduce inaccuracies. gencode does not have a compiled version.\n";
+	cout << "    * Padding may introduce inaccuracies. gencode does not have a compiled version.\n";
 	cout << endl;
-
-	//UnitLongNames_HashTable
 #endif //#ifndef NO_HASHING
 
-	cout << "\tTotal ROM requirements: " << totalRom << " bytes\n";
+	cout << "  Total ROM requirements: " << totalRom << " bytes\n";
 	cout << endl;
 }
 
 
 int main(int argc, char** argv)
 {
+	int optMaxTableSize = PQ::KnownUnitsLength * 2;
+	int optMaxSeed = 0xFF;
+	int optMinBucketSize = 2;
 	bool beep = false;
+	bool writeFiles = true;
+
 #ifdef NO_HASHING
 	cout << " * gencode: NO_HASHING is defined.\n";
 #endif
@@ -347,11 +582,27 @@ int main(int argc, char** argv)
 		fprintf(stderr, "gencode: Error, lib code was compiled with different header options!");
 		return 1;
 	}
-
 	cout << dec;
+
+
+	//-------------------------------------------------------
+	// Parse command line
 	if (argc <= 1)
 	{
-		cout << "gencode options: generate --rootpath [path], find-seed, info";
+		cout << "gencode options:\n\n";
+		cout << "generate --rootpath [path]    Writes headers and source files.\n";
+		cout << endl;
+		cout << "optimize                      Finds optimal hash parameters by brute force.\n";
+		cout << "   --max-seed [n]             Sets scanning range of seeds\n";
+		cout << "   --max-table-size [n]       Largest acceptable hash table length.\n";
+		cout << "                              Actual size will multiply by max bucket size.\n";
+		cout << "   --dry-run                  Do not write any files.\n";
+		cout << endl;
+		cout << "info                          Shows struct size and memory info.\n";
+		cout << endl;
+		//cout << "  find-seed (deprecated)      finds optimal hash seed of default sizes\n";
+		//cout << endl;
+
 #ifdef _WIN32
 		cout << ", --beep";
 #endif
@@ -361,55 +612,213 @@ int main(int argc, char** argv)
 	string rootpath;
 	bool generate = false;
 	bool info = false;
-	for (int i = 1; i < argc; i++)
+	bool runOptimize = false;
+	for (int iArg = 1; iArg < argc; iArg++)
 	{
-		if (!strcmp(argv[i], "--beep")) { beep = true; }
-		else if (!strcmp(argv[i], "find-seed"))
+		if (!strcmp(argv[iArg], "--beep")) { beep = true; }
+		//else if (!strcmp(argv[iArg], "find-seed"))
+		//{
+		//	printf("0x%x\n", findSeed(rootpath));
+		//	return 0;
+		//}
+		else if (!strcmp(argv[iArg], "--rootpath"))
 		{
-			printf("0x%x\n", findSeed(rootpath));
-			return 0;
+			iArg++;
+			rootpath = argv[iArg];
 		}
-		else if (!strcmp(argv[i], "--rootpath"))
-		{
-			i++;
-			rootpath = argv[i];
-		}
-		else if (!strcmp(argv[i], "generate"))
+		else if (!strcmp(argv[iArg], "generate"))
 		{
 			generate = true;
 		}
-		else if (!strcmp(argv[i], "info"))
+		else if (!strcmp(argv[iArg], "info"))
 		{
 			info = true;
 		}
-		else { fprintf(stderr, " * gencode: Unknown command: %s\n", argv[i]); }
+		else if (!strcmp(argv[iArg], "optimize"))
+		{
+			runOptimize = true;
+		}
+		else if (!strcmp(argv[iArg], "--max-seed"))
+		{
+			iArg++;
+			optMaxSeed = atoi(argv[iArg]);
+		}
+		else if (!strcmp(argv[iArg], "--max-table-size"))
+		{
+			iArg++;
+			optMaxTableSize = atoi(argv[iArg]);
+		}
+		else if (!strcmp(argv[iArg], "--min-bucket-size"))
+		{
+			iArg++;
+			optMinBucketSize = atoi(argv[iArg]);
+		}
+		else if (!strcmp(argv[iArg], "--dry-run"))
+		{
+			writeFiles = false;
+		}
+
+		else
+		{
+			fprintf(stderr, " * gencode: Unknown command: %s\n", argv[iArg]);
+			return 1;
+		}
 	}
+	// End parse command line
+	//-------------------------------------------------------
+
+
+	if (rootpath.length() == 0)
+	{
+		cout << " * Warning: --rootpath is null.\n";
+	}
+	else if (rootpath[rootpath.length()] != '/' && rootpath[rootpath.length()] != '\\')
+	{
+		rootpath += "/";
+	}
+
 
 	if (info) { showinfo(); }
 
-	if (!generate) { return 0; }
+	if (!generate) { writeFiles = false; }
+
 	int ret = 0;
 	try
 	{
 #ifndef NO_HASHING
-		if (rootpath.length() == 0) { throw runtime_error("--rootpath not set"); }
-		if (rootpath[rootpath.length()] != '/' && rootpath[rootpath.length()] != '\\')
-		{
-			rootpath += "/";
+		int unitSymbolsSize =   (int)PQ::default_hashTableSize_UnitSymbols;
+		int unitSymbolsSeed =   (int)PQ::defaultHashSeed;
+		int unitLongNamesSize = (int)PQ::default_hashTableSize_UnitLongNames;
+		int unitLongNamesSeed = (int)PQ::defaultHashSeed;
+		int prefixSymbolsSize = (int)PQ::default_hashTableSize_PrefixSymbols;
+		int prefixSymbolsSeed = (int)PQ::defaultHashSeed;
+		int unitSymbolsBucketSize = 0;
+		int unitLongNamesBucketSize = 0;
+		int prefixSymbolsBucketSize = 0;
+		float unitSymbolsCoverage = 0;
+		float unitLongNamesCoverage = 0;
+		float prefixSymbolsCoverage = 0;
+
+		ofstream hashParamsFile;
+		if (writeFiles)
+		{ 
+			hashParamsFile.open(rootpath + "src/hashParams.acpp");
+			if (!hashParamsFile.is_open())
+			{
+				throw runtime_error("Can not write src/hashParams.acpp");
+			}
 		}
-		remove((rootpath + "include/PhysicalQuantity/hashTables.ah").c_str());
-		cout << "gencode: Generating hash tables...";
-		dumpHashTable(rootpath, &PhysicalQuantity::KnownUnits[0], &PhysicalQuantity::KnownUnits[0].symbol, sizeof(PhysicalQuantity::UnitDefinition), PhysicalQuantity::KnownUnitsLength, PhysicalQuantity::hashTableSize_UnitSymbols, "UnitSymbols", "PhysicalQuantity::unitIndex_t");
-		dumpHashTable(rootpath, &PhysicalQuantity::KnownUnits[0], &PhysicalQuantity::KnownUnits[0].longName, sizeof(PhysicalQuantity::UnitDefinition), PhysicalQuantity::KnownUnitsLength, PhysicalQuantity::hashTableSize_UnitLongNames, "UnitLongNames", "PhysicalQuantity::unitIndex_t");
-		dumpHashTable(rootpath, &PhysicalQuantity::KnownPrefixes[0], &PhysicalQuantity::KnownPrefixes[0].symbol, sizeof(PhysicalQuantity::Prefix), PhysicalQuantity::KnownPrefixesLength, PhysicalQuantity::hashTableSize_PrefixSymbols, "PrefixSymbols", "PhysicalQuantity::prefixIndex_t");
-		cout << " OK\n";
+		if (runOptimize)
+		{
+			if (!optimizeHashes(optMaxTableSize, optMaxSeed, optMinBucketSize,
+				unitSymbolsSize, unitSymbolsSeed, unitSymbolsBucketSize, unitSymbolsCoverage,
+				unitLongNamesSize, unitLongNamesSeed, unitLongNamesBucketSize, unitLongNamesCoverage,
+				prefixSymbolsSize, prefixSymbolsSeed, prefixSymbolsBucketSize, prefixSymbolsCoverage))
+			{
+				throw runtime_error("optimize returned false");
+			}
+			cout.flush();
+			printf("      UnitSymbols_HashTable[%d][%d] %.2g%% used, seed=%d\n", unitSymbolsSize, unitSymbolsBucketSize, unitSymbolsCoverage * 100, unitSymbolsSeed);
+			printf("    UnitLongNames_HashTable[%d][%d] %.2g%% used, seed=%d\n", unitLongNamesSize, unitLongNamesBucketSize, unitLongNamesCoverage * 100, unitLongNamesSeed);
+			printf("    PrefixSymbols_HashTable[%d][%d] %.2g%% used, seed=%d\n", prefixSymbolsSize, prefixSymbolsBucketSize, prefixSymbolsCoverage * 100, prefixSymbolsSeed);
+			fflush(stdout);
+		}
+
+//		char unitSymbolsBucketSizeText[20];
+//		char unitLongNamesBucketSizeText[20];
+//		char prefixSymbolsBucketSizeText[20];
+//		char unitSymbolsCoverageText[20];
+//		char unitLongNamesCoverageText[20];
+//		char prefixSymbolsCoverageText[20];
+//
+//#ifdef _MSC_VER
+//#pragma warning(disable:4996)
+//#endif
+//		if (unitSymbolsBucketSize == 0) { strcpy(unitSymbolsBucketSizeText, "??"); }
+//		else { sprintf(unitSymbolsBucketSizeText,   "%d", unitSymbolsBucketSize); }
+//		if (unitLongNamesBucketSize == 0) { strcpy(unitLongNamesBucketSizeText, "??"); }
+//		else { sprintf(unitLongNamesBucketSizeText, "%d", unitLongNamesBucketSize); }
+//		if (prefixSymbolsBucketSize == 0) { strcpy(prefixSymbolsBucketSizeText, "??"); }
+//		else { sprintf(prefixSymbolsBucketSizeText, "%d", prefixSymbolsBucketSize); }
+//		sprintf(unitSymbolsCoverageText,   "%.2g", 100.0f * unitSymbolsCoverage);
+//		sprintf(unitLongNamesCoverageText, "%.2g", 100.0f * unitLongNamesCoverage);
+//		sprintf(prefixSymbolsCoverageText, "%.2g", 100.0f * prefixSymbolsCoverage);
+//#ifdef _MSC_VER
+//#pragma warning(default:4996)
+//#endif
+//		cout.flush();
+
+		//cout << "  Hash table info:\n" << setprecision(3) //   (seed)[tableSize][bucketSize]\n"
+		//	<< "    Unit symbols: seed " << unitSymbolsSeed << ", length " << unitSymbolsSize 
+		//	<< ", " << ((unitSymbolsCoverage == 0) ? "??" : unitSymbolsCoverageText) << "% used"
+		//	<< ", bucket length " << ((unitSymbolsBucketSize == 0) ? "??" : unitSymbolsBucketSizeText) 
+		//	<< endl
+		//
+		//	<< "    Unit long names: seed " << unitLongNamesSeed << ", length " << unitLongNamesSize 
+		//	<< ", " << ((unitLongNamesCoverage == 0) ? "??" : unitLongNamesCoverageText) << "% used"
+		//	<< ", bucket length " << ((unitLongNamesBucketSize == 0) ? "??" : unitLongNamesBucketSizeText)
+		//	<< endl
+		//
+		//	<< "    Prefix symbols: seed " << prefixSymbolsSeed << ", length " << prefixSymbolsSize 
+		//	<< ", " << ((prefixSymbolsCoverage == 0) ? "??" : prefixSymbolsCoverageText) << "% used"
+		//	<< ", bucket length " << ((prefixSymbolsBucketSize == 0) ? "??" : prefixSymbolsBucketSizeText)
+		//	<< endl;
+
+		if (writeFiles)
+		{
+			hashParamsFile << "#if !defined(NO_HASHING) && !defined(PQ_GENCODE)\n";
+			hashParamsFile << "#include <PhysicalQuantity.h>\n";
+			hashParamsFile << "const int PhysicalQuantity::hashTableSize_UnitSymbols = " << unitSymbolsSize << ";\n";
+			hashParamsFile << "const int PhysicalQuantity::hashTableSize_UnitLongNames = " << unitLongNamesSize << ";\n";
+			hashParamsFile << "const int PhysicalQuantity::hashTableSize_PrefixSymbols = " << prefixSymbolsSize << ";\n";
+			hashParamsFile << "const int PhysicalQuantity::hashTableSeed_UnitSymbols = " << unitSymbolsSeed << ";\n";
+			hashParamsFile << "const int PhysicalQuantity::hashTableSeed_UnitLongNames = " << unitLongNamesSeed << ";\n";
+			hashParamsFile << "const int PhysicalQuantity::hashTableSeed_PrefixSymbols = " << prefixSymbolsSeed << ";\n";
+			hashParamsFile << "#endif\n";
+			hashParamsFile.close();
+
+			remove((rootpath + "include/PhysicalQuantity/hashTables.ah").c_str());
+			cout << "gencode: Generating hash tables...";
+			// TODO: Optimize
+			int iTrash;
+			float fTrash;
+			dumpHashTable(rootpath, iTrash, fTrash,
+				&PhysicalQuantity::KnownUnits[0],
+				&PhysicalQuantity::KnownUnits[0].symbol,
+				sizeof(PhysicalQuantity::UnitDefinition),
+				PhysicalQuantity::KnownUnitsLength,
+				unitSymbolsSize,
+				"UnitSymbols", "PhysicalQuantity::unitIndex_t",
+				unitSymbolsSeed, writeFiles);
+			dumpHashTable(rootpath, iTrash, fTrash,
+				&PhysicalQuantity::KnownUnits[0],
+				&PhysicalQuantity::KnownUnits[0].longName,
+				sizeof(PhysicalQuantity::UnitDefinition),
+				PhysicalQuantity::KnownUnitsLength,
+				unitLongNamesSize,
+				"UnitLongNames", "PhysicalQuantity::unitIndex_t",
+				unitLongNamesSeed, writeFiles);
+			dumpHashTable(rootpath, iTrash, fTrash,
+				&PhysicalQuantity::KnownPrefixes[0],
+				&PhysicalQuantity::KnownPrefixes[0].symbol,
+				sizeof(PhysicalQuantity::Prefix),
+				PhysicalQuantity::KnownPrefixesLength,
+				prefixSymbolsSize,
+				"PrefixSymbols", "PhysicalQuantity::prefixIndex_t",
+				prefixSymbolsSeed, writeFiles);
+			cout << " OK\n";
+		}
+
 		//dumpHashTable(&PhysicalQuantity::KnownPrefixes[0], &PhysicalQuantity::KnownPrefixes[0].longName, sizeof(PhysicalQuantity::Prefix), PhysicalQuantity::KnownPrefixesLength, PhysicalQuantity::hashTableSize_PrefixLongNames, "PrefixLongNames");
 #endif //#ifndef NO_HASHING
 
 #ifndef NO_LITERALS
-		cout << "gencode: Generating literals... ";
-		dumpLiterals(rootpath);
-		cout << " OK\n";
+		if (writeFiles)
+		{
+			cout << "gencode: Generating literals... ";
+			dumpLiterals(rootpath);
+			cout << " OK\n";
+		}
 #endif
 #if defined(_MSC_VER) && defined(BEEP_IF_HASH_TABLES_REBUILT)
 		if (beep)

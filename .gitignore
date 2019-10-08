@@ -1,10 +1,10 @@
 *.i
 *.7z
-include/PhysicalQuantity/hashTables.ah
-include/PhysicalQuantity/literals.ah
-src/literals.acpp
+include/PhysicalQuantity/*.ah
+src/*.acpp
 *.exe
 *.lib
 *.so
 *.o
 *.obj
+temp/

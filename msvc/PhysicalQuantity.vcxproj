@@ -244,6 +244,11 @@
   <ItemGroup>
     <Natvis Include="CSubString.natvis" />
   </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\src\hashParams.acpp">
+      <FileType>Document</FileType>
+    </ClCompile>
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
