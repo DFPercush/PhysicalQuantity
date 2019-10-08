@@ -4,6 +4,7 @@
 // Conditional compilation options:   (See README.txt)
 
 #define CPP11              // Compiler supports C++11
+//#define NO_TYPEDEFS      // Do not define PQ:: and csubstr:: shortcuts
 //#define NO_NEW           // Do not use dynamic memory allocation.
 //#define NO_STD_STRING    // Do not #include <string> or use std::string .
 //#define NO_LITERALS      // Do not define literal operators like 1_kg. Require a C++11 compiler or newer.

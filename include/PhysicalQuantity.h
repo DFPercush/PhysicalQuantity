@@ -9,6 +9,7 @@
 
 //==================================================================================
 // Config checking
+// TODO: NO_TYPEDEFS
 #ifdef NO_NEW
 #define PQ_HAS_NO_NEW 0x01
 #define NO_STD_STRING
@@ -45,7 +46,15 @@
 #else
 #define PQ_HAS_CPP11 0
 #endif
-#define PQ_HEADER_OPTIONS (PQ_HAS_NO_NEW | PQ_HAS_NO_STD_STRING | PQ_HAS_NO_LITERALS | PQ_HAS_NO_INLINE | PQ_HAS_NO_HASHING | PQ_HAS_NO_THROW | PQ_HAS_CPP11)
+// Typedefs wouldn't affect anything at the linker/binary stage, would they?
+//#ifdef NO_TYPEDEFS
+//#define PQ_HAS_NO_TYPEDEFS 0x100
+//#else
+#define PQ_HAS_NO_TYPEDEFS 0
+//#endif
+
+#define PQ_HEADER_OPTIONS (PQ_HAS_NO_NEW | PQ_HAS_NO_STD_STRING | PQ_HAS_NO_LITERALS | PQ_HAS_NO_INLINE | PQ_HAS_NO_HASHING | PQ_HAS_NO_THROW | PQ_HAS_CPP11 | PQ_HAS_NO_TYPEDEFS)
+
 // End config checking
 //==================================================================================
 
@@ -185,6 +194,7 @@ public:
 	//    originally to be used as a template parameter to unordered_map,
 	//    but that wastes a lot of RAM
 #ifndef NO_HASHING
+	typedef unsigned short bucketSize_t;
 	static const size_t defaultHashSeed;
 	struct cstrHasherTiny
 	{
@@ -312,7 +322,7 @@ public:
 	PhysicalQuantity(num value, const char* unit);
 	PhysicalQuantity(num value);
 	PhysicalQuantity(CSubString str);
-#if defined(CPP11) && !defined(NO_INLINE)
+#if defined(CPP11)
 	constexpr PhysicalQuantity(num value_p, signed char dim_p[(int)QuantityType::ENUM_MAX])
 		: value(value_p), dim {dim_p[0], dim_p[1], dim_p[2], dim_p[3], dim_p[4]} {}
 #else
@@ -333,7 +343,7 @@ public:
 	std::string toString(const UnitListBase&) const;
 #endif
 
-#if defined(CPP11) && !defined(NO_INLINE)
+#if defined(CPP11)
 	constexpr PhysicalQuantity operator* (const PhysicalQuantity& rhs) const 
 	{
 		signed char d[(int)QuantityType::ENUM_MAX]
@@ -359,15 +369,15 @@ public:
 		return PhysicalQuantity(value / rhs.value, d);
 	}
 #else
-//#endif //#if defined(CPP11) && !defined(NO_INLINE)
+//#endif //#if defined(CPP11)
 	PhysicalQuantity operator* (const PhysicalQuantity& rhs) const;
 	PhysicalQuantity operator/ (const PhysicalQuantity& rhs) const;
-#endif //#if defined(CPP11) && !defined(NO_INLINE)
+#endif //#if defined(CPP11)
 
 	PhysicalQuantity operator+ (const PhysicalQuantity& rhs) const;
 	PhysicalQuantity operator- (const PhysicalQuantity& rhs) const;
 
-#if defined(CPP11) && !defined(NO_INLINE)
+#if defined(CPP11)
 	constexpr PhysicalQuantity operator* (num rhs)
 	{
 		signed char d[(int)QuantityType::ENUM_MAX]
@@ -392,10 +402,10 @@ public:
 		};
 		return PhysicalQuantity(value * rhs, d);
 	}
-#else //#if defined(CPP11) && !defined(NO_INLINE)
+#else //#if defined(CPP11)
 	PhysicalQuantity operator* (num rhs) const;
 	PhysicalQuantity operator/ (num rhs) const;
-#endif //#if defined(CPP11) && !defined(NO_INLINE)
+#endif //#if defined(CPP11)
 	PhysicalQuantity operator+ (num rhs) const;
 	PhysicalQuantity operator- (num rhs) const;
 
@@ -540,7 +550,7 @@ public:
 	DefineLiteralBase( Y##symbol_no_quotes, 1e24  ) \
 
 
-#if defined(CPP11) && !defined(NO_INLINE)
+#if defined(CPP11)
 // Implement the fundamental SI units of each quantity as compile time constants
 
 // Use these in a header
@@ -584,40 +594,18 @@ public:
 	CxLiteral( Y##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e24  ) \
 //----------------------------------------------------------------------------
 
-////       sym  Ma Di Ti Te Cu
-//CxLiteral(mi, 0, 1, 0, 0, 0, 5280.0 / 0.010)
-////                  sym Ma Di Ti Te Cu fac
-//CxLiteralWithPrefixes(g, 1, 0, 0, 0, 0, 0.001)
-//CxLiteralWithPrefixes(m, 0, 1, 0, 0, 0, 1.0 )
-//CxLiteralWithPrefixes(s, 0, 0, 1, 0, 0, 1.0 )
-//CxLiteralWithPrefixes(K, 0, 0, 0, 1, 0, 1.0 )
-//CxLiteralWithPrefixes(A, 0, 0, 0, 0, 1, 1.0 )
-
 #else // defined(CPP11) && !defined(NO_INLINE)
 #define CxLiteral(DISABLED, CPP11, NOT, DEFINED, OR, NO_INLINE, ppOptions_h)
-//DeclareLiteral(s)
-//DeclareLiteral(K)
-//DeclareLiteral(m)
-//DeclareLiteral(g)
-//DeclareLiteral(A)
-
-#endif //#if defined(CPP11) && !defined(NO_INLINE)
-
-//DeclareLiteral(rad)
-//DeclareLiteral(deg)
-//DeclareLiteral(Hz)
-//DeclareLiteral(N)
-//DeclareLiteral(J)
-//DeclareLiteral(C)
-//DeclareLiteral(ang)
-//DeclareLiteral(lb)
-// ***********************************************************/
-
-
+#endif //#if defined(CPP11)
 #endif // !NO_LITERALS
 // End literals
 //==================================================================================
 
 #ifndef PQ_GENCODE
 #include <PhysicalQuantity/literals.ah>
+#endif
+
+#ifndef NO_TYPEDEFS
+typedef PhysicalQuantity PQ;
+typedef PhysicalQuantity::CSubString csubstr;
 #endif

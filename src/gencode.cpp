@@ -45,7 +45,7 @@ void dumpLiterals(string rootpath)
 	source << "#include <PhysicalQuantity.h>\n";
 
 	header << "#ifndef NO_LITERALS\n";
-	header << "#if defined(CPP11) && !defined(NO_INLINE)\n";
+	header << "#if defined(CPP11)\n";
 
 	for (int ui = 0; ui < PQ::KnownUnitsLength; ui++)
 	{
@@ -73,7 +73,7 @@ void dumpLiterals(string rootpath)
 		}
 	}
 
-	header << "#else //#if defined(CPP11) && !defined(NO_INLINE)\n";
+	header << "#else //#if defined(CPP11)\n";
 	source << "#if !defined(CPP11) || defined(NO_INLINE)\n";
 
 	for (int i = 0; i < PQ::KnownUnitsLength; i++)
@@ -97,7 +97,7 @@ void dumpLiterals(string rootpath)
 		}
 	}
 
-	header << "#endif //#else of #if defined(CPP11) && !defined(NO_INLINE)\n\n//Units with additive offsets:\n";
+	header << "#endif //#else of #if defined(CPP11)\n\n//Units with additive offsets:\n";
 
 	for (int i = 0; i < PQ::KnownUnitsLength; i++)
 	{
@@ -164,13 +164,13 @@ unsigned int dumpHashTable(string rootpath, const void* pArray, const char * con
 		counts[icount] = thiscount;
 		if (thiscount > maxCount) maxCount = thiscount;
 	}
-	//if (print) printf("struct %s_HashTableEntry_t { unsigned int bucketSize; %s bucket[%d]; };\n%s_HashTableEntry_t %s_HashTable[] = \n{", 
+	//if (print) printf("struct %s_HashTableEntry_t { unsigned short bucketSize; %s bucket[%d]; };\n%s_HashTableEntry_t %s_HashTable[] = \n{", 
 	//	arrayName, indexTypeName, maxCount, arrayName, arrayName);
 	if (print)
 	{
-		//printf("struct %s_HashTableEntry_t { unsigned int bucketSize; %s bucket[%d]; };\n%s_HashTableEntry_t %s_HashTable[] = \n{", 
+		//printf("struct %s_HashTableEntry_t { unsigned short bucketSize; %s bucket[%d]; };\n%s_HashTableEntry_t %s_HashTable[] = \n{", 
 		//	arrayName, indexTypeName, maxCount, arrayName, arrayName);
-		hh << "struct " << arrayName << "_HashTableEntry_t { unsigned int bucketSize; "
+		hh << "struct " << arrayName << "_HashTableEntry_t { PhysicalQuantity::bucketSize_t bucketSize; "
 			<< indexTypeName << " bucket[" << maxCount << "]; };\n" << arrayName
 			<< "_HashTableEntry_t " << arrayName << "_HashTable[] = \n{\n";
 	}
@@ -245,35 +245,88 @@ unsigned int findSeed(string rootpath)
 
 void showinfo()
 {
+	cout << "gencode info:\n\n\tPQ_HEADER_OPTIONS = 0x" << hex << PQ_HEADER_OPTIONS;
+	if (PQHeaderOptionsMatch)
+	{
+		cout << " OK\n";
+	}
+	else
+	{
+		cout << " BAD (lib 0x" << hex << PhysicalQuantity::compiledHeaderOptions << ")\n";
+	}
+	cout << dec << endl;
+
+	size_t totalRom = 0;
+	size_t tmp;
 	cout << "\tsizeof(PQ) = " << sizeof(PQ) << endl;
 	cout << "\tsizeof(PQ::CSubString) = " << sizeof(PQ::CSubString) << endl;
 	cout << "\tsizeof(PQ::UnitList) = " << sizeof(PQ::UnitList) << endl;
 	cout <<"\tsizeof(PQ::UnitListBase::UnitPref) = " << sizeof(PhysicalQuantity::UnitListBase::UnitPref) << endl;
+	cout << endl;
+
 	cout << "\tsizeof(PQ::UnitDefinition) = " << sizeof(PQ::UnitDefinition) << endl;
-	cout <<	"\tsizeof(PQ::KnownUnits) = " << PQ::KnownUnitsLength * sizeof(PQ::UnitDefinition) 
-		<< " (" << PQ::KnownUnitsLength << " elements)\n";
+	tmp = PQ::KnownUnitsLength * sizeof(PQ::UnitDefinition);
+	totalRom += tmp;
+	cout <<	"\tPQ::KnownUnits[" << PQ::KnownUnitsLength << "]: " << tmp << " bytes\n";
+		//<< " (" << PQ::KnownUnitsLength << " elements)\n";
+	size_t uslen = 0;
+	for (int iu = 0; iu < PQ::KnownUnitsLength;iu++)
+	{
+		// +1 for null terminator
+		uslen += strlen(PQ::KnownUnits[iu].symbol) + sizeof(char);
+		uslen += strlen(PQ::KnownUnits[iu].longName) + sizeof(char);
+	}
+	totalRom += uslen;
+	cout << "\tStrings in KnownUnits[]: " << uslen << " bytes\n";
+	cout << endl;
+
 	cout << "\tsizeof(PQ::Prefix) = " << sizeof(PQ::Prefix) << endl;
-	cout << "\tsizeof(PQ::KnownPrefixes) = " << sizeof(PQ::Prefix) * PQ::KnownPrefixesLength 
-		<< " (" << PQ::KnownPrefixesLength << " elements)\n";
+	tmp = sizeof(PQ::Prefix) * PQ::KnownPrefixesLength;
+	totalRom += tmp;
+	cout << "\tPQ::KnownPrefixes[" << PQ::KnownPrefixesLength << "]: " << tmp << " bytes\n";
+		//<< " (" << PQ::KnownPrefixesLength << " elements)\n";
+	size_t pslen = 0;
+	for (int ip = 0; ip < PQ::KnownPrefixesLength; ip++)
+	{
+		pslen += strlen(PQ::KnownPrefixes[ip].symbol) + sizeof(char);
+		pslen += strlen(PQ::KnownPrefixes[ip].longName) + sizeof(char);
+	}
+	totalRom += pslen;
+	cout << "\tStrings in KnownPrefixes[]: " << pslen << " bytes\n";
+	cout << endl;
+
 #ifndef NO_HASHING
 	cout << "\tPQ::defaultHashSeed = " << PhysicalQuantity::defaultHashSeed << endl;
 	int us = dumpHashTable("", &PhysicalQuantity::KnownUnits[0], &PhysicalQuantity::KnownUnits[0].symbol, sizeof(PhysicalQuantity::UnitDefinition), PhysicalQuantity::KnownUnitsLength, PhysicalQuantity::hashTableSize_UnitSymbols, "UnitSymbols", "PhysicalQuantity::unitIndex_t", PhysicalQuantity::defaultHashSeed, false);
 	int ul = dumpHashTable("", &PhysicalQuantity::KnownUnits[0], &PhysicalQuantity::KnownUnits[0].longName, sizeof(PhysicalQuantity::UnitDefinition), PhysicalQuantity::KnownUnitsLength, PhysicalQuantity::hashTableSize_UnitLongNames, "UnitLongNames", "PhysicalQuantity::unitIndex_t", PhysicalQuantity::defaultHashSeed, false);
 	int ps = dumpHashTable("", &PhysicalQuantity::KnownPrefixes[0], &PhysicalQuantity::KnownPrefixes[0].symbol, sizeof(PhysicalQuantity::Prefix), PhysicalQuantity::KnownPrefixesLength, PhysicalQuantity::hashTableSize_PrefixSymbols, "PrefixSymbols", "PhysicalQuantity::prefixIndex_t", PhysicalQuantity::defaultHashSeed, false);
+
+	tmp = (sizeof(PQ::bucketSize_t) + (sizeof(PQ::prefixIndex_t) * ps)) * PQ::hashTableSize_PrefixSymbols;
+	totalRom += tmp;
 	cout << "\tPrefixSymbols_HashTable[" << PQ::hashTableSize_PrefixSymbols << "]: " 
 	     << "bucketSize " << ps << ", "
-		 << (sizeof(int) + (sizeof(PQ::prefixIndex_t) * ps)) * PQ::hashTableSize_PrefixSymbols << " bytes*\n";
-	//cout << "\tPQ::hashTableSize_UnitSymbols = " << PQ::hashTableSize_UnitSymbols << endl;
+		 << tmp << " bytes*\n";
+
+	tmp = (sizeof(PQ::bucketSize_t) + (sizeof(PQ::unitIndex_t) * us)) * PQ::hashTableSize_UnitSymbols;
+	totalRom += tmp;
 	cout << "\tUnitSymbols_HashTable[" << PQ::hashTableSize_UnitSymbols << "]: "
 		<< "bucketSize " << us << ", "
-		<< (sizeof(int) + (sizeof(PQ::unitIndex_t) * us)) * PQ::hashTableSize_UnitSymbols << " bytes*\n";
-	//cout << "\tPQ::hashTableSize_UnitLongNames = " << PQ::hashTableSize_UnitLongNames << endl;	
+		<< tmp << " bytes*\n";
+
+	tmp = (sizeof(PQ::bucketSize_t) + (sizeof(PQ::unitIndex_t) * ul)) * PQ::hashTableSize_UnitLongNames;
+	totalRom += tmp;
 	cout << "\tUnitLongNames_HashTable[" << PQ::hashTableSize_UnitLongNames << "]: "
 		<< "bucketSize " << ul << ", "
-		<< (sizeof(int) + (sizeof(PQ::unitIndex_t) * ul)) * PQ::hashTableSize_UnitLongNames << " bytes*\n";
+		<< tmp << " bytes*\n";
+
 	cout << "\t  * Padding may introduce inaccuracies. gencode does not have a compiled version.\n";
+	cout << endl;
+
 	//UnitLongNames_HashTable
 #endif //#ifndef NO_HASHING
+
+	cout << "\tTotal ROM requirements: " << totalRom << " bytes\n";
+	cout << endl;
 }
 
 
@@ -287,21 +340,22 @@ int main(int argc, char** argv)
 	cout << " * gencode: NO_LITERALS is defined.\n";
 #endif
 	
-	cout << "gencode info:\n\tPreprocessor options 0x" << hex << PQ_HEADER_OPTIONS;
-	if (PQHeaderOptionsMatch)
+	if (!PQHeaderOptionsMatch)
 	{
-		cout << " OK\n";
-	}
-	else
-	{
-		cout << " BAD (lib 0x" << PhysicalQuantity::compiledHeaderOptions << ")\n";
+		// This really shouldn't happen because gencode should build from source, 
+		// not link against the final library object.
+		fprintf(stderr, "gencode: Error, lib code was compiled with different header options!");
 		return 1;
 	}
 
 	cout << dec;
-	if (argc < 1)
+	if (argc <= 1)
 	{
-		cout << "gencode options: generate, find-seed, info, --rootpath [path] --beep (windows)\n";
+		cout << "gencode options: generate --rootpath [path], find-seed, info";
+#ifdef _WIN32
+		cout << ", --beep";
+#endif
+		cout << endl;
 		return 1;
 	}
 	string rootpath;
@@ -312,7 +366,7 @@ int main(int argc, char** argv)
 		if (!strcmp(argv[i], "--beep")) { beep = true; }
 		else if (!strcmp(argv[i], "find-seed"))
 		{
-			printf("0x%x", findSeed(rootpath));
+			printf("0x%x\n", findSeed(rootpath));
 			return 0;
 		}
 		else if (!strcmp(argv[i], "--rootpath"))
