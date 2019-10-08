@@ -5,6 +5,11 @@ const PhysicalQuantity::UnitDefinition PhysicalQuantity::KnownUnits[] =
 {
 // { symbol, longName, { MASS, DISTANCE, TIME, TEMPERATURE, CURRENT }, offset, factor, flags },
 //                  Ma Di Ti Te Cu
+{"degC","degreeC", { 0, 0, 0, 1, 0}, 273.15, 1.0, NOPREFIX},
+{"degF","degreeF", { 0, 0, 0, 1, 0}, 255.37222222222222222222222222222, 0.55555555555555555555555555555556, NOPREFIX},
+// TODO: MaxUnitIndexWithOffset, scrap .offset
+{"K","kelvin",     { 0, 0, 0, 1, 0}, 0, 1.0, CANPREFIX},
+
 {"rad", "radian",  { 0, 0, 0, 0, 0}, 0, 1, NOPREFIX},
 {"deg", "degree",  { 0, 0, 0, 0, 0}, 0, 0.01745329251994329576923690768489, NOPREFIX},
 {"pi", "pi",       { 0, 0, 0, 0, 0}, 0, 3.1415926535897932384626433832795, NOPREFIX | NOLITERAL},
@@ -21,15 +26,18 @@ const PhysicalQuantity::UnitDefinition PhysicalQuantity::KnownUnits[] =
 
 {"ang","angstrom", { 0, 1, 0, 0, 0}, 0, 1.0e-10},  // unicode wchar_t is not supported at this time
 {"g", "gram",      { 1, 0, 0, 0, 0}, 0, 0.001},
-{"s", "second",    { 0, 0, 1, 0, 0}, 0, 1.0},
+
+{"s", "second",    { 0, 0, 1, 0, 0}, 0, 1.0, NOPREFIX},
 {"Hz", "hertz",    { 0, 0,-1, 0, 0}, 0, 1.0},
+{"min", "minute",  { 0, 0, 1, 0, 0}, 0, 60, NOPREFIX},
+{"hr", "hour",     { 0, 0, 1, 0, 0}, 0, 3600, NOPREFIX},
+
+{"mph","MilesPerHour",{0,1,-1,0,0}, 0, 1609.3439999931/3600, NOPREFIX},
+
 {"J", "joule",     { 1, 2,-2, 0, 0}, 0, 1.0},
 {"N", "newton",    { 1, 1,-2, 0, 0}, 0, 1.0},
 {"lb", "pound",    { 1, 1,-2, 0, 0}, 0, 4.448221615260501, NOPREFIX},
 //                  Ma Di Ti Te Cu
-{"K","kelvin",     { 0, 0, 0, 1, 0}, 0, 1.0, CANPREFIX},
-{"degC","degreeC", { 0, 0, 0, 1, 0}, 273.15, 1.0, NOPREFIX},
-{"degF","degreeF", { 0, 0, 0, 1, 0}, 255.37222222222222222222222222222, 0.55555555555555555555555555555556, NOPREFIX},
 
 {"C","coulomb",    { 0, 0, 1, 0, 1}, 0, 1.0},
 {"A","ampere",     { 0, 0, 0, 0, 1}, 0, 1.0},
@@ -80,33 +88,4 @@ const int PhysicalQuantity::KnownPrefixesLength = sizeof(PhysicalQuantity::Known
 	// If that changes, might need to change findUnit()
 const PhysicalQuantity::prefixIndex_t PhysicalQuantity::dekaIndex = 10; // Index, not value, although it's fitting.
 
-
-
-#ifndef NO_HASHING
-const int PhysicalQuantity::hashTableSize_UnitSymbols = 50;
-const int PhysicalQuantity::hashTableSize_UnitLongNames = 50;
-const int PhysicalQuantity::hashTableSize_PrefixSymbols = 50;
-//const int PhysicalQuantity::hashTableSize_PrefixLongNames = 50;
-const size_t PhysicalQuantity::defaultHashSeed = 8;
-#endif
-
-
-//#ifndef NO_LITERALS
-//#if !defined(CPP11) || defined(NO_INLINE)
-//// otherwise-constexpr literals go here
-//DefineLiteral(m)
-//DefineLiteral(g)
-//DefineLiteral(s)
-//DefineLiteral(K)
-//DefineLiteral(A)
-//#endif
-//DefineLiteral(Hz)
-//DefineLiteral(N)
-//DefineLiteral(J)
-//DefineLiteral(C)
-//DefineLiteral(ang)
-//DefineLiteral(rad)
-//DefineLiteral(deg)
-//DefineLiteral(lb)
-//#endif  // !NO_LITERALS
 

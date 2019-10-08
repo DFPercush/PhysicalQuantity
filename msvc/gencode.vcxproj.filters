@@ -18,7 +18,7 @@
     <ClCompile Include="..\src\hash.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\genhashtables.cpp">
+    <ClCompile Include="..\src\gencode.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\src\csubstr.cpp">

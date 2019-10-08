@@ -156,12 +156,13 @@ public:
 
 	struct UnitDefinition
 	{
+		// TODO: rearrange for padding
 		const char* symbol;
 		const char* longName;
 		const signed char dim[(int)QuantityType::ENUM_MAX];
 		num offset; // temperature is a special snowflake
 		num factor;
-		int flags; // canPrefix = true; // TODO: use in findUnit(). sprint?
+		unsigned char flags = 0; // canPrefix = true; // TODO: use in findUnit(). sprint?
 	};
 #define NOPREFIX  0x01
 #define CANPREFIX 0
@@ -337,11 +338,11 @@ public:
 	{
 		signed char d[(int)QuantityType::ENUM_MAX]
 		{
-			dim[0] + rhs.dim[0],  
-			dim[1] + rhs.dim[1],  
-			dim[2] + rhs.dim[2],  
-			dim[3] + rhs.dim[3],  
-			dim[4] + rhs.dim[4]
+			(signed char)(dim[0] + rhs.dim[0]),  
+			(signed char)(dim[1] + rhs.dim[1]),  
+			(signed char)(dim[2] + rhs.dim[2]),  
+			(signed char)(dim[3] + rhs.dim[3]),  
+			(signed char)(dim[4] + rhs.dim[4])
 		};
 		return PhysicalQuantity(value * rhs.value, d);
 	}
@@ -349,11 +350,11 @@ public:
 	{
 		signed char d[(int)QuantityType::ENUM_MAX]
 		{
-			dim[0] - rhs.dim[0],  
-			dim[1] - rhs.dim[1],  
-			dim[2] - rhs.dim[2],  
-			dim[3] - rhs.dim[3],  
-			dim[4] - rhs.dim[4]
+			(signed char)(dim[0] - rhs.dim[0]),  
+			(signed char)(dim[1] - rhs.dim[1]),  
+			(signed char)(dim[2] - rhs.dim[2]),  
+			(signed char)(dim[3] - rhs.dim[3]),  
+			(signed char)(dim[4] - rhs.dim[4])
 		};
 		return PhysicalQuantity(value / rhs.value, d);
 	}
@@ -424,7 +425,7 @@ public:
 	static const int hashTableSize_UnitSymbols;
 	static const int hashTableSize_UnitLongNames;
 	static const int hashTableSize_PrefixSymbols;
-	static const int hashTableSize_PrefixLongNames;
+	//static const int hashTableSize_PrefixLongNames;
 #endif //#ifndef NO_HASHING
 	static num equalityToleranceFactor;
 
@@ -482,7 +483,7 @@ public:
 // Use these in a header.
 #define DeclareLiteral(symbol_no_quotes) PhysicalQuantity operator ""_##symbol_no_quotes(long double); PhysicalQuantity operator ""_##symbol_no_quotes(unsigned long long);
 #define DeclareLiteralWithPrefixes(symbol_no_quotes) \
-	DeclareLiteral(  ##symbol_no_quotes) \
+	DeclareLiteral(  symbol_no_quotes) \
 	DeclareLiteral( c##symbol_no_quotes) \
 	DeclareLiteral( k##symbol_no_quotes) \
 	DeclareLiteral( m##symbol_no_quotes) \
@@ -516,7 +517,7 @@ public:
 	}
 #define DefineLiteral(symbol_no_quotes) DefineLiteralBase(##symbol_no_quotes, 1.0)
 #define DefineLiteralWithPrefixes(symbol_no_quotes) \
-	DefineLiteralBase(  ##symbol_no_quotes, 1.0   ) \
+	DefineLiteralBase(  symbol_no_quotes, 1.0   ) \
 	DefineLiteralBase( c##symbol_no_quotes, 1e-2  ) \
 	DefineLiteralBase( k##symbol_no_quotes, 1e3   ) \
 	DefineLiteralBase( m##symbol_no_quotes, 1e-3  ) \
@@ -558,8 +559,9 @@ public:
 	}
 
 //----------------------------------------------------------------------------
+#define BLANK(x)
 #define CxLiteralWithPrefixes(symbol_no_quotes, Ma, Di, Ti, Te, Cu, factor) \
-	CxLiteral(  ##symbol_no_quotes,  Ma, Di, Ti, Te, Cu, factor) \
+	CxLiteral( symbol_no_quotes,  Ma, Di, Ti, Te, Cu, factor) \
 	CxLiteral( c##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e-2  ) \
 	CxLiteral( k##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e3   ) \
 	CxLiteral( m##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e-3  ) \
@@ -616,6 +618,6 @@ public:
 // End literals
 //==================================================================================
 
-#ifndef PQ_BUILD_TOOL
-#include <PhysicalQuantity/literals.h>
+#ifndef PQ_GENCODE
+#include <PhysicalQuantity/literals.ah>
 #endif

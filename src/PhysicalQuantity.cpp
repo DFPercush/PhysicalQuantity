@@ -3,7 +3,6 @@ TODO:
 	/ convert() - UnitListCache
 	. toString(const UnitList& pu)
 	. initializer_list ? {1.23, {0,1,0,0,0}}
-	. constexpr
 	. print a double without sprintf ? Arduino for example can't sprintf floating points
 	.	> -48+3
 		-483
@@ -16,14 +15,14 @@ TODO:
 #include <stdio.h>
 
 #ifndef NO_HASHING
-#ifndef PQ_BUILD_TOOL
-#include <PhysicalQuantity/hashTables.h>
-#else //#ifndef PQ_BUILD_TOOL
+#ifndef PQ_GENCODE
+#include <PhysicalQuantity/hashTables.ah>
+#else //#ifndef PQ_GENCODE
 struct { unsigned int bucketSize; unsigned int bucket[1]; } UnitSymbols_HashTable[1];
 struct { unsigned int bucketSize; unsigned int bucket[1]; } UnitLongNames_HashTable[1];
 struct { unsigned int bucketSize; unsigned int bucket[1]; } PrefixSymbols_HashTable[1];
 //struct { unsigned int bucketSize; unsigned int bucket[1]; } PrefixLongNames_HashTable[1];
-#endif //#ifndef PQ_BUILD_TOOL
+#endif //#ifndef PQ_GENCODE
 #endif //#ifndef NO_HASHING
 
 using namespace std;
@@ -797,8 +796,8 @@ std::string PhysicalQuantity::toString() const
 string PhysicalQuantity::toString(const UnitListBase& pu) const
 {
 	string ret;
-	size_t buflen = pu.count() * 12 + 32;
-	size_t needbuflen = buflen;
+	size_t buflen = 0;
+	size_t needbuflen = pu.count() * 12 + 32;
 	char* buf = nullptr;
 	while (needbuflen >= buflen)
 	{
@@ -806,7 +805,7 @@ string PhysicalQuantity::toString(const UnitListBase& pu) const
 		buf = new char[needbuflen];
 		buflen = needbuflen;
 		needbuflen = sprint(buf, buflen, pu);
-	}	
+	}
 	ret = buf;
 	delete [] buf;
 	return ret;

@@ -1,5 +1,5 @@
 
-// Note: Make sure PQ_BUILD_TOOL is defined in project settings / 
+// Note: Make sure PQ_GENCODE is defined in project settings / 
 // preprocessor options, or as a compiler argument,
 // or you will get errors about undeclared identifiers *_HashTable
 // It's not enough to declare it here. Some source .cpp files also need it.
@@ -23,6 +23,7 @@ typedef PhysicalQuantity::CSubString csubstr;
 #include <Windows.h>
 #endif
 
+
 void dumpLiterals(string rootpath)
 {
 	ofstream header;
@@ -31,19 +32,19 @@ void dumpLiterals(string rootpath)
 	{
 		rootpath += "/";
 	}
-	header.open(rootpath + "include/PhysicalQuantity/literals.h");
-	if (!header.is_open()) { throw runtime_error("Could not open include/PhysicalQuantity/literals.h"); }
-	source.open(rootpath + "src/literals.cpp");
+	header.open(rootpath + "include/PhysicalQuantity/literals.ah");
+	if (!header.is_open()) { throw runtime_error("Could not open include/PhysicalQuantity/literals.ah"); }
+	source.open(rootpath + "src/literals.acpp");
 	if (!source.is_open())
 	{
 		header.close();
-		throw runtime_error("Could not open src/literals.cpp");
+		throw runtime_error("Could not open src/literals.acpp");
 	}
 
+	source << "#ifndef NO_LITERALS\n";
 	source << "#include <PhysicalQuantity.h>\n";
 
 	header << "#ifndef NO_LITERALS\n";
-	source << "#ifndef NO_LITERALS\n";
 	header << "#if defined(CPP11) && !defined(NO_INLINE)\n";
 
 	for (int ui = 0; ui < PQ::KnownUnitsLength; ui++)
@@ -135,8 +136,8 @@ unsigned int dumpHashTable(string rootpath, const void* pArray, const char * con
 	}
 	if (print)
 	{
-		hh.open(rootpath + "include/PhysicalQuantity/hashTables.h", std::ofstream::app);
-		if (!hh.is_open()) { throw runtime_error("Could not open include/PhysicalQuantity/hashTables.h"); }
+		hh.open(rootpath + "include/PhysicalQuantity/hashTables.ah", std::ofstream::app);
+		if (!hh.is_open()) { throw runtime_error("Could not open include/PhysicalQuantity/hashTables.ah"); }
 	}
 	size_t l_seed;
 	if (seed_p != 0) { l_seed = seed_p; }
@@ -242,14 +243,74 @@ unsigned int findSeed(string rootpath)
 }
 #endif //#ifndef NO_HASHING
 
+void showinfo()
+{
+	cout << "\tsizeof(PQ) = " << sizeof(PQ) << endl;
+	cout << "\tsizeof(PQ::CSubString) = " << sizeof(PQ::CSubString) << endl;
+	cout << "\tsizeof(PQ::UnitList) = " << sizeof(PQ::UnitList) << endl;
+	cout <<"\tsizeof(PQ::UnitListBase::UnitPref) = " << sizeof(PhysicalQuantity::UnitListBase::UnitPref) << endl;
+	cout << "\tsizeof(PQ::UnitDefinition) = " << sizeof(PQ::UnitDefinition) << endl;
+	cout <<	"\tsizeof(PQ::KnownUnits) = " << PQ::KnownUnitsLength * sizeof(PQ::UnitDefinition) 
+		<< " (" << PQ::KnownUnitsLength << " elements)\n";
+	cout << "\tsizeof(PQ::Prefix) = " << sizeof(PQ::Prefix) << endl;
+	cout << "\tsizeof(PQ::KnownPrefixes) = " << sizeof(PQ::Prefix) * PQ::KnownPrefixesLength 
+		<< " (" << PQ::KnownPrefixesLength << " elements)\n";
+#ifndef NO_HASHING
+	cout << "\tPQ::defaultHashSeed = " << PhysicalQuantity::defaultHashSeed << endl;
+	int us = dumpHashTable("", &PhysicalQuantity::KnownUnits[0], &PhysicalQuantity::KnownUnits[0].symbol, sizeof(PhysicalQuantity::UnitDefinition), PhysicalQuantity::KnownUnitsLength, PhysicalQuantity::hashTableSize_UnitSymbols, "UnitSymbols", "PhysicalQuantity::unitIndex_t", PhysicalQuantity::defaultHashSeed, false);
+	int ul = dumpHashTable("", &PhysicalQuantity::KnownUnits[0], &PhysicalQuantity::KnownUnits[0].longName, sizeof(PhysicalQuantity::UnitDefinition), PhysicalQuantity::KnownUnitsLength, PhysicalQuantity::hashTableSize_UnitLongNames, "UnitLongNames", "PhysicalQuantity::unitIndex_t", PhysicalQuantity::defaultHashSeed, false);
+	int ps = dumpHashTable("", &PhysicalQuantity::KnownPrefixes[0], &PhysicalQuantity::KnownPrefixes[0].symbol, sizeof(PhysicalQuantity::Prefix), PhysicalQuantity::KnownPrefixesLength, PhysicalQuantity::hashTableSize_PrefixSymbols, "PrefixSymbols", "PhysicalQuantity::prefixIndex_t", PhysicalQuantity::defaultHashSeed, false);
+	cout << "\tPrefixSymbols_HashTable[" << PQ::hashTableSize_PrefixSymbols << "]: " 
+	     << "bucketSize " << ps << ", "
+		 << (sizeof(int) + (sizeof(PQ::prefixIndex_t) * ps)) * PQ::hashTableSize_PrefixSymbols << " bytes*\n";
+	//cout << "\tPQ::hashTableSize_UnitSymbols = " << PQ::hashTableSize_UnitSymbols << endl;
+	cout << "\tUnitSymbols_HashTable[" << PQ::hashTableSize_UnitSymbols << "]: "
+		<< "bucketSize " << us << ", "
+		<< (sizeof(int) + (sizeof(PQ::unitIndex_t) * us)) * PQ::hashTableSize_UnitSymbols << " bytes*\n";
+	//cout << "\tPQ::hashTableSize_UnitLongNames = " << PQ::hashTableSize_UnitLongNames << endl;	
+	cout << "\tUnitLongNames_HashTable[" << PQ::hashTableSize_UnitLongNames << "]: "
+		<< "bucketSize " << ul << ", "
+		<< (sizeof(int) + (sizeof(PQ::unitIndex_t) * ul)) * PQ::hashTableSize_UnitLongNames << " bytes*\n";
+	cout << "\t  * Padding may introduce inaccuracies. gencode does not have a compiled version.\n";
+	//UnitLongNames_HashTable
+#endif //#ifndef NO_HASHING
+}
+
+
 int main(int argc, char** argv)
 {
 	bool beep = false;
+#ifdef NO_HASHING
+	cout << " * gencode: NO_HASHING is defined.\n";
+#endif
+#ifdef NO_LITERALS
+	cout << " * gencode: NO_LITERALS is defined.\n";
+#endif
+	
+	cout << "gencode info:\n\tPreprocessor options 0x" << hex << PQ_HEADER_OPTIONS;
+	if (PQHeaderOptionsMatch)
+	{
+		cout << " OK\n";
+	}
+	else
+	{
+		cout << " BAD (lib 0x" << PhysicalQuantity::compiledHeaderOptions << ")\n";
+		return 1;
+	}
+
+	cout << dec;
+	if (argc < 1)
+	{
+		cout << "gencode options: generate, find-seed, info, --rootpath [path] --beep (windows)\n";
+		return 1;
+	}
 	string rootpath;
+	bool generate = false;
+	bool info = false;
 	for (int i = 1; i < argc; i++)
 	{
 		if (!strcmp(argv[i], "--beep")) { beep = true; }
-		else if (!strcmp(argv[i], "--find-seed"))
+		else if (!strcmp(argv[i], "find-seed"))
 		{
 			printf("0x%x", findSeed(rootpath));
 			return 0;
@@ -259,11 +320,20 @@ int main(int argc, char** argv)
 			i++;
 			rootpath = argv[i];
 		}
-		else { fprintf(stderr, "Unknown: %s\n", argv[i]); }
+		else if (!strcmp(argv[i], "generate"))
+		{
+			generate = true;
+		}
+		else if (!strcmp(argv[i], "info"))
+		{
+			info = true;
+		}
+		else { fprintf(stderr, " * gencode: Unknown command: %s\n", argv[i]); }
 	}
 
+	if (info) { showinfo(); }
 
-
+	if (!generate) { return 0; }
 	int ret = 0;
 	try
 	{
@@ -273,15 +343,20 @@ int main(int argc, char** argv)
 		{
 			rootpath += "/";
 		}
-		remove((rootpath + "include/PhysicalQuantity/hashTables.h").c_str());
+		remove((rootpath + "include/PhysicalQuantity/hashTables.ah").c_str());
+		cout << "gencode: Generating hash tables...";
 		dumpHashTable(rootpath, &PhysicalQuantity::KnownUnits[0], &PhysicalQuantity::KnownUnits[0].symbol, sizeof(PhysicalQuantity::UnitDefinition), PhysicalQuantity::KnownUnitsLength, PhysicalQuantity::hashTableSize_UnitSymbols, "UnitSymbols", "PhysicalQuantity::unitIndex_t");
 		dumpHashTable(rootpath, &PhysicalQuantity::KnownUnits[0], &PhysicalQuantity::KnownUnits[0].longName, sizeof(PhysicalQuantity::UnitDefinition), PhysicalQuantity::KnownUnitsLength, PhysicalQuantity::hashTableSize_UnitLongNames, "UnitLongNames", "PhysicalQuantity::unitIndex_t");
 		dumpHashTable(rootpath, &PhysicalQuantity::KnownPrefixes[0], &PhysicalQuantity::KnownPrefixes[0].symbol, sizeof(PhysicalQuantity::Prefix), PhysicalQuantity::KnownPrefixesLength, PhysicalQuantity::hashTableSize_PrefixSymbols, "PrefixSymbols", "PhysicalQuantity::prefixIndex_t");
+		cout << " OK\n";
 		//dumpHashTable(&PhysicalQuantity::KnownPrefixes[0], &PhysicalQuantity::KnownPrefixes[0].longName, sizeof(PhysicalQuantity::Prefix), PhysicalQuantity::KnownPrefixesLength, PhysicalQuantity::hashTableSize_PrefixLongNames, "PrefixLongNames");
 #endif //#ifndef NO_HASHING
 
+#ifndef NO_LITERALS
+		cout << "gencode: Generating literals... ";
 		dumpLiterals(rootpath);
-
+		cout << " OK\n";
+#endif
 #if defined(_MSC_VER) && defined(BEEP_IF_HASH_TABLES_REBUILT)
 		if (beep)
 		{
@@ -305,34 +380,8 @@ int main(int argc, char** argv)
 			Beep(300, 100);
 #endif
 		}
-
 	}
+	cout << "gencode: exit code " << ret << endl;
 	return ret;
 }
 
-#ifdef NO_HASHING
-int main(int argc, char** argv)
-{
-	bool beep = false;
-	for (int i = 1; i < argc; i++)
-	{
-		if (!strcmp(argv[i], "--beep")) { beep = true; }
-		else { fprintf(stderr, "Unknown: %s\n", argv[i]); }
-	}
-
-//
-//#if defined(_MSC_VER) && defined(BEEP_IF_HASH_TABLES_REBUILT)
-//	if (beep)
-//	{
-//		Beep(350, 100);
-//		Beep(300, 200);
-//		Beep(350, 100);
-//		Beep(300, 200);
-//		Beep(350, 100);
-//		Beep(300, 200);
-//	}
-//#endif
-
-	return 1;
-}
-#endif //#ifndef NO_HASHING

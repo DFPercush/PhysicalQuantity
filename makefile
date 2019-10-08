@@ -1,16 +1,15 @@
 include config.mk
 compile=$(Compiler) $(CompilerOptions)
 StaticHeaders=include/PhysicalQuantity.h include/PhysicalQuantity/ppOptions.h
-AllHeaders=$(StaticHeaders) include/PhysicalQuantity/hashTables.h
+AllHeaders=$(StaticHeaders) include/PhysicalQuantity/hashTables.ah include/PhysicalQuantity/literals.ah
 
-all: $(BinPath)genhashtables $(LibPath)PhysicalQuantity.a $(BinPath)TestConsole
-	echo Up to date.
+all: $(BinPath)gencode $(LibPath)PhysicalQuantity.a $(BinPath)TestConsole
 
 #-----------------------------------------------------------------
 # Binaries
-genhashtablesObjects=$(ObjPath)genhashtables.o $(ObjPath)csubstr.o $(ObjPath)hash.o $(ObjPath)PhysicalQuantity-gen.o $(ObjPath)PhysicalUnitDefinitions.o
-$(BinPath)genhashtables: $(genhashtablesObjects)
-	$(compile) $(LibPathFlag)$(LibPath) $(OutputFlag) $(BinPath)genhashtables $(genhashtablesObjects)
+gencodeObjects=$(ObjPath)gencode.o $(ObjPath)csubstr.o $(ObjPath)hash.o $(ObjPath)PhysicalQuantity-gencode.o $(ObjPath)PhysicalUnitDefinitions.o
+$(BinPath)gencode: $(gencodeObjects)
+	$(compile) $(LibPathFlag)$(LibPath) $(OutputFlag) $(BinPath)gencode $(gencodeObjects)
 
 #TestConsoleObj=$(ObjPath)TestConsole.o $(LibPath)libPhysicalQuantity.so
 #$(BinPath)TestConsole: $(TestConsoleObj)
@@ -20,49 +19,61 @@ $(BinPath)TestConsole: $(TestConsoleObj)
 	$(Compiler) $(OutputFlag) $(BinPath)TestConsole $(ObjPath)TestConsole.o $(LibPath)PhysicalQuantity.a
 
 #-----------------------------------------------------------------
-# Shared libraries
-pqObj=$(ObjPath)csubstr.o $(ObjPath)hash.o $(ObjPath)PhysicalQuantity.o $(ObjPath)PhysicalUnitDefinitions.o
-#$(LibPath)libPhysicalQuantity.so: $(pqObj)
-$(LibPath)PhysicalQuantity.a: $(pqObj)
-	ar rvs $(LibPath)PhysicalQuantity.a $(pqObj)
+# Shared library
+libPqObj=$(ObjPath)csubstr.o $(ObjPath)hash.o $(ObjPath)PhysicalQuantity.o $(ObjPath)PhysicalUnitDefinitions.o $(ObjPath)literals.o
+#$(LibPath)libPhysicalQuantity.so: $(libPqObj)
+$(LibPath)PhysicalQuantity.a: $(libPqObj)
+	ar rvs $(LibPath)PhysicalQuantity.a $(libPqObj)
 
-#	$(compile) $(SharedFlag) $(SharedLinkFlags) $(OutputFlag) $(LibPath)libPhysicalQuantity.so $(pqObj)
+#	$(compile) $(SharedFlag) $(SharedLinkFlags) $(OutputFlag) $(LibPath)libPhysicalQuantity.so $(libPqObj)
 
 
 #-----------------------------------------------------------------
 # Generated files
-#include/PhysicalQuantity/hashTables.h: $(BinPath)genhashtables
-#	$(BinPath)genhashtables > include/PhysicalQuantity/hashTables.h
-include/PhysicalQuantity/hashTables.h include/PhysicalQuantity/literals.h src/literals.cpp: $(BinPath)genhashtables
-	$(BinPath)genhashtables --rootpath ./
+#include/PhysicalQuantity/hashTables.ah: $(BinPath)gencode
+#	$(BinPath)gencode > include/PhysicalQuantity/hashTables.ah
+include/PhysicalQuantity/hashTables.ah include/PhysicalQuantity/literals.ah src/literals.acpp: $(BinPath)gencode
+	$(BinPath)gencode generate --rootpath ./
 
 
 #---------------------------------------------------------------
 # Intermediate objects
 CommonIntCompile=$(compile) $(SharedCompileFlags) $(Defines) $(IncludePathFlag)$(IncludePath) $(OutputFlag) $(ObjPath)
-$(ObjPath)PhysicalQuantity-gen.o: src/PhysicalQuantity.cpp $(StaticHeaders)
-	$(CommonIntCompile)PhysicalQuantity-gen.o src/PhysicalQuantity.cpp $(DefineFlag)PQ_BUILD_TOOL
+$(ObjPath)PhysicalQuantity-gencode.o: src/PhysicalQuantity.cpp $(StaticHeaders)
+	$(CommonIntCompile)PhysicalQuantity-gencode.o src/PhysicalQuantity.cpp $(DefineFlag)PQ_GENCODE
 
-$(ObjPath)PhysicalQuantity.o: src/PhysicalQuantity.cpp $(AllHeaders)
-	$(CommonIntCompile)PhysicalQuantity.o src/PhysicalQuantity.cpp
-
+# For some of these modules, I'm passing the gencode define because 
+# they really just don't need all the fancy stuff, and gencode
+# depends on them. They mainly just need to see their types declared
+# from within the PQ class. It's kind of a circular dependency situation,
+# but we are tricksy. Could create separate intermediates for the gencode
+# binary, but it's really not necessary.
 $(ObjPath)csubstr.o: src/csubstr.cpp $(StaticHeaders)
-	$(CommonIntCompile)csubstr.o src/csubstr.cpp
+	$(CommonIntCompile)csubstr.o src/csubstr.cpp $(DefineFlag)PQ_GENCODE
 
 $(ObjPath)hash.o: src/hash.cpp $(StaticHeaders)
-	$(CommonIntCompile)hash.o src/hash.cpp
+	$(CommonIntCompile)hash.o src/hash.cpp $(DefineFlag)PQ_GENCODE
 
 $(ObjPath)PhysicalUnitDefinitions.o: src/PhysicalUnitDefinitions.cpp $(StaticHeaders)
-	$(CommonIntCompile)PhysicalUnitDefinitions.o src/PhysicalUnitDefinitions.cpp
+	$(CommonIntCompile)PhysicalUnitDefinitions.o src/PhysicalUnitDefinitions.cpp $(DefineFlag)PQ_GENCODE
+
+$(ObjPath)gencode.o: src/gencode.cpp $(StaticHeaders)
+	$(CommonIntCompile)gencode.o src/gencode.cpp $(DefineFlag)PQ_GENCODE
+
+$(ObjPath)literals.o: src/literals.acpp $(StaticHeaders)
+	$(CommonIntCompile)literals.o $(ExplicitCppFile) src/literals.acpp
+
+# Now these two really do need everything generated and built before them.
+$(ObjPath)PhysicalQuantity.o: src/PhysicalQuantity.cpp $(AllHeaders)
+	$(CommonIntCompile)PhysicalQuantity.o src/PhysicalQuantity.cpp
 
 $(ObjPath)TestConsole.o: src/TestConsole.cpp $(AllHeaders)
 	$(CommonIntCompile)TestConsole.o src/TestConsole.cpp
 
-$(ObjPath)genhashtables.o: src/genhashtables.cpp $(StaticHeaders)
-	$(CommonIntCompile)genhashtables.o src/genhashtables.cpp
 
 clean:
 	rm -f $(BinPath)*
 	rm -f $(LibPath)*
 	rm -f $(ObjPath)*
-
+	rm -f src/*.acpp
+	rm -f include/PhysicalQuantity/*.ah

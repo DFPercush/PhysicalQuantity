@@ -1,22 +1,30 @@
 
+#ifndef NO_HASHING
 
 #include <PhysicalQuantity.h>
 
 typedef PhysicalQuantity::CSubString csubstr;
 
-#ifndef NO_HASHING
 
 // If you change these values or add new units, rebuild hashTables.h
 // In Visual Studio, a Rebuild All / Rebuild Solution will do this.
-// The main() for this is in genhashtables.cpp
+// It is also part of the makefile for the library.
+// The main() for this is in gencode.cpp
 // See README.txt for instructions on adding new units.
+
+const int PhysicalQuantity::hashTableSize_UnitSymbols = 50;
+const int PhysicalQuantity::hashTableSize_UnitLongNames = 50;
+const int PhysicalQuantity::hashTableSize_PrefixSymbols = 50;
+const size_t PhysicalQuantity::defaultHashSeed = 8;
+
 
 
 // If you really need some serious hashing power from a proven algorithm....
 //uint32_t murmur3_32(const unsigned char* key, size_t len, uint32_t seed);
 
-
-// But in the name of speed, let's be a little simpler
+// But in the name of speed, let's be a little simpler.
+// After all, this is read only data, we can tweak to get it just right
+// without needing a complex general case algorithm.
 size_t PhysicalQuantity::cstrHasherTiny::operator()(const CSubString& s) const
 {
 	//return murmur3_32((unsigned char*)s, strlen(s), 0x5f4d9a1b);

@@ -29,7 +29,7 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
     <ProjectGuid>{6758434D-2C15-45FA-9745-6F95895F6EAD}</ProjectGuid>
-    <RootNamespace>genhashtables</RootNamespace>
+    <RootNamespace>gencode</RootNamespace>
     <WindowsTargetPlatformVersion>10.0.18362.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -98,37 +98,37 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <IncludePath>$(ProjectDir)..\include;$(IncludePath)</IncludePath>
     <CustomBuildAfterTargets>Link</CustomBuildAfterTargets>
-    <OutDir>$(SolutionDir)$(Configuration)\$(Platform)\$(ProjectName)\</OutDir>
-    <IntDir>$(SolutionDir)$(Configuration)\$(Platform)\$(ProjectName)\</IntDir>
+    <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</OutDir>
+    <IntDir>$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='interactive|x64'">
     <IncludePath>$(ProjectDir)..\include;$(IncludePath)</IncludePath>
     <CustomBuildAfterTargets>Link</CustomBuildAfterTargets>
-    <OutDir>$(SolutionDir)$(Configuration)\$(Platform)\$(ProjectName)\</OutDir>
-    <IntDir>$(SolutionDir)$(Configuration)\$(Platform)\$(ProjectName)\</IntDir>
+    <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</OutDir>
+    <IntDir>$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <IncludePath>$(ProjectDir)..\include;$(IncludePath)</IncludePath>
     <CustomBuildAfterTargets>Link</CustomBuildAfterTargets>
-    <OutDir>$(SolutionDir)$(Configuration)\$(Platform)\$(ProjectName)\</OutDir>
-    <IntDir>$(SolutionDir)$(Configuration)\$(Platform)\$(ProjectName)\</IntDir>
+    <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</OutDir>
+    <IntDir>$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <IncludePath>$(ProjectDir)..\include;$(IncludePath)</IncludePath>
-    <OutDir>$(SolutionDir)$(Configuration)\$(Platform)\$(ProjectName)\</OutDir>
-    <IntDir>$(SolutionDir)$(Configuration)\$(Platform)\$(ProjectName)\</IntDir>
+    <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</OutDir>
+    <IntDir>$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
     <CustomBuildAfterTargets>Link</CustomBuildAfterTargets>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='interactive|Win32'">
     <IncludePath>$(ProjectDir)..\include;$(IncludePath)</IncludePath>
-    <OutDir>$(SolutionDir)$(Configuration)\$(Platform)\$(ProjectName)\</OutDir>
-    <IntDir>$(SolutionDir)$(Configuration)\$(Platform)\$(ProjectName)\</IntDir>
+    <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</OutDir>
+    <IntDir>$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
     <CustomBuildAfterTargets>Link</CustomBuildAfterTargets>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <IncludePath>$(ProjectDir)..\include;$(IncludePath)</IncludePath>
-    <OutDir>$(SolutionDir)$(Configuration)\$(Platform)\$(ProjectName)\</OutDir>
-    <IntDir>$(SolutionDir)$(Configuration)\$(Platform)\$(ProjectName)\</IntDir>
+    <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</OutDir>
+    <IntDir>$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
     <CustomBuildAfterTargets>Link</CustomBuildAfterTargets>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -137,14 +137,14 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <PreprocessorDefinitions>PQ_BUILD_TOOL;BEEP_IF_HASH_TABLES_REBUILT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>PQ_GENCODE;BEEP_IF_HASH_TABLES_REBUILT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <CustomBuildStep>
-      <Message>generating hashTables.h</Message>
+      <Message>gencode: auto generating dependencies</Message>
     </CustomBuildStep>
     <CustomBuildStep>
       <Outputs>$(ProjectDir)..\include\PhysicalQuantity\hashTables.h;%(Outputs)</Outputs>
-      <Command>$(OutputPath)genhashtables.exe --rootpath $(SolutionDir)..\</Command>
+      <Command>$(OutputPath)gencode.exe --rootpath $(SolutionDir)..\ generate</Command>
       <Inputs>$(ProjectDir)..\src\hash.cpp;$(ProjectDir)..\src\PhysicalUnitDefinitions.cpp;%(Inputs)</Inputs>
     </CustomBuildStep>
     <PostBuildEvent>
@@ -157,14 +157,14 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <PreprocessorDefinitions>PQ_BUILD_TOOL;BEEP_IF_HASH_TABLES_REBUILT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>PQ_GENCODE;BEEP_IF_HASH_TABLES_REBUILT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <CustomBuildStep>
-      <Message>generating hashTables.h</Message>
+      <Message>gencode: auto generating dependencies</Message>
     </CustomBuildStep>
     <CustomBuildStep>
       <Outputs>$(ProjectDir)..\include\PhysicalQuantity\hashTables.h;%(Outputs)</Outputs>
-      <Command>$(OutputPath)genhashtables.exe --rootpath $(SolutionDir)..\</Command>
+      <Command>$(OutputPath)gencode.exe --rootpath $(SolutionDir)..\ generate</Command>
       <Inputs>$(ProjectDir)..\src\hash.cpp;$(ProjectDir)..\src\PhysicalUnitDefinitions.cpp;%(Inputs)</Inputs>
     </CustomBuildStep>
     <PostBuildEvent>
@@ -177,11 +177,11 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <PreprocessorDefinitions>PQ_BUILD_TOOL;BEEP_IF_HASH_TABLES_REBUILT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>PQ_GENCODE;BEEP_IF_HASH_TABLES_REBUILT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <CustomBuildStep>
-      <Command>$(OutputPath)genhashtables.exe --rootpath $(SolutionDir)..\</Command>
-      <Message>generating hashTables.h</Message>
+      <Command>$(OutputPath)gencode.exe --rootpath $(SolutionDir)..\ generate</Command>
+      <Message>gencode: auto generating dependencies</Message>
       <Outputs>$(ProjectDir)..\include\PhysicalQuantity\hashTables.h;%(Outputs)</Outputs>
       <Inputs>$(ProjectDir)..\src\hash.cpp;$(ProjectDir)..\src\PhysicalUnitDefinitions.cpp;%(Inputs)</Inputs>
     </CustomBuildStep>
@@ -195,11 +195,11 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <PreprocessorDefinitions>PQ_BUILD_TOOL;BEEP_IF_HASH_TABLES_REBUILT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>PQ_GENCODE;BEEP_IF_HASH_TABLES_REBUILT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <CustomBuildStep>
-      <Command>$(OutputPath)genhashtables.exe --rootpath $(SolutionDir)..\</Command>
-      <Message>generating hashTables.h</Message>
+      <Command>$(OutputPath)gencode.exe --rootpath $(SolutionDir)..\ generate</Command>
+      <Message>gencode: auto generating dependencies</Message>
       <Outputs>$(ProjectDir)..\include\PhysicalQuantity\hashTables.h;%(Outputs)</Outputs>
       <Inputs>$(ProjectDir)..\src\hash.cpp;$(ProjectDir)..\src\PhysicalUnitDefinitions.cpp;%(Inputs)</Inputs>
     </CustomBuildStep>
@@ -215,15 +215,15 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <PreprocessorDefinitions>PQ_BUILD_TOOL;BEEP_IF_HASH_TABLES_REBUILT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>PQ_GENCODE;BEEP_IF_HASH_TABLES_REBUILT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
     <CustomBuildStep>
-      <Command>$(OutputPath)genhashtables.exe --rootpath $(SolutionDir)..\</Command>
-      <Message>generating hashTables.h</Message>
+      <Command>$(OutputPath)gencode.exe --rootpath $(SolutionDir)..\ generate</Command>
+      <Message>gencode: auto generating dependencies</Message>
       <Outputs>$(ProjectDir)..\include\PhysicalQuantity\hashTables.h;%(Outputs)</Outputs>
       <Inputs>$(ProjectDir)..\src\hash.cpp;$(ProjectDir)..\src\PhysicalUnitDefinitions.cpp;%(Inputs)</Inputs>
     </CustomBuildStep>
@@ -239,18 +239,18 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <PreprocessorDefinitions>PQ_BUILD_TOOL;BEEP_IF_HASH_TABLES_REBUILT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>PQ_GENCODE;BEEP_IF_HASH_TABLES_REBUILT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
     <CustomBuildStep>
-      <Message>generating hashTables.h</Message>
+      <Message>gencode: auto generating dependencies</Message>
     </CustomBuildStep>
     <CustomBuildStep>
       <Outputs>$(ProjectDir)..\include\PhysicalQuantity\hashTables.h;%(Outputs)</Outputs>
-      <Command>$(OutputPath)genhashtables.exe --rootpath $(SolutionDir)..\</Command>
+      <Command>$(OutputPath)gencode.exe --rootpath $(SolutionDir)..\ generate</Command>
       <Inputs>$(ProjectDir)..\src\hash.cpp;$(ProjectDir)..\src\PhysicalUnitDefinitions.cpp;%(Inputs)</Inputs>
     </CustomBuildStep>
     <PostBuildEvent>
@@ -259,7 +259,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\src\csubstr.cpp" />
-    <ClCompile Include="..\src\genhashtables.cpp" />
+    <ClCompile Include="..\src\gencode.cpp" />
     <ClCompile Include="..\src\hash.cpp" />
     <ClCompile Include="..\src\PhysicalQuantity.cpp" />
     <ClCompile Include="..\src\PhysicalUnitDefinitions.cpp" />

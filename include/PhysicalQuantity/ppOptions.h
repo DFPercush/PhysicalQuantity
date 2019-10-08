@@ -11,9 +11,8 @@
 //#define INLINE_KEYWORD inline  // default is __inline
 //#define NO_HASHING       // Do not use hash tables for unit string lookups (Tables can be in ROM). Requires. approx. 1 KB
 //#define NO_THROW         // Do not use 'throw' for errors, instead use an error callback (see errorHandler)
-//TODO: #define NO_CONSTEXPR     // Do not use 'constexpr' keyword. Requires C++11.
 // TODO: NO_SPRINTF, NO_SPRINTF_INT, NO_SPRINTF_FLOAT
-
+// TODO: Minimal = no substr, no parse/print/eval. ::create(unitIndex, power)
 // End conditional compilation options
 //=================================================================================================================
 

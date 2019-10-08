@@ -8,7 +8,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PhysicalQuantity", "Physica
 		{6758434D-2C15-45FA-9745-6F95895F6EAD} = {6758434D-2C15-45FA-9745-6F95895F6EAD}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "genhashtables", "genhashtables.vcxproj", "{6758434D-2C15-45FA-9745-6F95895F6EAD}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "gencode", "gencode.vcxproj", "{6758434D-2C15-45FA-9745-6F95895F6EAD}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TestConsole", "TestConsole.vcxproj", "{99016E24-E28E-4F93-A98C-36699C001C44}"
 	ProjectSection(ProjectDependencies) = postProject

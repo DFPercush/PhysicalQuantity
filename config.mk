@@ -1,7 +1,5 @@
-# Here you can pass conditional compilation options
-# as seen in the README, if you don't want to modify 
-# ppOptions.h
-# Comma separated list, no spaces
+# Here you can pass conditional compilation options as seen 
+#in the README, if you don't want to modify ppOptions.h.
 
 Defines=
 
@@ -17,6 +15,7 @@ LibPathFlag=-L
 IncludePathFlag=-I
 LibDepFlag=-l
 DefineFlag=-D
+ExplicitCppFile=-x c++
 
 # I don't recommend changing these paths
 # You will also have to modify the buildtool source

@@ -27,7 +27,7 @@
     <ClCompile Include="..\src\PhysicalUnitDefinitions.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\literals.cpp">
+    <ClCompile Include="..\src\literals.acpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -35,13 +35,13 @@
     <ClInclude Include="..\include\PhysicalQuantity.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\PhysicalQuantity\hashTables.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\include\PhysicalQuantity\ppOptions.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\PhysicalQuantity\literals.h">
+    <ClInclude Include="..\include\PhysicalQuantity\literals.ah">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\PhysicalQuantity\hashTables.ah">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
