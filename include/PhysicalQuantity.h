@@ -159,20 +159,18 @@ public:
 		DISTANCE,
 		TIME,
 		TEMPERATURE,
-		CHARGE,
+		CURRENT,
 		ENUM_MAX
 	};
 
 	struct UnitDefinition
 	{
-		// TODO: rearrange for padding
 		const char* symbol;
 		const char* longName;
 		const char* plurals; // TODO: implement. Maybe #define away? Or the whole thing.
 		num factor;
 		const signed char dim[(int)QuantityType::ENUM_MAX];
 		unsigned short flags = 0;
-		//  TODO: implement NOPREFIX in findUnit()
 	};
 #define NOPREFIX  0x01
 #define CANPREFIX 0
@@ -190,10 +188,6 @@ public:
 	//==================================================================================
 
 
-	//==================================================================================
-	// Hashing function 
-	//    originally to be used as a template parameter to unordered_map,
-	//    but that wastes a lot of RAM
 #ifndef NO_HASHING
 	typedef unsigned short bucketSize_t;
 
@@ -213,6 +207,10 @@ public:
 	static const int hashTableSeed_PrefixSymbols;
 #endif //PQ_GENCODE
 
+	//==================================================================================
+	// Hashing function 
+	//    originally to be used as a template parameter to unordered_map,
+	//    but that wastes a lot of RAM
 	static const size_t defaultHashSeed;
 	struct cstrHasherTiny
 	{
@@ -394,6 +392,7 @@ public:
 
 	PhysicalQuantity operator+ (const PhysicalQuantity& rhs) const;
 	PhysicalQuantity operator- (const PhysicalQuantity& rhs) const;
+	PhysicalQuantity pow(int exp);
 
 #if defined(CPP11)
 	constexpr PhysicalQuantity operator* (num rhs)

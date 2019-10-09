@@ -1,11 +1,7 @@
 /*
 TODO: 
-	/ convert() - UnitListCache
-	. toString(const UnitList& pu)
 	. initializer_list ? {1.23, {0,1,0,0,0}}
 	. print a double without sprintf ? Arduino for example can't sprintf floating points
-	.	> -48+3
-		-483
 */
 
 #include <PhysicalQuantity.h>
@@ -17,11 +13,6 @@ TODO:
 #ifndef NO_HASHING
 #ifndef PQ_GENCODE
 #include <PhysicalQuantity/hashTables.ah>
-//#else //#ifndef PQ_GENCODE
-//struct { unsigned int bucketSize; unsigned int bucket[1]; } UnitSymbols_HashTable[1];
-//struct { unsigned int bucketSize; unsigned int bucket[1]; } UnitLongNames_HashTable[1];
-//struct { unsigned int bucketSize; unsigned int bucket[1]; } PrefixSymbols_HashTable[1];
-////struct { unsigned int bucketSize; unsigned int bucket[1]; } PrefixLongNames_HashTable[1];
 #endif //#ifndef PQ_GENCODE
 #endif //#ifndef NO_HASHING
 
@@ -242,10 +233,7 @@ void PhysicalQuantity::parseUnits(const CSubString& unitStr, signed char (&units
 		if (c == ' ' || c == '*' || c == '/' || i == ulen) 
 		{
 			wordEnd = i;
-
-			// Do stuff
 			word = csubstr(unitStr, wordStart, wordEnd - wordStart);
-
 			if (c == '/')
 			{
 				if (denom)
@@ -337,7 +325,6 @@ void PhysicalQuantity::parseUnits(const CSubString& unitStr, signed char (&units
 					{
 						factorOut *= KnownPrefixes[foundPrefix].factor;
 					}
-					//if (KnownUnits[foundUnit].offset != 0.0)
 					if (foundUnit < KnownUnitsWithOffsetLength)
 					{
 						if (tempOfs != 0.0)
@@ -358,7 +345,7 @@ void PhysicalQuantity::parseUnits(const CSubString& unitStr, signed char (&units
 							throw InvalidExpressionException("Can not handle an offset unit with a power greater than 1. (e.g. degrees F squared)");
 	#endif
 						}
-						tempOfs = KnownUnitsWithOffset[foundUnit]; // KnownUnits[foundUnit].offset;
+						tempOfs = KnownUnitsWithOffset[foundUnit];
 
 						for (int iSetOffsetFlags = 0; iSetOffsetFlags < (int)QuantityType::ENUM_MAX; iSetOffsetFlags++)
 						{
@@ -420,7 +407,6 @@ void PhysicalQuantity::mulUnit(signed char(&unitsOut)[(int)QuantityType::ENUM_MA
 void PhysicalQuantity::parse(const CSubString& text_arg)
 {
 	CSubString text(text_arg);
-	//num newValue = 0.0;
 	int firstNotSpace = (int)text.find_first_not_of(' ');
 	if (firstNotSpace > 0) { text = text.substr(firstNotSpace); }
 	if (text.length() == 0)
@@ -432,16 +418,6 @@ void PhysicalQuantity::parse(const CSubString& text_arg)
 		throw InvalidExpressionException("Quantity can not be null."); 
 #endif
 	}
-	//int firstNotNumber = (int)text.find_first_not_of("0123456789Ee.-+"); // added Ee
-	//if (firstNotNumber == -1)
-	//{
-	//	value = text.atof();
-	//	memset(dim, 0, sizeof(dim));
-	//	return;
-	//}
-	//else
-	//{
-	//}
 	
 	int firstSpace = (int)text.find_first_of(' ');
 	csubstr unitStr;
@@ -464,7 +440,6 @@ void PhysicalQuantity::parse(const CSubString& text_arg)
 	}
 	num unitFactor = 1.0;
 	num unitOfs = 0.0;
-	//parseUnits(CSubString(text, firstNotNumber), dim, unitFactor, unitOfs);
 	parseUnits(unitStr, dim, unitFactor, unitOfs);
 	value *= unitFactor;
 	value += unitOfs;
@@ -507,21 +482,14 @@ void PhysicalQuantity::WriteOutputUnit(int plen, int ulen, int reduceExp, size_t
 	}
 	else
 	{
-		outofs += nextLengthNeeded; //plen + ulen + 1;
+		outofs += nextLengthNeeded;
 	}
 }
 void PhysicalQuantity::sprintHalf(PhysicalQuantity& r, const PhysicalQuantity::UnitListBase & pu, bool& hasDenom, bool inDenomNow, int &md, int origmd, bool useSlash, size_t &outofs, size_t size, char * buf) const
 {
-	//int ulen;
-	//int plen;
-	//int ipre;
-	//int reduceExp;
-	//bool goForOutput;
 	hasDenom = false;
-	//for (int ipu = 0; ipu < pu.count() && md != 0; ipu++)
 	for (int ipu = 0; ipu < pu.count(); ipu++)
 	{
-		//const UnitDefinition& testunit = KnownUnits[pu[ipu].iUnit];
 		prefixIndex_t ipre = pu[ipu].iPrefix;
 		int plen;
 		if (ipre == -1) { plen = 0; }
@@ -532,7 +500,6 @@ void PhysicalQuantity::sprintHalf(PhysicalQuantity& r, const PhysicalQuantity::U
 	// That's all the preferred units. Is there anything left over?
 	for (int iu = 0; iu < KnownUnitsLength && md != 0; iu++)
 	{
-		//const UnitDefinition& testunit = KnownUnits[iu];
 		sprintHalfTryUnit(iu, r, origmd, hasDenom, useSlash, inDenomNow, 0, outofs, size, buf, -1, md, false);
 	}
 }
@@ -546,7 +513,6 @@ void PhysicalQuantity::sprintHalfTryUnit(int iTestUnit, PhysicalQuantity & r, in
 	if (preferred)
 	{
 		PQ testPref(*this);
-		//testPref.mulUnit()
 		mulUnit(testPref.dim, testunit, 1, false);
 		if (testPref.magdim() == mdorig)
 		{
@@ -572,10 +538,8 @@ void PhysicalQuantity::sprintHalfTryUnit(int iTestUnit, PhysicalQuantity & r, in
 	if (reduceExp != 0)
 	{
 		// if it reduces the overall dimension of the value, use it.
-		//if (origmd == 1 && testunit.offset != 0.0)
 		if (origmd == 1 && iTestUnit < KnownUnitsWithOffsetLength)
 		{
-			//r.value -= testunit.offset;
 			r.value -= PQ::KnownUnitsWithOffset[iTestUnit];
 		}
 		r.value /= testunit.factor;
@@ -691,10 +655,10 @@ std::string PhysicalQuantity::toString() const
 		ret += "^";
 		ret += numbuf;
 	}
-	if (dim[(int)QuantityType::CHARGE] > 0) { ret += " C"; }
-	if (dim[(int)QuantityType::CHARGE] > 1) 
+	if (dim[(int)QuantityType::CURRENT] > 0) { ret += " C"; }
+	if (dim[(int)QuantityType::CURRENT] > 1) 
 	{
-		sprintf(numbuf, "%d", (static_cast<signed int>(dim[(int)QuantityType::CHARGE])));
+		sprintf(numbuf, "%d", (static_cast<signed int>(dim[(int)QuantityType::CURRENT])));
 		ret += "^";
 		ret += numbuf;
 	}
@@ -743,10 +707,10 @@ std::string PhysicalQuantity::toString() const
 		ret += "^";
 		ret += numbuf;
 	}
-	if (dim[(int)QuantityType::CHARGE] < 0) { ret += " C"; }
-	if (dim[(int)QuantityType::CHARGE] < -1) 
+	if (dim[(int)QuantityType::CURRENT] < 0) { ret += " C"; }
+	if (dim[(int)QuantityType::CURRENT] < -1) 
 	{
-		sprintf(numbuf, "%d", (-1 * static_cast<signed int>(dim[(int)QuantityType::CHARGE])));
+		sprintf(numbuf, "%d", (-1 * static_cast<signed int>(dim[(int)QuantityType::CURRENT])));
 		ret += "^";
 		ret += numbuf;
 	}
@@ -897,7 +861,7 @@ bool PhysicalQuantity::findUnit(CSubString name, PhysicalQuantity::unitIndex_t& 
 	int foundUnitLen = 0;
 
 #ifndef NO_HASHING
-	static cstrHasherTiny hashPrefixSymbol(PQ::hashTableSeed_PrefixSymbols); // TODO: Different ones for each table
+	static cstrHasherTiny hashPrefixSymbol(PQ::hashTableSeed_PrefixSymbols);
 	static cstrHasherTiny hashUnitSymbol(PQ::hashTableSeed_UnitSymbols);
 	static cstrHasherTiny hashUnitLongName(PQ::hashTableSeed_UnitLongNames);
 	unsigned int iBucket, hashRaw, hashSymbol, hashLongName;
@@ -1043,7 +1007,6 @@ bool PhysicalQuantity::findUnit(CSubString name, PhysicalQuantity::unitIndex_t& 
 	}
 // #endif  //#ifndef NO_HASHING
 
-	//if (iUnit == -1) { return false; }
 	if (foundUnitLen == 0) { return false; }
 	if (foundUnitLen == nlen)
 	{
@@ -1072,49 +1035,6 @@ bool PhysicalQuantity::findUnit(CSubString name, PhysicalQuantity::unitIndex_t& 
 }
 #endif //#else of #ifndef PQ_GENCODE
 
-/**********************
-signed int PhysicalQuantity::findUnit(const string& name)
-{
-	// TODO: convert away from string
-	signed int ret;
-#if defined(NO_NEW) || defined(NO_THROW)
-	for (int i = 0; i < KnownUnitsLength; i++)
-	{
-		//if (matchLast(name, KnownUnits[i].symbol) || matchLast(name, KnownUnits[i].longName))
-		if (name == KnownUnits[i].symbol || name == KnownUnits[i].longName)
-		{
-			return i;
-		}
-	}
-	return -1;
-#else
-	try
-	{
-		ret = UnitSymbolLookup.at(name.c_str());
-	}
-	catch (const std::out_of_range & ex)
-	{
-		// Funy stuff to squash a warning
-		ret = (ex.what() ? -1 : -1);
-	}
-	if (ret == -1)
-	{
-		try
-		{
-			ret = UnitLongNameLookup.at(name.c_str());
-		}
-		catch (const std::out_of_range & ex)
-		{
-			// Funy stuff to squash a warning
-			ret = (ex.what() ? -1 : -1);
-		}
-	}
-	return ret;
-#endif
-
-}
-**********************************************************************************/
-
 
 bool PhysicalQuantity::operator==(const PhysicalQuantity& rhs) const
 {
@@ -1128,13 +1048,11 @@ bool PhysicalQuantity::operator==(const PhysicalQuantity& rhs) const
 
 void PhysicalQuantity::UnitListBase::build(const CSubString& unitList, PhysicalQuantity::UnitListBase::UnitPref* buffer, int bufferSizeBytes, bool dynamic)   //(const CSubString& unitList, int* buffer, int bufferLen, bool dynamic)
 {
-	//const char* pstr = unitList.c_str();
 	int len = (int)unitList.length();
 	int pos = 0;
-	unitIndeces = buffer; //new int[4]; //staticStorage;
-	int storageCapacity = bufferSizeBytes / sizeof(UnitPref); // staticStorageSize;
+	unitIndeces = buffer;
+	int storageCapacity = bufferSizeBytes / sizeof(UnitPref);
 	count_ = 0;
-	//std::pair<int, int> a; // TODO: remove
 	int wordStart = 0;
 	int wordEnd = 0;
 	csubstr word;
@@ -1150,15 +1068,12 @@ void PhysicalQuantity::UnitListBase::build(const CSubString& unitList, PhysicalQ
 		if (pos >= len || c == ' ')
 		{
 			wordEnd = pos;
-			word = csubstr(unitList, wordStart, wordEnd - wordStart); //unitList.substr(wordStart, wordEnd - wordStart);
+			word = csubstr(unitList, wordStart, wordEnd - wordStart);
 			iCaret = word.find_first_of('^');
 			if (iCaret != -1) { word = word.substr(0, iCaret); }
 
-			//unitIndex = PhysicalQuantity::findUnit(word);
-			//if (unitIndex != -1)
 			if (PhysicalQuantity::findUnit(word, unitIndex, prefixIndex))
 			{
-				//prefs.push_back(unitIndex); 
 				if (count_ >= storageCapacity)
 				{
 #ifdef NO_NEW
@@ -1199,14 +1114,13 @@ PhysicalQuantity::UnitListBase::~UnitListBase()
 
 #ifndef NO_NEW
 
-PhysicalQuantity::UnitList_dynamic::UnitList_dynamic(const CSubString& unitList)  //const string& unitList)
+PhysicalQuantity::UnitList_dynamic::UnitList_dynamic(const CSubString& unitList)
 {
 	unitIndeces = nullptr;
 	build(unitList, nullptr, 0, true);
 }
 PhysicalQuantity::UnitList_dynamic::~UnitList_dynamic()
 {
-	//if (unitIndeces != staticStorage) { delete [] unitIndeces; }
 	if (unitIndeces) 
 	{
 		delete [] unitIndeces; 
@@ -1233,7 +1147,7 @@ PhysicalQuantity::UnitList_static::UnitList_static(const CSubString& unitList_Sp
 
 const PhysicalQuantity::UnitListBase::UnitPref& PhysicalQuantity::UnitListBase::operator[] (int i) const
 {
-	return unitIndeces[i]; // KnownUnits[unitIndeces[i]];
+	return unitIndeces[i];
 }
 
 bool PhysicalQuantity::feq(PhysicalQuantity::num a, PhysicalQuantity::num b, PhysicalQuantity::num toleranceFactor)
@@ -1251,19 +1165,13 @@ bool PhysicalQuantity::feq(PhysicalQuantity::num a, PhysicalQuantity::num b, Phy
 
 PhysicalQuantity PhysicalQuantity::eval(CSubString str)
 {
-	// trying to avoid any dynamic allocation here,
-	// even if it takes a few extra passes
-	//int pstart;
 	int pleft = -1;
 	int pright = -1;
 	int plevel = 0;
 	PQ left;
 	PQ right;
-	//PQ val;
-	//char prev = 0;
 	char c;
 	int len = str.length();
-	//for (int i = 0; i < len; i++)
 	plevel = 0;
 	for (int i = len - 1; i >= 0; i--)
 	{
@@ -1299,10 +1207,8 @@ PhysicalQuantity PhysicalQuantity::eval(CSubString str)
 			right = eval(str.substr(i + 1));
 			return left - right;
 		}
-		//prev = c;
 	}
 
-	// TODO: Check plevel
 	plevel = 0;
 	for (int i = len - 1; i >= 0; i--)
 	{
@@ -1338,10 +1244,8 @@ PhysicalQuantity PhysicalQuantity::eval(CSubString str)
 			right = eval(str.substr(i + 1));
 			return left / right;
 		}
-		//prev = c;
 	}
 
-	// TODO: Check plevel
 	plevel = 0;
 	for (int i = len - 1; i >= 0; i--)
 	{
@@ -1367,7 +1271,6 @@ PhysicalQuantity PhysicalQuantity::eval(CSubString str)
 		}
 		// Exponent operator ^ is parsed if previous character is not a letter,
 		// in which case it's considered part of a unit
-		// TODO: We got bugs
 		else if (c == '^' && plevel == 0 &&
 			(!(str[i - 1] >= 'a' && str[i - 1] <= 'z')) &&
 			(!(str[i - 1] >= 'A' && str[i - 1] <= 'Z'))
@@ -1402,12 +1305,11 @@ PhysicalQuantity PhysicalQuantity::eval(CSubString str)
 					}
 				}
 			}
-			mant.value = pow(mant.value, exp.value);
+			mant.value = ::pow(mant.value, exp.value);
 			signed char newdim[(int)QuantityType::ENUM_MAX];
 			for (int i = 0; i < (int)QuantityType::ENUM_MAX; i++)
 			{
 				signed int newpow = (signed int)mant.dim[i] * (signed int)exp.value;
-				//overflow_error
 				if (newpow > 127 || newpow < -128)
 				{
 #ifdef NO_THROW
@@ -1422,7 +1324,6 @@ PhysicalQuantity PhysicalQuantity::eval(CSubString str)
 			memcpy(mant.dim, newdim, sizeof(newdim));
 			return mant;
 		}
-		//prev = c;
 	}
 
 
@@ -1492,6 +1393,17 @@ bool PhysicalQuantity::readNetworkBinary(void* buf)
 	}
 	memcpy(dim, (char*)buf + sizeof(num), sizeof(dim));
 	return true;
+}
+
+PhysicalQuantity PhysicalQuantity::pow(int x)
+{
+	PQ ret;
+	ret.value = ::pow(value, x);
+	for (int pi = 0; pi < (int)QuantityType::ENUM_MAX; pi++)
+	{
+		ret.dim[pi] = dim[pi] * x;
+	}
+	return ret;
 }
 
 
