@@ -325,7 +325,7 @@ void PhysicalQuantity::parseUnits(const CSubString& unitStr, signed char (&units
 					{
 						factorOut *= KnownPrefixes[foundPrefix].factor;
 					}
-					if (foundUnit < KnownUnitsWithOffsetLength)
+					if (foundUnit < KnownUnitOffsetsLength)
 					{
 						if (tempOfs != 0.0)
 						{
@@ -345,7 +345,7 @@ void PhysicalQuantity::parseUnits(const CSubString& unitStr, signed char (&units
 							throw InvalidExpressionException("Can not handle an offset unit with a power greater than 1. (e.g. degrees F squared)");
 	#endif
 						}
-						tempOfs = KnownUnitsWithOffset[foundUnit];
+						tempOfs = KnownUnitOffsets[foundUnit];
 
 						for (int iSetOffsetFlags = 0; iSetOffsetFlags < (int)QuantityType::ENUM_MAX; iSetOffsetFlags++)
 						{
@@ -538,9 +538,9 @@ void PhysicalQuantity::sprintHalfTryUnit(int iTestUnit, PhysicalQuantity & r, in
 	if (reduceExp != 0)
 	{
 		// if it reduces the overall dimension of the value, use it.
-		if (origmd == 1 && iTestUnit < KnownUnitsWithOffsetLength)
+		if (origmd == 1 && iTestUnit < KnownUnitOffsetsLength)
 		{
-			r.value -= PQ::KnownUnitsWithOffset[iTestUnit];
+			r.value -= PQ::KnownUnitOffsets[iTestUnit];
 		}
 		r.value /= testunit.factor;
 		mulUnit(r.dim, testunit, reduceExp, true);

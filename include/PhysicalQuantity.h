@@ -443,8 +443,8 @@ public:
 	static const int compiledHeaderOptions;
 	static const UnitDefinition KnownUnits[];
 	static const int KnownUnitsLength;
-	static const num KnownUnitsWithOffset[];
-	static const int KnownUnitsWithOffsetLength;
+	static const num KnownUnitOffsets[];
+	static const int KnownUnitOffsetsLength;
 
 	static const Prefix KnownPrefixes[];
 	static const int KnownPrefixesLength;

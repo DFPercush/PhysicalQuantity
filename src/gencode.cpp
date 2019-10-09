@@ -52,7 +52,7 @@ void dumpLiterals(string rootpath)
 		const PQ::UnitDefinition& u = PQ::KnownUnits[ui];
 		if (u.flags & NOLITERAL) { continue; }
 		//if (u.offset == 0.0)
-		//if (ui >= PQ::KnownUnitsWithOffsetLength)
+		//if (ui >= PQ::KnownUnitOffsetsLength)
 		//{
 			if (u.flags & NOPREFIX)
 			{
@@ -71,7 +71,7 @@ void dumpLiterals(string rootpath)
 			//fprintf(header, "%")
 			header << setprecision(std::numeric_limits<long double>::digits10 + 1)
 				<< u.factor << ","
-				<< ((ui < PQ::KnownUnitsWithOffsetLength) ? PQ::KnownUnitsWithOffset[ui] : 0)
+				<< ((ui < PQ::KnownUnitOffsetsLength) ? PQ::KnownUnitOffsets[ui] : 0)
 				<< ")" << endl;
 		//}  // offset
 	}
@@ -84,7 +84,7 @@ void dumpLiterals(string rootpath)
 		const PQ::UnitDefinition& u = PQ::KnownUnits[i];
 		if (u.flags & NOLITERAL) { continue; }
 		//if (u.offset == 0.0)
-		//if (i >= PQ::KnownUnitsWithOffsetLength)
+		//if (i >= PQ::KnownUnitOffsetsLength)
 		//{
 			if (u.flags & NOPREFIX)
 			{
@@ -108,7 +108,7 @@ void dumpLiterals(string rootpath)
 	//	const PQ::UnitDefinition& u = PQ::KnownUnits[i];
 	//	if (u.flags & NOLITERAL) { continue; }
 	//	//if (u.offset != 0.0)
-	//	if (i < PQ::KnownUnitsWithOffsetLength)
+	//	if (i < PQ::KnownUnitOffsetsLength)
 	//	{
 	//		if (u.flags & NOPREFIX)
 	//		{
@@ -458,7 +458,7 @@ void showinfo(string rootpath = "")
 		+ sizeof(PQ::defaultHashSeed             )
 		+ sizeof(PQ::compiledHeaderOptions       )
 		+ sizeof(PQ::KnownUnitsLength            )
-		+ sizeof(PQ::KnownUnitsWithOffsetLength  )
+		+ sizeof(PQ::KnownUnitOffsetsLength  )
 		+ sizeof(PQ::KnownPrefixesLength         )
 		+ sizeof(PQ::dekaIndex                   );
 	cout << "  static const scalars: " << tmp << " bytes\n\n";

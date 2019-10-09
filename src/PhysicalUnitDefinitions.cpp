@@ -1,7 +1,7 @@
 
 #include <PhysicalQuantity.h>
 
-const PQ::num PhysicalQuantity::KnownUnitsWithOffset[] = 
+const PQ::num PhysicalQuantity::KnownUnitOffsets[] = 
 {
 	// Any unit with an additive offset must be at the beginning
 	// of KnownUnits[]
@@ -9,49 +9,49 @@ const PQ::num PhysicalQuantity::KnownUnitsWithOffset[] =
 	273.15, // degC
 	255.37222222222222222222222222222  // degF
 };
-const int PhysicalQuantity::KnownUnitsWithOffsetLength = sizeof(KnownUnitsWithOffset) / sizeof(PQ::num);
+const int PhysicalQuantity::KnownUnitOffsetsLength = sizeof(KnownUnitOffsets) / sizeof(PQ::num);
 
 
 const PhysicalQuantity::UnitDefinition PhysicalQuantity::KnownUnits[] = 
 {
-// { symbol, longName, { MASS, DISTANCE, TIME, TEMPERATURE, CURRENT }, offset, factor, flags },
-//                  Ma Di Ti Te Cu
-{"K","kelvin","",1.0, {0,0,0,1,0}, CANPREFIX},
-{"degC","degreeC","",1.0, {0,0,0,1,0}, NOPREFIX},
-{"degF","degreeF","",0.55555555555555555555555555555556, {0,0,0,1,0}, NOPREFIX},
+// { symbol, longName, plural, factor, { MASS, DISTANCE, TIME, TEMPERATURE, CURRENT }, flags }
+//                        Ma Di Ti Te Cu
+{"K","kelvin","kelvin",1.0, {0,0,0,1,0}, CANPREFIX},
+{"degC","degreeC","degreesC",1.0, {0,0,0,1,0}, NOPREFIX},
+{"degF","degreeF","degreesF",0.55555555555555555555555555555556, {0,0,0,1,0}, NOPREFIX},
 
-{"rad","radian","",1, { 0, 0, 0, 0, 0}, NOPREFIX},
-{"deg","degree","",0.01745329251994329576923690768489, {0,0,0,0,0}, NOPREFIX},
+{"rad","radian","radians",1, { 0, 0, 0, 0, 0}, NOPREFIX},
+{"deg","degree","degrees",0.01745329251994329576923690768489, {0,0,0,0,0}, NOPREFIX},
 {"pi","","",3.1415926535897932384626433832795, {0,0,0,0,0}, NOPREFIX | NOLITERAL},
 {"tau","","",6.283185307179586476925286766559, {0,0,0,0,0}, NOPREFIX | NOLITERAL},
 // Conflicts with fundamental charge
 //{"e", "e",         { 0, 0, 0, 0, 0}, 0, 2.7182818284590452353602874713527, NO_PREFIX},
 
-{"m", "meter","",1, {0,1,0,0,0}},
-{"mi", "mile","",1609.3439999931,     { 0, 1, 0, 0, 0}, NOPREFIX},
-{"yd", "yard","",0.9144, {0,1,0,0,0}, NOPREFIX},
-{"ft", "foot","",0.3048, {0,1,0,0,0}, NOPREFIX},
-{"in", "inch","",0.0254, {0,1,0,0,0}, NOPREFIX},
+{"m", "meter","meters",1, {0,1,0,0,0}},
+{"mi", "mile","meters",1609.3439999931,     { 0, 1, 0, 0, 0}, NOPREFIX},
+{"yd", "yard","yards",0.9144, {0,1,0,0,0}, NOPREFIX},
+{"ft", "foot","feet",0.3048, {0,1,0,0,0}, NOPREFIX},
+{"in", "inch","inches",0.0254, {0,1,0,0,0}, NOPREFIX},
 
 
-{"ang","angstrom","",1e-10, {0,1,0,0,0}},  // unicode wchar_t is not supported at this time
-{"g", "gram","",0.001, {1,0,0,0,0}},
+{"ang","angstrom","angstroms",1e-10, {0,1,0,0,0}},  // unicode wchar_t is not supported at this time
+{"g", "gram","grams",0.001, {1,0,0,0,0}},
 //                  Ma Di Ti Te Cu
-{"s", "second","",1, {0,0,1,0,0}, NOPREFIX},
+{"s", "second","seconds",1, {0,0,1,0,0}, NOPREFIX},
 {"Hz", "hertz","",1, {0,0,-1,0,0}},
-{"min", "minute","",60, {0,0,1,0,0}, NOPREFIX},
-{"hr", "hour","",3600, {0,0,1,0,0}, NOPREFIX},
+{"min", "minute","minutes",60, {0,0,1,0,0}, NOPREFIX},
+{"hr", "hour","hours",3600, {0,0,1,0,0}, NOPREFIX},
 
-{"mph","MilesPerHour","",1609.3439999931/3600, {0,1,-1,0,0}, NOPREFIX},
+{"mph","MilePerHour","MilesPerHour",1609.3439999931/3600, {0,1,-1,0,0}, NOPREFIX},
 
-{"J","joule","",1, {1,2,-2,0,0}},
-{"N","newton","",1, {1,1,-2,0,0}},
-{"lb","pound","",4.448221615260501, {1,1,-2,0,0}, NOPREFIX},
+{"J","joule","joules",1, {1,2,-2,0,0}},
+{"N","newton","newtons",1, {1,1,-2,0,0}},
+{"lb","pound","pounds",4.448221615260501, {1,1,-2,0,0}, NOPREFIX},
 //                  Ma Di Ti Te Cu
 
-{"C","coulomb","",1, {0,0,1,0,1}},
-{"A","ampere","",1, {0,0,0,0,1}},
-{"e","FundamentalCharge","",1.6021765314e-19, {0,0,1,0,1}, NOPREFIX},
+{"C","coulomb","coulombs",1, {0,0,1,0,1}},
+{"A","amp","amps",1, {0,0,0,0,1}},
+{"e","FundamentalCharge","FundamentalCharges",1.6021765314e-19, {0,0,1,0,1}, NOPREFIX},
 //{"e-","ElectronChargeNegative", {0,0,1,0,1},0, -1.6021765314e-19, NO_PREFIX},
 
 
