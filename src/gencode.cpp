@@ -26,7 +26,6 @@ typedef PhysicalQuantity::CSubString csubstr;
 
 void dumpLiterals(string rootpath)
 {
-	// TODO: Offsets
 	ofstream header;
 	ofstream source;
 	if (rootpath[rootpath.length()] != '/' && rootpath[rootpath.length()] != '\\')

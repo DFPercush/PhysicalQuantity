@@ -168,11 +168,9 @@ public:
 		// TODO: rearrange for padding
 		const char* symbol;
 		const char* longName;
-		const signed char dim[(int)QuantityType::ENUM_MAX];
-		num offset; // temperature is a special snowflake
-		// TODO: put all offset units at the beginning and have a unitsWithOffsetCount,
-		//      and put the offsets in a separate array
+		const char* plurals; // TODO: implement. Maybe #define away? Or the whole thing.
 		num factor;
+		const signed char dim[(int)QuantityType::ENUM_MAX];
 		unsigned short flags = 0;
 		//  TODO: implement NOPREFIX in findUnit()
 	};
