@@ -1041,6 +1041,20 @@ bool PhysicalQuantity::operator==(const PhysicalQuantity& rhs) const
 	if (memcmp(dim, rhs.dim, sizeof(dim)) != 0) { return false; }
 	return PhysicalQuantity::feq(value, rhs.value, equalityToleranceFactor);
 }
+bool PhysicalQuantity::operator!=(const PhysicalQuantity& rhs) const
+{
+	return PhysicalQuantity::feq(value, rhs.value, equalityToleranceFactor);
+}
+bool PhysicalQuantity::operator>=(const PhysicalQuantity& rhs) const
+{
+	if (memcmp(dim, rhs.dim, sizeof(dim)) != 0) { return false; }
+	return value >= rhs.value;
+}
+bool PhysicalQuantity::operator<=(const PhysicalQuantity& rhs) const
+{
+	if (memcmp(dim, rhs.dim, sizeof(dim)) != 0) { return false; }
+	return value <= rhs.value;
+}
 
 
 //============================================================================================
@@ -1405,6 +1419,17 @@ PhysicalQuantity PhysicalQuantity::pow(int x)
 	}
 	return ret;
 }
+
+
+
+#ifdef NO_INLINE
+PhysicalQuantity PhysicalQuantity::get1kg() { signed char d[5]={1,0,0,0,0}; return PhysicalQuantity(1.0, d); }
+PhysicalQuantity PhysicalQuantity::get1m() {  signed char d[5]={0,1,0,0,0}; return PhysicalQuantity(1.0, d); }
+PhysicalQuantity PhysicalQuantity::get1s() {  signed char d[5]={0,0,1,0,0}; return PhysicalQuantity(1.0, d); }
+PhysicalQuantity PhysicalQuantity::get1K() {  signed char d[5]={0,0,0,1,0}; return PhysicalQuantity(1.0, d); }
+PhysicalQuantity PhysicalQuantity::get1A() {  signed char d[5]={0,0,0,0,1}; return PhysicalQuantity(1.0, d); }
+bool PhysicalQuantity::isScalar() { return (dim[0] == 0 && dim[1] == 0 && dim[2] == 0 && dim[3] == 0 && dim[5] == 0); }
+#endif //#ifdef NO_INLINE
 
 
 #ifndef NO_HASHING

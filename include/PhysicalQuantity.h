@@ -167,7 +167,7 @@ public:
 	{
 		const char* symbol;
 		const char* longName;
-		const char* plurals; // TODO: implement. Maybe #define away? Or the whole thing.
+		const char* plural; // TODO: implement. Maybe #define away? Or the whole thing.
 		num factor;
 		const signed char dim[(int)QuantityType::ENUM_MAX];
 		unsigned short flags = 0;
@@ -348,11 +348,29 @@ public:
 	PhysicalQuantity& operator=(const PhysicalQuantity& cp);
 	~PhysicalQuantity() = default;
 
+	// TODO: NO_TEXT
 	void parse(const CSubString& text);
 	num convert(const CSubString& units) const;
 	size_t sprint(char* buf, size_t size, const UnitListBase& pu, bool useSlash = true) const;
 	size_t sprint(char* buf, size_t size, const CSubString& sspu, bool useSlash = true) const; // TODO: inline
 	size_t sprint(char* buf, size_t size, const CSubString& sspu, void* puBuf, size_t puBufSize, bool useSlash = true) const;
+
+#ifdef NO_INLINE
+	static PhysicalQuantity get1kg();
+	static PhysicalQuantity get1m();
+	static PhysicalQuantity get1s();
+	static PhysicalQuantity get1K();
+	static PhysicalQuantity get1A();
+	bool isScalar();
+#else // NO_INLINE
+	static PhysicalQuantity get1kg() { char d[5]={1,0,0,0,0}; return PhysicalQuantity(1.0, d); }
+	static PhysicalQuantity get1m() { char d[5]={0,1,0,0,0}; return PhysicalQuantity(1.0, d); }
+	static PhysicalQuantity get1s() { char d[5]={0,0,1,0,0}; return PhysicalQuantity(1.0, d); }
+	static PhysicalQuantity get1K() { char d[5]={0,0,0,1,0}; return PhysicalQuantity(1.0, d); }
+	static PhysicalQuantity get1A() { char d[5]={0,0,0,0,1}; return PhysicalQuantity(1.0, d); }
+	bool isScalar() { return (dim[0] == 0 && dim[1] == 0 && dim[2] == 0 && dim[3] == 0 && dim[5] == 0); }
+#endif // #else of #ifdef NO_INLINE
+
 
 #ifndef NO_STD_STRING
 	std::string toString() const;
@@ -427,8 +445,10 @@ public:
 	PhysicalQuantity operator- (num rhs) const;
 
 	bool operator==(const PhysicalQuantity& rhs) const;
-	// TODO: boolean comparison operators
-	
+	bool operator>=(const PhysicalQuantity& rhs) const;
+	bool operator<=(const PhysicalQuantity& rhs) const;
+	bool operator!=(const PhysicalQuantity& rhs) const;
+
 	bool like(const PhysicalQuantity& rhs) const; // Same kind of quantity.
 
 #ifndef NO_NETWORK

@@ -6,7 +6,7 @@ free/open source, just don't plagiarize
 
 	PhysicalQuantity is an C++ class library which
 allows direct arithmetic operations on values including the basic units of
-distance, mass, time, temperature, and charge (or current), as well as
+distance, mass, time, temperature, and current, as well as
 any other units derived from these quantities. This allows different teams 
 working on a project to operate in their preferred units without things going boom.
 	It keeps track of the dimensions of a value during all calculations, and 
@@ -377,7 +377,7 @@ How to add more units:
 	1. In PhysicalUnitDefinitions.cpp, find the KnownUnits[] array, and add a line.
 		The format should be commented in there, but just in case, you'll need
 		the symbol, the long name, the dimensions/powers of 
-		{mass, distance, time, temperature, charge}, the offset amount
+		{mass, distance, time, temperature, current}, the offset amount
 		(probably 0, mostly used in temperature scales), and finally,
 		the almighty conversion factor. Conversion factors are expressed
 		in terms of kilograms, meters, seconds, Kelvin, and Coulombs.
