@@ -5,6 +5,7 @@ const PQ::num PhysicalQuantity::KnownUnitsWithOffset[] =
 {
 	// Any unit with an additive offset must be at the beginning
 	// of KnownUnits[]
+	0, // Kelvin, needs to come first for sprint() order
 	273.15, // degC
 	255.37222222222222222222222222222  // degF
 };
@@ -15,10 +16,10 @@ const PhysicalQuantity::UnitDefinition PhysicalQuantity::KnownUnits[] =
 {
 // { symbol, longName, { MASS, DISTANCE, TIME, TEMPERATURE, CURRENT }, offset, factor, flags },
 //                  Ma Di Ti Te Cu
+{"K","kelvin",     { 0, 0, 0, 1, 0}, 0, 1.0, CANPREFIX},
 {"degC","degreeC", { 0, 0, 0, 1, 0}, 273.15, 1.0, NOPREFIX},
 {"degF","degreeF", { 0, 0, 0, 1, 0}, 255.37222222222222222222222222222, 0.55555555555555555555555555555556, NOPREFIX},
 
-{"K","kelvin",     { 0, 0, 0, 1, 0}, 0, 1.0, CANPREFIX},
 
 {"rad", "radian",  { 0, 0, 0, 0, 0}, 0, 1, NOPREFIX},
 {"deg", "degree",  { 0, 0, 0, 0, 0}, 0, 0.01745329251994329576923690768489, NOPREFIX},
