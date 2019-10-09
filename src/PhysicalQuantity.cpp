@@ -937,14 +937,16 @@ bool PhysicalQuantity::findUnit(CSubString name, PhysicalQuantity::unitIndex_t& 
 	int foundUnitLen = 0;
 
 #ifndef NO_HASHING
-	static cstrHasherTiny hasher; // TODO: Different ones for each table
+	static cstrHasherTiny hashPrefixSymbol(PQ::hashTableSeed_PrefixSymbols); // TODO: Different ones for each table
+	static cstrHasherTiny hashUnitSymbol(PQ::hashTableSeed_UnitSymbols);
+	static cstrHasherTiny hashUnitLongName(PQ::hashTableSeed_UnitLongNames);
 	unsigned int iBucket, hashRaw, hashSymbol, hashLongName;
 	char firstLetter[2];
 
 	if ((nlen > 2) && (name[0] == 'd') && (name[1] == 'a'))
 	{
 		possibleUnitPart = csubstr(name, 2);
-		hashRaw = (unsigned int)hasher(possibleUnitPart);
+		hashRaw = (unsigned int)hashUnitSymbol(possibleUnitPart);
 		hashSymbol = hashRaw % hashTableSize_UnitSymbols;
 		for (iBucket = 0; iBucket < UnitSymbols_HashTable[hashSymbol].bucketSize; iBucket++)
 		{
@@ -955,6 +957,7 @@ bool PhysicalQuantity::findUnit(CSubString name, PhysicalQuantity::unitIndex_t& 
 				return true;
 			}
 		}
+		hashRaw = (unsigned int)hashUnitLongName(possibleUnitPart);
 		hashLongName = hashRaw % hashTableSize_UnitLongNames;
 		for (iBucket = 0; iBucket < UnitLongNames_HashTable[hashLongName].bucketSize; iBucket++)
 		{
@@ -969,7 +972,7 @@ bool PhysicalQuantity::findUnit(CSubString name, PhysicalQuantity::unitIndex_t& 
 
 	firstLetter[0] = name[0];
 	firstLetter[1] = 0;
-	hashSymbol = (unsigned int)hasher(firstLetter) % hashTableSize_PrefixSymbols;
+	hashSymbol = (unsigned int)hashPrefixSymbol(firstLetter) % hashTableSize_PrefixSymbols;
 	for (iBucket = 0; iBucket < PrefixSymbols_HashTable[hashSymbol].bucketSize; iBucket++)
 	{
 		if (name[0] == KnownPrefixes[PrefixSymbols_HashTable[hashSymbol].bucket[iBucket]].symbol[0])
@@ -983,12 +986,12 @@ bool PhysicalQuantity::findUnit(CSubString name, PhysicalQuantity::unitIndex_t& 
 	csubstr tryUnitNames[2];
 	tryUnitNames[0] = csubstr(name);
 	tryUnitNames[1] = csubstr(name, 1);
-	unitIndex_t iTryUnitName = 0; // (iPrefix == -1) ? 1 : 0;
+	unitIndex_t iTryUnitName = 0;
 
 	// look up unit symbol
 	while(iTryUnitName < 2)
 	{
-		hashRaw = (unsigned int)hasher(tryUnitNames[iTryUnitName]);
+		hashRaw = (unsigned int)hashUnitSymbol(tryUnitNames[iTryUnitName]);
 		hashSymbol = hashRaw % hashTableSize_UnitSymbols;
 		for (iBucket = 0; iBucket < UnitSymbols_HashTable[hashSymbol].bucketSize; iBucket++)
 		{
@@ -1001,6 +1004,7 @@ bool PhysicalQuantity::findUnit(CSubString name, PhysicalQuantity::unitIndex_t& 
 		}
 		//if (iUnit != -1) { break; }
 		if (foundUnitLen > 0) { break; }
+		hashRaw = (unsigned int)hashUnitLongName(tryUnitNames[iTryUnitName]);
 		hashLongName = hashRaw % hashTableSize_UnitLongNames;
 		for (iBucket = 0; iBucket < UnitLongNames_HashTable[hashLongName].bucketSize; iBucket++)
 		{
