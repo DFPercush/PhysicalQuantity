@@ -33,7 +33,6 @@ typedef PhysicalQuantity::CSubString csubstr;
 #pragma warning(disable:4996)
 #endif
 
-const PhysicalQuantity::num PhysicalQuantity::Pi = 3.1415926535897932384626433832795;
 PhysicalQuantity::num PhysicalQuantity::equalityToleranceFactor = 1e-6;
 const int PhysicalQuantity::compiledHeaderOptions = PQ_HEADER_OPTIONS;
 
@@ -112,20 +111,11 @@ PhysicalQuantity::PhysicalQuantity(PhysicalQuantity::num valueArg)
 	memset(dim, 0, sizeof(dim));
 }
 
-#if !defined(CPP11) || defined(NO_INLINE)
-PhysicalQuantity::PhysicalQuantity(PhysicalQuantity::num value_p, signed char dim_p[5]) //(int)PhysicalQuantity::QuantityType::ENUM_MAX])
-	: value(value_p),
-	  dim {dim_p[0], dim_p[1], dim_p[2], dim_p[3], dim_p[4]}
-	{}
+#if !defined(CPP11) // || defined(NO_INLINE)
+PhysicalQuantity::PhysicalQuantity(num value_p, signed char dim_p[(int)QuantityType::ENUM_MAX], num offset)
+	: value(value_p), dim {dim_p[0], dim_p[1], dim_p[2], dim_p[3], dim_p[4]} {}
 #endif
 
-//{
-//	value = value_p;
-//	for (int i = 0; i < (int)QuantityType::ENUM_MAX; i++)
-//	{
-//		dim[i] = dim_p[i];
-//	}
-//}
 
 PhysicalQuantity& PhysicalQuantity::operator=(PhysicalQuantity::num valueArg)
 {
@@ -177,18 +167,8 @@ unsigned int PhysicalQuantity::magdim() const
 	return ret;
 }
 
-//void PhysicalQuantity::magdimMulDiv(const UnitDefinition& unit, int& mulOut, int& divOut int& powOut) const
 int PhysicalQuantity::magdimReduce(const UnitDefinition& unit) const
-//magdimMulDiv(const PhysicalQuantity::UnitDefinition& unit) const
 {
-	//int ret = 0;
-	//int rmul = 0;
-	////int rdiv = 0;
-	//int test;
-	
-	//int maxpow = 0;
-	//int maxFactor = 1;
-
 	unsigned int mdorig = magdim();
 	int after = 0;
 	for (int iq = 0; iq < (int)QuantityType::ENUM_MAX; iq++)
@@ -222,29 +202,6 @@ int PhysicalQuantity::magdimReduce(const UnitDefinition& unit) const
 		if (after < 0) { after = -after; }
 	} while (after < (int)mdlast);
 	return lastpow;
-
-	//do
-	//{
-	//	testpow++;
-	//	for (int i = 0; i < (int)QuantityType::ENUM_MAX; i++)
-	//	{
-	//		//
-	//
-	//		//test = dim[i] - unit.dim[i] * testpow;
-	//		//if (test >= 0) { rdiv += test; }
-	//		//else { rdiv -= test; }
-	//		//
-	//		//test = dim[i] + unit.dim[i];
-	//		//if (test >= 0) { rmul += test; }
-	//		//else { rmul -= test; }
-	//
-	//		//di = dim[i] - unit.dim[i];
-	//		//if (di >= 0) { ret += di; }
-	//		//else { ret -= di; }
-	//	}
-	//} while (maxFactor > 0);
-	//mulOut = rmul;
-	//divOut = rdiv;
 }
 
 
@@ -287,7 +244,7 @@ void PhysicalQuantity::parseUnits(const CSubString& unitStr, signed char (&units
 			wordEnd = i;
 
 			// Do stuff
-			word = csubstr(unitStr, wordStart, wordEnd - wordStart);  //unitStr.substr(wordStart, wordEnd - wordStart);
+			word = csubstr(unitStr, wordStart, wordEnd - wordStart);
 
 			if (c == '/')
 			{
@@ -380,7 +337,8 @@ void PhysicalQuantity::parseUnits(const CSubString& unitStr, signed char (&units
 					{
 						factorOut *= KnownPrefixes[foundPrefix].factor;
 					}
-					if (KnownUnits[foundUnit].offset != 0.0)
+					//if (KnownUnits[foundUnit].offset != 0.0)
+					if (foundUnit < KnownUnitsWithOffsetLength)
 					{
 						if (tempOfs != 0.0)
 						{
@@ -400,7 +358,7 @@ void PhysicalQuantity::parseUnits(const CSubString& unitStr, signed char (&units
 							throw InvalidExpressionException("Can not handle an offset unit with a power greater than 1. (e.g. degrees F squared)");
 	#endif
 						}
-						tempOfs = KnownUnits[foundUnit].offset;
+						tempOfs = KnownUnitsWithOffset[foundUnit]; // KnownUnits[foundUnit].offset;
 
 						for (int iSetOffsetFlags = 0; iSetOffsetFlags < (int)QuantityType::ENUM_MAX; iSetOffsetFlags++)
 						{
@@ -563,23 +521,24 @@ void PhysicalQuantity::sprintHalf(PhysicalQuantity& r, const PhysicalQuantity::U
 	//for (int ipu = 0; ipu < pu.count() && md != 0; ipu++)
 	for (int ipu = 0; ipu < pu.count(); ipu++)
 	{
-		const UnitDefinition& testunit = KnownUnits[pu[ipu].iUnit];
+		//const UnitDefinition& testunit = KnownUnits[pu[ipu].iUnit];
 		prefixIndex_t ipre = pu[ipu].iPrefix;
 		int plen;
 		if (ipre == -1) { plen = 0; }
 		else { plen = (int)strlen(KnownPrefixes[ipre].symbol); }
-		sprintHalfTryUnit(testunit, r, origmd, hasDenom, useSlash, inDenomNow, plen, outofs, size, buf, ipre, md, true);
+		sprintHalfTryUnit(pu[ipu].iUnit, r, origmd, hasDenom, useSlash, inDenomNow, plen, outofs, size, buf, ipre, md, true);
 	}
 
 	// That's all the preferred units. Is there anything left over?
 	for (int iu = 0; iu < KnownUnitsLength && md != 0; iu++)
 	{
-		const UnitDefinition& testunit = KnownUnits[iu];
-		sprintHalfTryUnit(testunit, r, origmd, hasDenom, useSlash, inDenomNow, 0, outofs, size, buf, -1, md, false);
+		//const UnitDefinition& testunit = KnownUnits[iu];
+		sprintHalfTryUnit(iu, r, origmd, hasDenom, useSlash, inDenomNow, 0, outofs, size, buf, -1, md, false);
 	}
 }
-void PhysicalQuantity::sprintHalfTryUnit(const PhysicalQuantity::UnitDefinition & testunit, PhysicalQuantity & r, int origmd, bool & hasDenom, bool useSlash, bool inDenomNow, int plen, size_t & outofs, size_t size, char * buf, PhysicalQuantity::prefixIndex_t ipre, int & md, bool preferred) const
+void PhysicalQuantity::sprintHalfTryUnit(int iTestUnit, PhysicalQuantity & r, int origmd, bool & hasDenom, bool useSlash, bool inDenomNow, int plen, size_t & outofs, size_t size, char * buf, PhysicalQuantity::prefixIndex_t ipre, int & md, bool preferred) const
 {
+	const PhysicalQuantity::UnitDefinition & testunit = PQ::KnownUnits[iTestUnit];
 	int ulen = (int)strlen(testunit.symbol);
 	int reduceExp;
 	unsigned int mdorig = magdim();
@@ -613,9 +572,11 @@ void PhysicalQuantity::sprintHalfTryUnit(const PhysicalQuantity::UnitDefinition 
 	if (reduceExp != 0)
 	{
 		// if it reduces the overall dimension of the value, use it.
-		if (origmd == 1 && testunit.offset != 0.0)
+		//if (origmd == 1 && testunit.offset != 0.0)
+		if (origmd == 1 && iTestUnit < KnownUnitsWithOffsetLength)
 		{
-			r.value -= testunit.offset;
+			//r.value -= testunit.offset;
+			r.value -= PQ::KnownUnitsWithOffset[iTestUnit];
 		}
 		r.value /= testunit.factor;
 		mulUnit(r.dim, testunit, reduceExp, true);
@@ -927,7 +888,6 @@ PhysicalQuantity PhysicalQuantity::operator- (num rhs) const
 #ifndef PQ_GENCODE
 bool PhysicalQuantity::findUnit(CSubString name, PhysicalQuantity::unitIndex_t& outUnitIndex, PhysicalQuantity::prefixIndex_t& outPrefixIndex)
 {
-	// TODO: canPrefix
 	prefixIndex_t iPrefix = -1;
 	unitIndex_t iUnit = 0;
 	int nlen = name.length();
@@ -1091,7 +1051,8 @@ bool PhysicalQuantity::findUnit(CSubString name, PhysicalQuantity::unitIndex_t& 
 		outUnitIndex = iUnit;
 		return true;
 	}
-	else if (foundPrefixLen + foundUnitLen == nlen)
+	else if ((foundPrefixLen + foundUnitLen == nlen)
+		&& ((KnownUnits[iUnit].flags & NOPREFIX) == 0))
 	{
 		outPrefixIndex = iPrefix;
 		outUnitIndex = iUnit;

@@ -26,6 +26,7 @@ typedef PhysicalQuantity::CSubString csubstr;
 
 void dumpLiterals(string rootpath)
 {
+	// TODO: Offsets
 	ofstream header;
 	ofstream source;
 	if (rootpath[rootpath.length()] != '/' && rootpath[rootpath.length()] != '\\')
@@ -51,8 +52,9 @@ void dumpLiterals(string rootpath)
 	{
 		const PQ::UnitDefinition& u = PQ::KnownUnits[ui];
 		if (u.flags & NOLITERAL) { continue; }
-		if (u.offset == 0.0)
-		{
+		//if (u.offset == 0.0)
+		//if (ui >= PQ::KnownUnitsWithOffsetLength)
+		//{
 			if (u.flags & NOPREFIX)
 			{
 				header << "CxLiteral(";
@@ -69,19 +71,22 @@ void dumpLiterals(string rootpath)
 			}
 			//fprintf(header, "%")
 			header << setprecision(std::numeric_limits<long double>::digits10 + 1)
-				<< u.factor << ")" << endl;
-		}
+				<< u.factor << ","
+				<< ((ui < PQ::KnownUnitsWithOffsetLength) ? PQ::KnownUnitsWithOffset[ui] : 0)
+				<< ")" << endl;
+		//}  // offset
 	}
 
 	header << "#else //#if defined(CPP11)\n";
-	source << "#if !defined(CPP11) || defined(NO_INLINE)\n";
+	source << "#if !defined(CPP11)\n";
 
 	for (int i = 0; i < PQ::KnownUnitsLength; i++)
 	{
 		const PQ::UnitDefinition& u = PQ::KnownUnits[i];
 		if (u.flags & NOLITERAL) { continue; }
-		if (u.offset == 0.0)
-		{
+		//if (u.offset == 0.0)
+		//if (i >= PQ::KnownUnitsWithOffsetLength)
+		//{
 			if (u.flags & NOPREFIX)
 			{
 				header << "DeclareLiteral(";
@@ -94,34 +99,35 @@ void dumpLiterals(string rootpath)
 			}
 			header << u.symbol << ")\n";
 			source << u.symbol << ")\n";
-		}
+		//}
 	}
 
 	header << "#endif //#else of #if defined(CPP11)\n\n//Units with additive offsets:\n";
 
-	for (int i = 0; i < PQ::KnownUnitsLength; i++)
-	{
-		const PQ::UnitDefinition& u = PQ::KnownUnits[i];
-		if (u.flags & NOLITERAL) { continue; }
-		if (u.offset != 0.0)
-		{
-			if (u.flags & NOPREFIX)
-			{
-				header << "DeclareLiteral(";
-				source << "DefineLiteral(";
-			}
-			else
-			{
-				header << "DeclareLiteralWithPrefixes(";
-				source << "DefineLiteralWithPrefixes(";
-			}
-			header << u.symbol << ")\n";
-			source << u.symbol << ")\n";
-		}
-	}
+	//for (int i = 0; i < PQ::KnownUnitsLength; i++)
+	//{
+	//	const PQ::UnitDefinition& u = PQ::KnownUnits[i];
+	//	if (u.flags & NOLITERAL) { continue; }
+	//	//if (u.offset != 0.0)
+	//	if (i < PQ::KnownUnitsWithOffsetLength)
+	//	{
+	//		if (u.flags & NOPREFIX)
+	//		{
+	//			header << "DeclareLiteral(";
+	//			source << "DefineLiteral(";
+	//		}
+	//		else
+	//		{
+	//			header << "DeclareLiteralWithPrefixes(";
+	//			source << "DefineLiteralWithPrefixes(";
+	//		}
+	//		header << u.symbol << ")\n";
+	//		source << u.symbol << ")\n";
+	//	}
+	//}
 
 	header << "#endif //#ifndef NO_LITERALS\n";
-	source << "#endif //!CPP11 || NO_INLINE\n";
+	source << "#endif //!CPP11\n";
 	source << "#endif //#ifndef NO_LITERALS\n";
 }
 
@@ -443,6 +449,22 @@ void showinfo(string rootpath = "")
 	cout <<"  sizeof(PQ::UnitListBase::UnitPref) = " << sizeof(PhysicalQuantity::UnitListBase::UnitPref) << endl;
 	cout << endl;
 
+	tmp = (6 * sizeof(int)) + 
+		//hashTableSize_UnitSymbols;
+		//hashTableSize_UnitLongNames;
+		//hashTableSize_PrefixSymbols;
+		//hashTableSeed_UnitSymbols;
+		//hashTableSeed_UnitLongNames;
+		//hashTableSeed_PrefixSymbols;	
+		+ sizeof(PQ::defaultHashSeed             )
+		+ sizeof(PQ::compiledHeaderOptions       )
+		+ sizeof(PQ::KnownUnitsLength            )
+		+ sizeof(PQ::KnownUnitsWithOffsetLength  )
+		+ sizeof(PQ::KnownPrefixesLength         )
+		+ sizeof(PQ::dekaIndex                   );
+	cout << "  static const scalars: " << tmp << " bytes\n\n";
+	totalRom += tmp;
+
 	cout << "  sizeof(PQ::UnitDefinition) = " << sizeof(PQ::UnitDefinition) << endl;
 	tmp = PQ::KnownUnitsLength * sizeof(PQ::UnitDefinition);
 	totalRom += tmp;
@@ -476,6 +498,7 @@ void showinfo(string rootpath = "")
 
 #ifndef NO_HASHING
 	cout << "  PQ::defaultHashSeed = " << PhysicalQuantity::defaultHashSeed << endl;
+	cout << "  sizeof(PQ::bucketSize_t) = " << sizeof(PQ::bucketSize_t) << endl;
 	int iTrash;
 	float fTrash;
 
@@ -555,7 +578,8 @@ void showinfo(string rootpath = "")
 	cout << endl;
 #endif //#ifndef NO_HASHING
 
-	cout << "  Total ROM requirements: " << totalRom << " bytes\n";
+
+	cout << "  Total ROM data: " << totalRom << " bytes\n";
 	cout << endl;
 }
 

@@ -30,14 +30,14 @@ $(LibPath)PhysicalQuantity.a: $(libPqObj)
 
 #-----------------------------------------------------------------
 # Generated files
-#include/PhysicalQuantity/hashTables.ah: $(BinPath)gencode
-#	$(BinPath)gencode > include/PhysicalQuantity/hashTables.ah
+
 include/PhysicalQuantity/hashTables.ah include/PhysicalQuantity/literals.ah src/literals.acpp src/hashParams.acpp: $(BinPath)gencode
-	$(BinPath)gencode generate --rootpath ./ optimize --max-seed 255 --max-table-size 100 --min-bucket-size 2
+	$(BinPath)gencode generate --rootpath ./ optimize --max-seed $(HashMaxSeed) --max-table-size $(HashMaxTableSize) --min-bucket-size $(HashMinBucketSize)
 
 
 #---------------------------------------------------------------
 # Intermediate objects
+
 CommonIntCompile=$(compile) $(SharedCompileFlags) $(Defines) $(IncludePathFlag)$(IncludePath) $(OutputFlag) $(ObjPath)
 $(ObjPath)PhysicalQuantity-gencode.o: src/PhysicalQuantity.cpp $(StaticHeaders)
 	$(CommonIntCompile)PhysicalQuantity-gencode.o src/PhysicalQuantity.cpp $(DefineFlag)PQ_GENCODE
@@ -63,15 +63,19 @@ $(ObjPath)gencode.o: src/gencode.cpp $(StaticHeaders)
 $(ObjPath)literals.o: src/literals.acpp $(StaticHeaders) bin/gencode
 	$(CommonIntCompile)literals.o $(ExplicitCppFile) src/literals.acpp
 
-# Now these two really do need everything generated and built before them.
+$(ObjPath)hashParams.o: src/hashParams.acpp bin/gencode
+	$(CommonIntCompile)hashParams.o $(ExplicitCppFile) src/hashParams.acpp
+
+
+#--------------------------------------------------------------------------
+# Final binaries
+
 $(ObjPath)PhysicalQuantity.o: src/PhysicalQuantity.cpp $(AllHeaders)
 	$(CommonIntCompile)PhysicalQuantity.o src/PhysicalQuantity.cpp
 
 $(ObjPath)TestConsole.o: src/TestConsole.cpp $(AllHeaders)
 	$(CommonIntCompile)TestConsole.o src/TestConsole.cpp
 
-$(ObjPath)hashParams.o: src/hashParams.acpp bin/gencode
-	$(CommonIntCompile)hashParams.o $(ExplicitCppFile) src/hashParams.acpp
 
 clean:
 	rm -f $(BinPath)*

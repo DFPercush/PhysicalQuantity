@@ -1,13 +1,23 @@
 
 #include <PhysicalQuantity.h>
 
+const PQ::num PhysicalQuantity::KnownUnitsWithOffset[] = 
+{
+	// Any unit with an additive offset must be at the beginning
+	// of KnownUnits[]
+	273.15, // degC
+	255.37222222222222222222222222222  // degF
+};
+const int PhysicalQuantity::KnownUnitsWithOffsetLength = sizeof(KnownUnitsWithOffset) / sizeof(PQ::num);
+
+
 const PhysicalQuantity::UnitDefinition PhysicalQuantity::KnownUnits[] = 
 {
 // { symbol, longName, { MASS, DISTANCE, TIME, TEMPERATURE, CURRENT }, offset, factor, flags },
 //                  Ma Di Ti Te Cu
 {"degC","degreeC", { 0, 0, 0, 1, 0}, 273.15, 1.0, NOPREFIX},
 {"degF","degreeF", { 0, 0, 0, 1, 0}, 255.37222222222222222222222222222, 0.55555555555555555555555555555556, NOPREFIX},
-// TODO: MaxUnitIndexWithOffset, scrap .offset
+
 {"K","kelvin",     { 0, 0, 0, 1, 0}, 0, 1.0, CANPREFIX},
 
 {"rad", "radian",  { 0, 0, 0, 0, 0}, 0, 1, NOPREFIX},
