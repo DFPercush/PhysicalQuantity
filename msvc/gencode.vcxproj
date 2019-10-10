@@ -97,19 +97,22 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <IncludePath>$(ProjectDir)..\include;$(IncludePath)</IncludePath>
-    <CustomBuildAfterTargets>Link</CustomBuildAfterTargets>
+    <CustomBuildAfterTargets>
+    </CustomBuildAfterTargets>
     <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</OutDir>
     <IntDir>$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='interactive|x64'">
     <IncludePath>$(ProjectDir)..\include;$(IncludePath)</IncludePath>
-    <CustomBuildAfterTargets>Link</CustomBuildAfterTargets>
+    <CustomBuildAfterTargets>
+    </CustomBuildAfterTargets>
     <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</OutDir>
     <IntDir>$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <IncludePath>$(ProjectDir)..\include;$(IncludePath)</IncludePath>
-    <CustomBuildAfterTargets>Link</CustomBuildAfterTargets>
+    <CustomBuildAfterTargets>
+    </CustomBuildAfterTargets>
     <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</OutDir>
     <IntDir>$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
   </PropertyGroup>
@@ -117,19 +120,22 @@
     <IncludePath>$(ProjectDir)..\include;$(IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</OutDir>
     <IntDir>$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
-    <CustomBuildAfterTargets>Link</CustomBuildAfterTargets>
+    <CustomBuildAfterTargets>
+    </CustomBuildAfterTargets>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='interactive|Win32'">
     <IncludePath>$(ProjectDir)..\include;$(IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</OutDir>
     <IntDir>$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
-    <CustomBuildAfterTargets>Link</CustomBuildAfterTargets>
+    <CustomBuildAfterTargets>
+    </CustomBuildAfterTargets>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <IncludePath>$(ProjectDir)..\include;$(IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</OutDir>
     <IntDir>$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
-    <CustomBuildAfterTargets>Link</CustomBuildAfterTargets>
+    <CustomBuildAfterTargets>
+    </CustomBuildAfterTargets>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -140,12 +146,16 @@
       <PreprocessorDefinitions>PQ_GENCODE;BEEP_IF_HASH_TABLES_REBUILT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <CustomBuildStep>
-      <Message>gencode: auto generating dependencies</Message>
+      <Message>
+      </Message>
     </CustomBuildStep>
     <CustomBuildStep>
-      <Outputs>$(ProjectDir)..\include\PhysicalQuantity\hashTables.h;%(Outputs)</Outputs>
-      <Command>$(OutputPath)gencode.exe --rootpath $(SolutionDir)..\ generate optimize</Command>
-      <Inputs>$(ProjectDir)..\src\hash.cpp;$(ProjectDir)..\src\PhysicalUnitDefinitions.cpp;%(Inputs)</Inputs>
+      <Outputs>
+      </Outputs>
+      <Command>
+      </Command>
+      <Inputs>
+      </Inputs>
     </CustomBuildStep>
     <PostBuildEvent>
       <Command>copy /Y "$(TargetPath)" "$(ProjectDir)..\bin\"</Command>
@@ -160,12 +170,16 @@
       <PreprocessorDefinitions>PQ_GENCODE;BEEP_IF_HASH_TABLES_REBUILT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <CustomBuildStep>
-      <Message>gencode: auto generating dependencies</Message>
+      <Message>
+      </Message>
     </CustomBuildStep>
     <CustomBuildStep>
-      <Outputs>$(ProjectDir)..\include\PhysicalQuantity\hashTables.h;%(Outputs)</Outputs>
-      <Command>$(OutputPath)gencode.exe --rootpath $(SolutionDir)..\ generate optimize</Command>
-      <Inputs>$(ProjectDir)..\src\hash.cpp;$(ProjectDir)..\src\PhysicalUnitDefinitions.cpp;%(Inputs)</Inputs>
+      <Outputs>
+      </Outputs>
+      <Command>
+      </Command>
+      <Inputs>
+      </Inputs>
     </CustomBuildStep>
     <PostBuildEvent>
       <Command>copy /Y "$(TargetPath)" "$(ProjectDir)..\bin\"</Command>
@@ -180,10 +194,14 @@
       <PreprocessorDefinitions>PQ_GENCODE;BEEP_IF_HASH_TABLES_REBUILT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <CustomBuildStep>
-      <Command>$(OutputPath)gencode.exe --rootpath $(SolutionDir)..\ generate optimize</Command>
-      <Message>gencode: auto generating dependencies</Message>
-      <Outputs>$(ProjectDir)..\include\PhysicalQuantity\hashTables.h;%(Outputs)</Outputs>
-      <Inputs>$(ProjectDir)..\src\hash.cpp;$(ProjectDir)..\src\PhysicalUnitDefinitions.cpp;%(Inputs)</Inputs>
+      <Command>
+      </Command>
+      <Message>
+      </Message>
+      <Outputs>
+      </Outputs>
+      <Inputs>
+      </Inputs>
     </CustomBuildStep>
     <PostBuildEvent>
       <Command>copy /Y "$(TargetPath)" "$(ProjectDir)..\bin\"</Command>
@@ -198,10 +216,14 @@
       <PreprocessorDefinitions>PQ_GENCODE;BEEP_IF_HASH_TABLES_REBUILT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <CustomBuildStep>
-      <Command>$(OutputPath)gencode.exe --rootpath $(SolutionDir)..\ generate optimize</Command>
-      <Message>gencode: auto generating dependencies</Message>
-      <Outputs>$(ProjectDir)..\include\PhysicalQuantity\hashTables.h;%(Outputs)</Outputs>
-      <Inputs>$(ProjectDir)..\src\hash.cpp;$(ProjectDir)..\src\PhysicalUnitDefinitions.cpp;%(Inputs)</Inputs>
+      <Command>
+      </Command>
+      <Message>
+      </Message>
+      <Outputs>
+      </Outputs>
+      <Inputs>
+      </Inputs>
     </CustomBuildStep>
     <PostBuildEvent>
       <Command>copy /Y "$(TargetPath)" "$(ProjectDir)..\bin\"</Command>
@@ -222,10 +244,14 @@
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
     <CustomBuildStep>
-      <Command>$(OutputPath)gencode.exe --rootpath $(SolutionDir)..\ generate optimize</Command>
-      <Message>gencode: auto generating dependencies</Message>
-      <Outputs>$(ProjectDir)..\include\PhysicalQuantity\hashTables.h;%(Outputs)</Outputs>
-      <Inputs>$(ProjectDir)..\src\hash.cpp;$(ProjectDir)..\src\PhysicalUnitDefinitions.cpp;%(Inputs)</Inputs>
+      <Command>
+      </Command>
+      <Message>
+      </Message>
+      <Outputs>
+      </Outputs>
+      <Inputs>
+      </Inputs>
     </CustomBuildStep>
     <PostBuildEvent>
       <Command>copy /Y "$(TargetPath)" "$(ProjectDir)..\bin\"</Command>
@@ -246,12 +272,16 @@
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
     <CustomBuildStep>
-      <Message>gencode: auto generating dependencies</Message>
+      <Message>
+      </Message>
     </CustomBuildStep>
     <CustomBuildStep>
-      <Outputs>$(ProjectDir)..\include\PhysicalQuantity\hashTables.h;%(Outputs)</Outputs>
-      <Command>$(OutputPath)gencode.exe --rootpath $(SolutionDir)..\ generate optimize</Command>
-      <Inputs>$(ProjectDir)..\src\hash.cpp;$(ProjectDir)..\src\PhysicalUnitDefinitions.cpp;%(Inputs)</Inputs>
+      <Outputs>
+      </Outputs>
+      <Command>
+      </Command>
+      <Inputs>
+      </Inputs>
     </CustomBuildStep>
     <PostBuildEvent>
       <Command>copy /Y "$(TargetPath)" "$(ProjectDir)..\bin\"</Command>

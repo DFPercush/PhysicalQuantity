@@ -1,9 +1,18 @@
 
 //#define NO_INLINE
 
-#include <stdio.h>
-#include <iostream>
 #include <PhysicalQuantity.h>
+#include <stdio.h>
+
+#ifdef NO_TEXT
+int main()
+{
+	printf(" *** testconsole: Compiled with NO_TEXT. Console not available.\n");
+	return 0;
+}
+#else //NO_TEXT
+
+#include <iostream>
 #include <string>
 #include <string.h>
 using namespace std;
@@ -240,4 +249,5 @@ int main(int argc, char** argv)
 	}
 	return 0;
 }
+#endif // !NO_TEXT
 

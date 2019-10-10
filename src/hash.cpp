@@ -1,10 +1,10 @@
 
-#ifndef NO_HASHING
-
 #include <PhysicalQuantity.h>
 
-typedef PhysicalQuantity::CSubString csubstr;
+#ifndef NO_TEXT
+#ifndef NO_HASHING
 
+typedef PhysicalQuantity::CSubString csubstr;
 
 // If you change these values or add new units, rebuild hashTables.h
 // In Visual Studio, a Rebuild All / Rebuild Solution will do this.
@@ -18,6 +18,7 @@ const size_t PhysicalQuantity::defaultHashSeed = 8;
 const int PhysicalQuantity::default_hashTableSize_UnitSymbols = 50;
 const int PhysicalQuantity::default_hashTableSize_UnitLongNames = 50;
 const int PhysicalQuantity::default_hashTableSize_PrefixSymbols = 50;
+const int PhysicalQuantity::default_hashTableSize_UnitPlurals = 50;
 #endif
 
 
@@ -86,5 +87,5 @@ uint32_t murmur3_32(const unsigned char* key, size_t len, uint32_t seed)
 }
 // **********************************************************/
 
-
 #endif //#ifndef NO_HASHING
+#endif // #ifndef NO_TEXT

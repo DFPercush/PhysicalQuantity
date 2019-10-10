@@ -1,8 +1,10 @@
 
-// Note: Make sure PQ_GENCODE is defined in project settings / 
-// preprocessor options, or as a compiler argument,
-// or you will get errors about undeclared identifiers *_HashTable
+// Note: PQ_GENCODE is defined in project settings /
+// preprocessor options, or as a compiler argument in makefile for
+// any source files built as a dependency of gencode.
+// If this #define is missing, you will get errors about undeclared identifiers *_HashTable
 // It's not enough to declare it here. Some source .cpp files also need it.
+
 
 #include <PhysicalQuantity.h>
 #include <stdio.h>
@@ -15,9 +17,10 @@
 #include <stdexcept>
 using namespace std;
 
-
 typedef PhysicalQuantity PQ;
+#ifndef NO_TEXT
 typedef PhysicalQuantity::CSubString csubstr;
+#endif
 
 #if defined(_MSC_VER) && defined(BEEP_IF_HASH_TABLES_REBUILT)
 #include <Windows.h>
@@ -130,6 +133,7 @@ void dumpLiterals(string rootpath)
 	source << "#endif //#ifndef NO_LITERALS\n";
 }
 
+#ifndef NO_TEXT
 #ifndef NO_HASHING
 
 unsigned int dumpHashTable(string rootpath, int& out_bucketSize, float& out_coverage, const void* pArray, const char * const* pcstrMember, int elementSize, int arrayLen, int hashTableSize, const char* arrayName, const char* indexTypeName, size_t seed_p = 0, bool print = true)
@@ -216,7 +220,8 @@ unsigned int dumpHashTable(string rootpath, int& out_bucketSize, float& out_cove
 bool optimizeHashes(int maxTableSize, int maxSeed, int minBucketSize,
 	int& out_tableSize_unitSymbols, int& out_seed_unitSymbols, int& out_unitSymbolsBucketSize, float& out_unitsymbolsCoverage,
 	int& out_tableSize_unitLongNames, int& out_seed_unitLongNames, int& out_unitLongNamesBucketSize, float& out_unitLongNames_coverage,
-	int& out_tableSize_prefixSymbols, int& out_seed_prefixSymbols, int& out_prefixSymbolsBucketSize, float& out_prefixSymbols_coverage
+	int& out_tableSize_prefixSymbols, int& out_seed_prefixSymbols, int& out_prefixSymbolsBucketSize, float& out_prefixSymbols_coverage,
+	int& out_tableSize_unitPlurals, int& out_seed_unitPlurals, int& out_unitPluralsBucketSize, float& out_unitPlurals_coverage
 	)
 {
 	if (minBucketSize < 1) { minBucketSize = 1; }
@@ -247,8 +252,8 @@ bool optimizeHashes(int maxTableSize, int maxSeed, int minBucketSize,
 			time(&now);
 			if (difftime(now, then) >= 10)
 			{
-				float progress = (1/3.0f) * ((((float)tlen / maxTableSize) * maxSeed) + maxSeed) / (float)(maxTableSize * maxSeed);
-				cout << " ... " << setprecision(3) << (progress + (0/3.0f)) * 100 << "%";
+				float progress = (1/4.0f) * ((((float)tlen / maxTableSize) * maxSeed) + maxSeed) / (float)(maxTableSize * maxSeed);
+				cout << " ... " << setprecision(3) << (progress + (0/4.0f)) * 100 << "%";
 				cout.flush();
 				then = now;
 			}
@@ -282,6 +287,52 @@ bool optimizeHashes(int maxTableSize, int maxSeed, int minBucketSize,
 	out_unitsymbolsCoverage = bestCoverage;
 
 	//--------------------------------------------------------------------
+	// Prefix symbols
+	bestBucketSize = 9999;
+	bestCoverage = 0;
+	for (int tlen = 1; tlen < maxTableSize && bestBucketSize > minBucketSize; tlen++)
+	{
+		for (int seed = 0; seed <= maxSeed && bestBucketSize > minBucketSize; seed++)
+		{
+			time(&now);
+			if (difftime(now, then) >= 10)
+			{
+				float progress = (2/4.0f) + ((1/3.0f) * ((((float)tlen / maxTableSize) * maxSeed) + maxSeed) / (float)(maxTableSize * maxSeed));
+				cout << " ... " << setprecision(3) << (progress + (2/4.0f)) * 100 << "%";
+				cout.flush();
+				then = now;
+			}
+			dumpHashTable("", rBucketSize, rCoverage,
+				&PhysicalQuantity::KnownPrefixes[0],
+				&PhysicalQuantity::KnownPrefixes[0].symbol,
+				sizeof(PhysicalQuantity::Prefix),
+				PhysicalQuantity::KnownPrefixesLength,
+				tlen,
+				"PrefixSymbols", "PhysicalQuantity::prefixIndex_t",
+				seed, false);
+			if (rBucketSize < bestBucketSize)
+			{
+				bestBucketSize = rBucketSize;
+				bestCoverage = rCoverage;
+				bestSeed = seed;
+				bestTlen = tlen;
+			}
+			else if ((rBucketSize == bestBucketSize) && (rCoverage > bestCoverage))
+			{
+				bestBucketSize = rBucketSize;
+				bestCoverage = rCoverage;
+				bestSeed = seed;
+				bestTlen = tlen;
+			}
+		}
+	}
+	out_tableSize_prefixSymbols = bestTlen;
+	out_seed_prefixSymbols = bestSeed;
+	out_prefixSymbolsBucketSize = bestBucketSize;
+	out_prefixSymbols_coverage = bestCoverage;
+
+#ifndef NO_LONG_NAMES
+	//--------------------------------------------------------------------
 	// Unit long names
 	bestBucketSize = 9999;
 	bestCoverage = 0;
@@ -292,8 +343,8 @@ bool optimizeHashes(int maxTableSize, int maxSeed, int minBucketSize,
 			time(&now);
 			if (difftime(now, then) >= 10)
 			{
-				float progress = (1/3.0f) + (0.33f * ((((float)tlen / maxTableSize) * maxSeed) + maxSeed) / (float)(maxTableSize * maxSeed));
-				cout << " ... " << setprecision(3) << (progress + (1/3.0f)) * 100 << "%";
+				float progress = (1/4.0f) + (0.33f * ((((float)tlen / maxTableSize) * maxSeed) + maxSeed) / (float)(maxTableSize * maxSeed));
+				cout << " ... " << setprecision(3) << (progress + (1/4.0f)) * 100 << "%";
 				cout.flush();
 				then = now;
 			}
@@ -327,7 +378,7 @@ bool optimizeHashes(int maxTableSize, int maxSeed, int minBucketSize,
 	out_unitLongNames_coverage = bestCoverage;
 
 	//--------------------------------------------------------------------
-	// Prefix symbols
+	// Unit plural names
 	bestBucketSize = 9999;
 	bestCoverage = 0;
 	for (int tlen = 1; tlen < maxTableSize && bestBucketSize > minBucketSize; tlen++)
@@ -337,18 +388,18 @@ bool optimizeHashes(int maxTableSize, int maxSeed, int minBucketSize,
 			time(&now);
 			if (difftime(now, then) >= 10)
 			{
-				float progress = (2/3.0f) + ((1/3.0f) * ((((float)tlen / maxTableSize) * maxSeed) + maxSeed) / (float)(maxTableSize * maxSeed));
-				cout << " ... " << setprecision(3) << (progress + (2/3.0f)) * 100 << "%";
+				float progress = (3/4.0f) + (0.33f * ((((float)tlen / maxTableSize) * maxSeed) + maxSeed) / (float)(maxTableSize * maxSeed));
+				cout << " ... " << setprecision(3) << (progress + (3/4.0f)) * 100 << "%";
 				cout.flush();
 				then = now;
 			}
 			dumpHashTable("", rBucketSize, rCoverage,
-				&PhysicalQuantity::KnownPrefixes[0],
-				&PhysicalQuantity::KnownPrefixes[0].symbol,
-				sizeof(PhysicalQuantity::Prefix),
-				PhysicalQuantity::KnownPrefixesLength,
+				&PhysicalQuantity::KnownUnits[0],
+				&PhysicalQuantity::KnownUnits[0].plural,
+				sizeof(PhysicalQuantity::UnitDefinition),
+				PhysicalQuantity::KnownUnitsLength,
 				tlen,
-				"PrefixSymbols", "PhysicalQuantity::prefixIndex_t",
+				"UnitPlurals", "PhysicalQuantity::unitIndex_t",
 				seed, false);
 			if (rBucketSize < bestBucketSize)
 			{
@@ -366,17 +417,27 @@ bool optimizeHashes(int maxTableSize, int maxSeed, int minBucketSize,
 			}
 		}
 	}
-	out_tableSize_prefixSymbols = bestTlen;
-	out_seed_prefixSymbols = bestSeed;
-	out_prefixSymbolsBucketSize = bestBucketSize;
-	out_prefixSymbols_coverage = bestCoverage;
+	out_tableSize_unitPlurals = bestTlen;
+	out_seed_unitPlurals = bestSeed;
+	out_unitPluralsBucketSize = bestBucketSize;
+	out_unitPlurals_coverage = bestCoverage;
+#else //#ifndef NO_LONG_NAMES
+	out_unitLongNamesBucketSize = 0;
+	out_unitLongNames_coverage = 0;
+	out_tableSize_unitLongNames = 0;
+	out_seed_unitLongNames;
+	out_unitPluralsBucketSize = 0;
+	out_unitPlurals_coverage = 0;
+	out_tableSize_unitPlurals = 0;
+	out_seed_unitPlurals = 0;
+#endif //#else of #ifndef NO_LONG_NAMES
 
 	cout << "\n  Optimization finished!\n";
 	cout.flush();
 	return true;
 }
-
 #endif //#ifndef NO_HASHING
+
 
 void showinfo(string rootpath = "")
 {
@@ -399,7 +460,7 @@ void showinfo(string rootpath = "")
 	cout <<"  sizeof(PQ::UnitListBase::UnitPref) = " << sizeof(PhysicalQuantity::UnitListBase::UnitPref) << endl;
 	cout << endl;
 
-	tmp = (6 * sizeof(int)) + 
+	tmp = (7 * sizeof(int))
 		// Leaving these comments here so I know they're accounted for in prev line.
 		// They will be part of the compiled library but not present here.
 		//hashTableSize_UnitSymbols;
@@ -408,12 +469,14 @@ void showinfo(string rootpath = "")
 		//hashTableSeed_UnitSymbols;
 		//hashTableSeed_UnitLongNames;
 		//hashTableSeed_PrefixSymbols;	
-		+ sizeof(PQ::defaultHashSeed             )
-		+ sizeof(PQ::compiledHeaderOptions       )
-		+ sizeof(PQ::KnownUnitsLength            )
+		//hashTableSize_UnitPlurals;
+		+ sizeof(PQ::defaultHashSeed         )
+		+ sizeof(PQ::compiledHeaderOptions   )
+		+ sizeof(PQ::KnownUnitsLength        )
 		+ sizeof(PQ::KnownUnitOffsetsLength  )
-		+ sizeof(PQ::KnownPrefixesLength         )
-		+ sizeof(PQ::dekaIndex                   );
+		+ sizeof(PQ::KnownPrefixesLength     )
+		+ sizeof(PQ::dekaIndex               )
+		;
 	cout << "  static const scalars: " << tmp << " bytes\n\n";
 	totalRom += tmp;
 
@@ -426,8 +489,10 @@ void showinfo(string rootpath = "")
 	{
 		// +1 for null terminator
 		uslen += strlen(PQ::KnownUnits[iu].symbol) + sizeof(char);
+#ifndef NO_LONG_NAMES
 		uslen += strlen(PQ::KnownUnits[iu].longName) + sizeof(char);
 		uslen += strlen(PQ::KnownUnits[iu].plural) + sizeof(char);
+#endif
 	}
 	totalRom += uslen;
 	cout << "  Strings in KnownUnits[]: " << uslen << " bytes\n";
@@ -441,7 +506,9 @@ void showinfo(string rootpath = "")
 	for (int ip = 0; ip < PQ::KnownPrefixesLength; ip++)
 	{
 		pslen += strlen(PQ::KnownPrefixes[ip].symbol) + sizeof(char);
+#ifndef NO_LONG_NAMES
 		pslen += strlen(PQ::KnownPrefixes[ip].longName) + sizeof(char);
+#endif
 	}
 	totalRom += pslen;
 	cout << "  Strings in KnownPrefixes[]: " << pslen << " bytes\n";
@@ -458,9 +525,11 @@ void showinfo(string rootpath = "")
 	size_t unitSymbolsSize = PQ::default_hashTableSize_UnitSymbols;
 	size_t unitLongNamesSize = PQ::default_hashTableSize_UnitLongNames;
 	size_t prefixSymbolsSize = PQ::default_hashTableSize_PrefixSymbols;
+	size_t unitPluralsSize = PQ::default_hashTableSize_UnitPlurals;
 	size_t unitSymbolsSeed = PQ::defaultHashSeed;
 	size_t unitLongNamesSeed = PQ::defaultHashSeed;
 	size_t prefixSymbolsSeed = PQ::defaultHashSeed;
+	size_t unitPluralsSeed = PQ::defaultHashSeed;
 	hashParamsFileIn.open(rootpath + "src/hashParams.acpp");
 	if (hashParamsFileIn.is_open())
 	{
@@ -469,11 +538,13 @@ void showinfo(string rootpath = "")
 		{
 			getline(hashParamsFileIn, line);
 			if (line.find("hashTableSize_UnitSymbols"  ) != string::npos) { unitSymbolsSize    = atoi(line.substr(line.find_first_of("=") + 1).c_str()); }
-			if (line.find("hashTableSize_UnitLongNames") != string::npos) { unitLongNamesSize  = atoi(line.substr(line.find_first_of("=") + 1).c_str()); }
-			if (line.find("hashTableSize_PrefixSymbols") != string::npos) { prefixSymbolsSize  = atoi(line.substr(line.find_first_of("=") + 1).c_str()); }
-			if (line.find("hashTableSeed_UnitSymbols"  ) != string::npos) { unitSymbolsSeed    = atoi(line.substr(line.find_first_of("=") + 1).c_str()); }
-			if (line.find("hashTableSeed_UnitLongNames") != string::npos) { unitLongNamesSeed  = atoi(line.substr(line.find_first_of("=") + 1).c_str()); }
-			if (line.find("hashTableSeed_PrefixSymbols") != string::npos) { prefixSymbolsSeed  = atoi(line.substr(line.find_first_of("=") + 1).c_str()); }
+			else if (line.find("hashTableSize_UnitLongNames") != string::npos) { unitLongNamesSize  = atoi(line.substr(line.find_first_of("=") + 1).c_str()); }
+			else if (line.find("hashTableSize_PrefixSymbols") != string::npos) { prefixSymbolsSize  = atoi(line.substr(line.find_first_of("=") + 1).c_str()); }
+			else if (line.find("hashTableSeed_UnitSymbols"  ) != string::npos) { unitSymbolsSeed    = atoi(line.substr(line.find_first_of("=") + 1).c_str()); }
+			else if (line.find("hashTableSeed_UnitLongNames") != string::npos) { unitLongNamesSeed  = atoi(line.substr(line.find_first_of("=") + 1).c_str()); }
+			else if (line.find("hashTableSeed_PrefixSymbols") != string::npos) { prefixSymbolsSeed  = atoi(line.substr(line.find_first_of("=") + 1).c_str()); }
+			else if (line.find("hashTableSeed_UnitPlurals") != string::npos) { unitPluralsSeed  = atoi(line.substr(line.find_first_of("=") + 1).c_str()); }
+			else if (line.find("hashTableSize_UnitPlurals") != string::npos) { unitPluralsSize  = atoi(line.substr(line.find_first_of("=") + 1).c_str()); }
 		}
 		hashParamsFileIn.close();
 	}
@@ -482,22 +553,6 @@ void showinfo(string rootpath = "")
 		cout << "  *** Warning: Can not read hash parameters from src/hashParams.acpp. Using defaults.\n";
 	}
 
-	int us = dumpHashTable("", iTrash, fTrash, 
-		&PhysicalQuantity::KnownUnits[0],
-		&PhysicalQuantity::KnownUnits[0].symbol,
-		sizeof(PhysicalQuantity::UnitDefinition),
-		PhysicalQuantity::KnownUnitsLength,
-		(int)unitSymbolsSize,
-		"UnitSymbols", "PhysicalQuantity::unitIndex_t",
-		unitSymbolsSeed, false);
-	int ul = dumpHashTable("", iTrash, fTrash,
-		&PhysicalQuantity::KnownUnits[0],
-		&PhysicalQuantity::KnownUnits[0].longName,
-		sizeof(PhysicalQuantity::UnitDefinition),
-		PhysicalQuantity::KnownUnitsLength,
-		(int)unitLongNamesSize,
-		"UnitLongNames", "PhysicalQuantity::unitIndex_t",
-		unitLongNamesSeed, false);
 	int ps = dumpHashTable("", iTrash, fTrash,
 		&PhysicalQuantity::KnownPrefixes[0],
 		&PhysicalQuantity::KnownPrefixes[0].symbol,
@@ -506,6 +561,34 @@ void showinfo(string rootpath = "")
 		(int)prefixSymbolsSize,
 		"PrefixSymbols", "PhysicalQuantity::prefixIndex_t",
 		prefixSymbolsSeed, false);
+	int us = dumpHashTable("", iTrash, fTrash, 
+		&PhysicalQuantity::KnownUnits[0],
+		&PhysicalQuantity::KnownUnits[0].symbol,
+		sizeof(PhysicalQuantity::UnitDefinition),
+		PhysicalQuantity::KnownUnitsLength,
+		(int)unitSymbolsSize,
+		"UnitSymbols", "PhysicalQuantity::unitIndex_t",
+		unitSymbolsSeed, false);
+
+#ifndef NO_LONG_NAMES
+	int ul = dumpHashTable("", iTrash, fTrash,
+		&PhysicalQuantity::KnownUnits[0],
+		&PhysicalQuantity::KnownUnits[0].longName,
+		sizeof(PhysicalQuantity::UnitDefinition),
+		PhysicalQuantity::KnownUnitsLength,
+		(int)unitLongNamesSize,
+		"UnitLongNames", "PhysicalQuantity::unitIndex_t",
+		unitLongNamesSeed, false);
+
+	int up = dumpHashTable("", iTrash, fTrash,
+		&PhysicalQuantity::KnownUnits[0],
+		&PhysicalQuantity::KnownUnits[0].plural,
+		sizeof(PhysicalQuantity::UnitDefinition),
+		PhysicalQuantity::KnownUnitsLength,
+		(int)unitPluralsSize,
+		"UnitPlurals", "PhysicalQuantity::unitIndex_t",
+		unitPluralsSeed, false);
+#endif //#ifndef NO_LONG_NAMES
 
 	tmp = (sizeof(PQ::bucketSize_t) + (sizeof(PQ::prefixIndex_t) * ps)) * prefixSymbolsSize;
 	totalRom += tmp;
@@ -519,11 +602,19 @@ void showinfo(string rootpath = "")
 		<< "bucketSize " << us << ", "
 		<< tmp << " bytes*\n";
 
+#ifndef NO_LONG_NAMES
 	tmp = (sizeof(PQ::bucketSize_t) + (sizeof(PQ::unitIndex_t) * ul)) * unitLongNamesSize;
 	totalRom += tmp;
 	cout << "  UnitLongNames_HashTable[" << unitLongNamesSize << "]: "
 		<< "bucketSize " << ul << ", "
 		<< tmp << " bytes*\n";
+
+	tmp = (sizeof(PQ::bucketSize_t) + (sizeof(PQ::unitIndex_t) * up)) * unitPluralsSize;
+	totalRom += tmp;
+	cout << "  UnitLongNames_HashTable[" << unitPluralsSize << "]: "
+		<< "bucketSize " << up << ", "
+		<< tmp << " bytes*\n";
+#endif // #ifndef NO_LONG_NAMES
 
 	cout << "    * Padding may introduce inaccuracies. gencode does not have a compiled version.\n";
 	cout << endl;
@@ -533,6 +624,8 @@ void showinfo(string rootpath = "")
 	cout << "  Total ROM data: " << totalRom << " bytes\n";
 	cout << endl;
 }
+
+#endif //#ifdef NO_TEXT
 
 
 int main(int argc, char** argv)
@@ -645,26 +738,75 @@ int main(int argc, char** argv)
 		rootpath += "/";
 	}
 
+	int ret = 0;
+
+
+	try
+	{
+
+#ifdef NO_TEXT
+		if (generate && writeFiles)
+		{
+			string filepath;
+			string couldnotopen = "Could not open ";
+			ofstream hashTablesAh;
+			filepath = rootpath + "include/PhysicalQuantity/hashTables.ah";
+			hashTablesAh.open(filepath);
+			if (hashTablesAh.is_open())
+			{
+				hashTablesAh << "// NO_TEXT is #defined.\n";
+				hashTablesAh.close();
+			}
+			else 
+			{
+				ret = 1; 
+				throw runtime_error((couldnotopen + filepath).c_str());
+			}
+			
+			ofstream hashParamsAcpp;
+			filepath = rootpath + "src/hashParams.acpp";
+			hashParamsAcpp.open(filepath);
+			if (hashParamsAcpp.is_open())
+			{
+				hashParamsAcpp << "// NO_TEXT is #defined.\n";
+				hashParamsAcpp.close();
+			}
+			else
+			{
+				ret = 1;
+				throw runtime_error((couldnotopen + filepath).c_str());
+			}
+		}
+#else //#ifdef NO_TEXT
 
 	if (info) { showinfo(); }
 
 	if (!generate) { writeFiles = false; }
 
-	int ret = 0;
-	try
-	{
+//#ifdef NO_TEXT
+//	cout << "  NO_TEXT is defined, nothing to generate. Exiting.";
+//	cout.flush();
+//	return 0;
+//#else
+
 #ifndef NO_HASHING
 		int unitSymbolsSize =   (int)PQ::default_hashTableSize_UnitSymbols;
 		int unitSymbolsSeed =   (int)PQ::defaultHashSeed;
+		int unitSymbolsBucketSize = 0;
+		float unitSymbolsCoverage = 0;
+//#ifndef NO_LONG_NAMES
 		int unitLongNamesSize = (int)PQ::default_hashTableSize_UnitLongNames;
 		int unitLongNamesSeed = (int)PQ::defaultHashSeed;
+		int unitLongNamesBucketSize = 0;
+		float unitLongNamesCoverage = 0;
+		int unitPluralsSize   = (int)PQ::default_hashTableSize_UnitPlurals;
+		int unitPluralsSeed   = (int)PQ::defaultHashSeed;
+		int unitPluralsBucketSize = 0;
+		float unitPluralsCoverage = 0;
+//#endif //#ifndef NO_LONG_NAMES
 		int prefixSymbolsSize = (int)PQ::default_hashTableSize_PrefixSymbols;
 		int prefixSymbolsSeed = (int)PQ::defaultHashSeed;
-		int unitSymbolsBucketSize = 0;
-		int unitLongNamesBucketSize = 0;
 		int prefixSymbolsBucketSize = 0;
-		float unitSymbolsCoverage = 0;
-		float unitLongNamesCoverage = 0;
 		float prefixSymbolsCoverage = 0;
 
 		ofstream hashParamsFile;
@@ -681,27 +823,35 @@ int main(int argc, char** argv)
 			if (!optimizeHashes(optMaxTableSize, optMaxSeed, optMinBucketSize,
 				unitSymbolsSize, unitSymbolsSeed, unitSymbolsBucketSize, unitSymbolsCoverage,
 				unitLongNamesSize, unitLongNamesSeed, unitLongNamesBucketSize, unitLongNamesCoverage,
-				prefixSymbolsSize, prefixSymbolsSeed, prefixSymbolsBucketSize, prefixSymbolsCoverage))
+				prefixSymbolsSize, prefixSymbolsSeed, prefixSymbolsBucketSize, prefixSymbolsCoverage,
+				unitPluralsSize, unitPluralsSeed, unitPluralsBucketSize, unitPluralsCoverage))
 			{
 				throw runtime_error("optimize returned false");
 			}
 			cout.flush();
 			printf("      UnitSymbols_HashTable[%d][%d] %.2g%% used, seed=%d\n", unitSymbolsSize, unitSymbolsBucketSize, unitSymbolsCoverage * 100, unitSymbolsSeed);
+#ifndef NO_LONG_NAMES
 			printf("    UnitLongNames_HashTable[%d][%d] %.2g%% used, seed=%d\n", unitLongNamesSize, unitLongNamesBucketSize, unitLongNamesCoverage * 100, unitLongNamesSeed);
+			printf("      UnitPlurals_HashTable[%d][%d] %.2g%% used, seed=%d\n", unitPluralsSize, unitPluralsBucketSize, unitPluralsCoverage * 100, unitPluralsSeed);
+#endif
 			printf("    PrefixSymbols_HashTable[%d][%d] %.2g%% used, seed=%d\n", prefixSymbolsSize, prefixSymbolsBucketSize, prefixSymbolsCoverage * 100, prefixSymbolsSeed);
 			fflush(stdout);
 		}
 
 		if (writeFiles)
 		{
-			hashParamsFile << "#if !defined(NO_HASHING) && !defined(PQ_GENCODE)\n";
 			hashParamsFile << "#include <PhysicalQuantity.h>\n";
+			hashParamsFile << "#if !defined(NO_HASHING) && !defined(PQ_GENCODE) && !defined(NO_TEXT)\n";
 			hashParamsFile << "const int PhysicalQuantity::hashTableSize_UnitSymbols = " << unitSymbolsSize << ";\n";
-			hashParamsFile << "const int PhysicalQuantity::hashTableSize_UnitLongNames = " << unitLongNamesSize << ";\n";
-			hashParamsFile << "const int PhysicalQuantity::hashTableSize_PrefixSymbols = " << prefixSymbolsSize << ";\n";
 			hashParamsFile << "const int PhysicalQuantity::hashTableSeed_UnitSymbols = " << unitSymbolsSeed << ";\n";
-			hashParamsFile << "const int PhysicalQuantity::hashTableSeed_UnitLongNames = " << unitLongNamesSeed << ";\n";
+			hashParamsFile << "const int PhysicalQuantity::hashTableSize_PrefixSymbols = " << prefixSymbolsSize << ";\n";
 			hashParamsFile << "const int PhysicalQuantity::hashTableSeed_PrefixSymbols = " << prefixSymbolsSeed << ";\n";
+#ifndef NO_LONG_NAMES
+			hashParamsFile << "const int PhysicalQuantity::hashTableSize_UnitLongNames = " << unitLongNamesSize << ";\n";
+			hashParamsFile << "const int PhysicalQuantity::hashTableSeed_UnitLongNames = " << unitLongNamesSeed << ";\n";
+			hashParamsFile << "const int PhysicalQuantity::hashTableSize_UnitPlurals = " << unitPluralsSize << ";\n";
+			hashParamsFile << "const int PhysicalQuantity::hashTableSeed_UnitPlurals = " << unitPluralsSeed << ";\n";
+#endif
 			hashParamsFile << "#endif\n";
 			hashParamsFile.close();
 
@@ -711,6 +861,14 @@ int main(int argc, char** argv)
 			int iTrash;
 			float fTrash;
 			dumpHashTable(rootpath, iTrash, fTrash,
+				&PhysicalQuantity::KnownPrefixes[0],
+				&PhysicalQuantity::KnownPrefixes[0].symbol,
+				sizeof(PhysicalQuantity::Prefix),
+				PhysicalQuantity::KnownPrefixesLength,
+				prefixSymbolsSize,
+				"PrefixSymbols", "PhysicalQuantity::prefixIndex_t",
+				prefixSymbolsSeed, writeFiles);
+			dumpHashTable(rootpath, iTrash, fTrash,
 				&PhysicalQuantity::KnownUnits[0],
 				&PhysicalQuantity::KnownUnits[0].symbol,
 				sizeof(PhysicalQuantity::UnitDefinition),
@@ -718,6 +876,7 @@ int main(int argc, char** argv)
 				unitSymbolsSize,
 				"UnitSymbols", "PhysicalQuantity::unitIndex_t",
 				unitSymbolsSeed, writeFiles);
+#ifndef NO_LONG_NAMES
 			dumpHashTable(rootpath, iTrash, fTrash,
 				&PhysicalQuantity::KnownUnits[0],
 				&PhysicalQuantity::KnownUnits[0].longName,
@@ -727,18 +886,21 @@ int main(int argc, char** argv)
 				"UnitLongNames", "PhysicalQuantity::unitIndex_t",
 				unitLongNamesSeed, writeFiles);
 			dumpHashTable(rootpath, iTrash, fTrash,
-				&PhysicalQuantity::KnownPrefixes[0],
-				&PhysicalQuantity::KnownPrefixes[0].symbol,
-				sizeof(PhysicalQuantity::Prefix),
-				PhysicalQuantity::KnownPrefixesLength,
-				prefixSymbolsSize,
-				"PrefixSymbols", "PhysicalQuantity::prefixIndex_t",
-				prefixSymbolsSeed, writeFiles);
+				&PhysicalQuantity::KnownUnits[0],
+				&PhysicalQuantity::KnownUnits[0].plural,
+				sizeof(PhysicalQuantity::UnitDefinition),
+				PhysicalQuantity::KnownUnitsLength,
+				unitPluralsSize,
+				"UnitPlurals", "PhysicalQuantity::unitIndex_t",
+				unitPluralsSeed, writeFiles);
+#endif //#ifndef NO_LONG_NAMES
 			cout << " OK\n";
 		}
 
 		//dumpHashTable(&PhysicalQuantity::KnownPrefixes[0], &PhysicalQuantity::KnownPrefixes[0].longName, sizeof(PhysicalQuantity::Prefix), PhysicalQuantity::KnownPrefixesLength, PhysicalQuantity::hashTableSize_PrefixLongNames, "PrefixLongNames");
 #endif //#ifndef NO_HASHING
+#endif //#else of #ifdef NO_TEXT
+	
 
 #ifndef NO_LITERALS
 		if (writeFiles)
@@ -772,6 +934,7 @@ int main(int argc, char** argv)
 #endif
 		}
 	}
+
 	cout << "gencode: exit code " << ret << endl;
 	return ret;
 }

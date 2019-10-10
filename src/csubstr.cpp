@@ -1,7 +1,7 @@
 #include <PhysicalQuantity.h>
 #include <string.h>
 
-
+#ifndef NO_TEXT
 typedef PhysicalQuantity::CSubString csubstr;
 typedef PhysicalQuantity::CSubString CSubString;
 
@@ -502,3 +502,6 @@ int CSubString::length() const { return (end - start) >= 0 ? (end-start) : 0 ; }
 int CSubString::find_first_of(const char* find, int startOfs) const { return find_first_of(CSubString(find), startOfs); }
 int CSubString::find_first_not_of(const char* find, int startOfs) const { return find_first_not_of(CSubString(find), startOfs); }
 #endif //#ifdef NO_INLINE
+
+#endif // !NO_TEXT
+

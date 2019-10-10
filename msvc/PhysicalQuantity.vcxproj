@@ -100,36 +100,42 @@
     <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</OutDir>
     <IntDir>$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
     <ExtensionsToDeleteOnClean>*.acpp;*.ah;$(ExtensionsToDeleteOnClean)</ExtensionsToDeleteOnClean>
+    <CustomBuildBeforeTargets>ClCompile</CustomBuildBeforeTargets>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='interactive|Win32'">
     <IncludePath>$(ProjectDir)..\include;$(IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</OutDir>
     <IntDir>$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
     <ExtensionsToDeleteOnClean>*.acpp;*.ah;$(ExtensionsToDeleteOnClean)</ExtensionsToDeleteOnClean>
+    <CustomBuildBeforeTargets>ClCompile</CustomBuildBeforeTargets>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <IncludePath>$(ProjectDir)..\include;$(IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</OutDir>
     <IntDir>$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
     <ExtensionsToDeleteOnClean>*.acpp;*.ah;$(ExtensionsToDeleteOnClean)</ExtensionsToDeleteOnClean>
+    <CustomBuildBeforeTargets>ClCompile</CustomBuildBeforeTargets>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <IncludePath>$(ProjectDir)..\include;$(IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</OutDir>
     <IntDir>$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
     <ExtensionsToDeleteOnClean>*.acpp;*.ah;$(ExtensionsToDeleteOnClean)</ExtensionsToDeleteOnClean>
+    <CustomBuildBeforeTargets>ClCompile</CustomBuildBeforeTargets>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='interactive|x64'">
     <IncludePath>$(ProjectDir)..\include;$(IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</OutDir>
     <IntDir>$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
     <ExtensionsToDeleteOnClean>*.acpp;*.ah;$(ExtensionsToDeleteOnClean)</ExtensionsToDeleteOnClean>
+    <CustomBuildBeforeTargets>ClCompile</CustomBuildBeforeTargets>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <IncludePath>$(ProjectDir)..\include;$(IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</OutDir>
     <IntDir>$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
     <ExtensionsToDeleteOnClean>*.acpp;*.ah;$(ExtensionsToDeleteOnClean)</ExtensionsToDeleteOnClean>
+    <CustomBuildBeforeTargets>ClCompile</CustomBuildBeforeTargets>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -145,6 +151,18 @@
     <PostBuildEvent>
       <Command>copy /Y "$(TargetPath)" "$(ProjectDir)..\lib\"</Command>
     </PostBuildEvent>
+    <CustomBuildStep>
+      <Command>$(SolutionDir)..\bin\gencode.exe --rootpath $(SolutionDir)..\ generate optimize</Command>
+    </CustomBuildStep>
+    <CustomBuildStep>
+      <Message>gencode: auto generating dependencies</Message>
+    </CustomBuildStep>
+    <CustomBuildStep>
+      <Outputs>$(ProjectDir)..\include\PhysicalQuantity\hashTables.ah;$(ProjectDir)..\include\PhysicalQuantity\literals.ah;$(ProjectDir)..\src\hashParams.acpp;$(ProjectDir)..\src\literals.acpp;%(Outputs)</Outputs>
+    </CustomBuildStep>
+    <CustomBuildStep>
+      <Inputs>$(SolutionDir)..\bin\gencode.exe;$(ProjectDir)..\src\hash.cpp;$(ProjectDir)..\src\PhysicalUnitDefinitions.cpp;%(Inputs)</Inputs>
+    </CustomBuildStep>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='interactive|Win32'">
     <ClCompile>
@@ -160,6 +178,18 @@
     <PostBuildEvent>
       <Command>copy /Y "$(TargetPath)" "$(ProjectDir)..\lib\"</Command>
     </PostBuildEvent>
+    <CustomBuildStep>
+      <Command>$(SolutionDir)..\bin\gencode.exe --rootpath $(SolutionDir)..\ generate optimize</Command>
+    </CustomBuildStep>
+    <CustomBuildStep>
+      <Message>gencode: auto generating dependencies</Message>
+    </CustomBuildStep>
+    <CustomBuildStep>
+      <Outputs>$(ProjectDir)..\include\PhysicalQuantity\hashTables.ah;$(ProjectDir)..\include\PhysicalQuantity\literals.ah;$(ProjectDir)..\src\hashParams.acpp;$(ProjectDir)..\src\literals.acpp;%(Outputs)</Outputs>
+    </CustomBuildStep>
+    <CustomBuildStep>
+      <Inputs>$(SolutionDir)..\bin\gencode.exe;$(ProjectDir)..\src\hash.cpp;$(ProjectDir)..\src\PhysicalUnitDefinitions.cpp;%(Inputs)</Inputs>
+    </CustomBuildStep>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -174,6 +204,18 @@
     <PostBuildEvent>
       <Command>copy /Y "$(TargetPath)" "$(ProjectDir)..\lib\"</Command>
     </PostBuildEvent>
+    <CustomBuildStep>
+      <Command>$(SolutionDir)..\bin\gencode.exe --rootpath $(SolutionDir)..\ generate optimize</Command>
+    </CustomBuildStep>
+    <CustomBuildStep>
+      <Message>gencode: auto generating dependencies</Message>
+    </CustomBuildStep>
+    <CustomBuildStep>
+      <Outputs>$(ProjectDir)..\include\PhysicalQuantity\hashTables.ah;$(ProjectDir)..\include\PhysicalQuantity\literals.ah;$(ProjectDir)..\src\hashParams.acpp;$(ProjectDir)..\src\literals.acpp;%(Outputs)</Outputs>
+    </CustomBuildStep>
+    <CustomBuildStep>
+      <Inputs>$(SolutionDir)..\bin\gencode.exe;$(ProjectDir)..\src\hash.cpp;$(ProjectDir)..\src\PhysicalUnitDefinitions.cpp;%(Inputs)</Inputs>
+    </CustomBuildStep>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='interactive|x64'">
     <ClCompile>
@@ -188,6 +230,18 @@
     <PostBuildEvent>
       <Command>copy /Y "$(TargetPath)" "$(ProjectDir)..\lib\"</Command>
     </PostBuildEvent>
+    <CustomBuildStep>
+      <Command>$(SolutionDir)..\bin\gencode.exe --rootpath $(SolutionDir)..\ generate optimize</Command>
+    </CustomBuildStep>
+    <CustomBuildStep>
+      <Message>gencode: auto generating dependencies</Message>
+    </CustomBuildStep>
+    <CustomBuildStep>
+      <Outputs>$(ProjectDir)..\include\PhysicalQuantity\hashTables.ah;$(ProjectDir)..\include\PhysicalQuantity\literals.ah;$(ProjectDir)..\src\hashParams.acpp;$(ProjectDir)..\src\literals.acpp;%(Outputs)</Outputs>
+    </CustomBuildStep>
+    <CustomBuildStep>
+      <Inputs>$(SolutionDir)..\bin\gencode.exe;$(ProjectDir)..\src\hash.cpp;$(ProjectDir)..\src\PhysicalUnitDefinitions.cpp;%(Inputs)</Inputs>
+    </CustomBuildStep>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -206,6 +260,18 @@
     <PostBuildEvent>
       <Command>copy /Y "$(TargetPath)" "$(ProjectDir)..\lib\"</Command>
     </PostBuildEvent>
+    <CustomBuildStep>
+      <Command>$(SolutionDir)..\bin\gencode.exe --rootpath $(SolutionDir)..\ generate optimize</Command>
+    </CustomBuildStep>
+    <CustomBuildStep>
+      <Message>gencode: auto generating dependencies</Message>
+    </CustomBuildStep>
+    <CustomBuildStep>
+      <Outputs>$(ProjectDir)..\include\PhysicalQuantity\hashTables.ah;$(ProjectDir)..\include\PhysicalQuantity\literals.ah;$(ProjectDir)..\src\hashParams.acpp;$(ProjectDir)..\src\literals.acpp;%(Outputs)</Outputs>
+    </CustomBuildStep>
+    <CustomBuildStep>
+      <Inputs>$(SolutionDir)..\bin\gencode.exe;$(ProjectDir)..\src\hash.cpp;$(ProjectDir)..\src\PhysicalUnitDefinitions.cpp;%(Inputs)</Inputs>
+    </CustomBuildStep>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -224,6 +290,18 @@
     <PostBuildEvent>
       <Command>copy /Y "$(TargetPath)" "$(ProjectDir)..\lib\"</Command>
     </PostBuildEvent>
+    <CustomBuildStep>
+      <Command>$(SolutionDir)..\bin\gencode.exe --rootpath $(SolutionDir)..\ generate optimize</Command>
+    </CustomBuildStep>
+    <CustomBuildStep>
+      <Message>gencode: auto generating dependencies</Message>
+    </CustomBuildStep>
+    <CustomBuildStep>
+      <Outputs>$(ProjectDir)..\include\PhysicalQuantity\hashTables.ah;$(ProjectDir)..\include\PhysicalQuantity\literals.ah;$(ProjectDir)..\src\hashParams.acpp;$(ProjectDir)..\src\literals.acpp;%(Outputs)</Outputs>
+    </CustomBuildStep>
+    <CustomBuildStep>
+      <Inputs>$(SolutionDir)..\bin\gencode.exe;$(ProjectDir)..\src\hash.cpp;$(ProjectDir)..\src\PhysicalUnitDefinitions.cpp;%(Inputs)</Inputs>
+    </CustomBuildStep>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\src\csubstr.cpp" />

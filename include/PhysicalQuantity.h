@@ -2,14 +2,18 @@
 
 #include <PhysicalQuantity/ppOptions.h>
 
+//==================================================================================
+// Config checking
 
 #if !defined(NO_INLINE) && !defined(INLINE_KEYWORD)
 #define INLINE_KEYWORD __inline
 #endif //#if !defined(NO_INLINE) && !defined(INLINE_KEYWORD)
 
-//==================================================================================
-// Config checking
-// TODO: NO_TYPEDEFS
+#ifdef NO_TEXT
+#define NO_HASHING
+#endif
+
+// Set compiled options flags
 #ifdef NO_NEW
 #define PQ_HAS_NO_NEW 0x01
 #define NO_STD_STRING
@@ -46,14 +50,26 @@
 #else
 #define PQ_HAS_CPP11 0
 #endif
+#ifdef NO_LONG_NAMES
+#define PQ_HAS_NO_LONG_NAMES 0x100
+#else
+#define PQ_HAS_NO_LONG_NAMES 0
+#endif
+#ifdef NO_TEXT
+#define PQ_HAS_NO_TEXT 0x200
+#else
+#define PQ_HAS_NO_TEXT 0
+#endif
 // Typedefs wouldn't affect anything at the linker/binary stage, would they?
 //#ifdef NO_TYPEDEFS
-//#define PQ_HAS_NO_TYPEDEFS 0x100
+//#define PQ_HAS_NO_TYPEDEFS 0xxxxxx
 //#else
 #define PQ_HAS_NO_TYPEDEFS 0
 //#endif
 
-#define PQ_HEADER_OPTIONS (PQ_HAS_NO_NEW | PQ_HAS_NO_STD_STRING | PQ_HAS_NO_LITERALS | PQ_HAS_NO_INLINE | PQ_HAS_NO_HASHING | PQ_HAS_NO_THROW | PQ_HAS_CPP11 | PQ_HAS_NO_TYPEDEFS)
+#define PQ_HEADER_OPTIONS (PQ_HAS_NO_NEW | PQ_HAS_NO_STD_STRING | PQ_HAS_NO_LITERALS | \
+	PQ_HAS_NO_INLINE | PQ_HAS_NO_HASHING | PQ_HAS_NO_THROW | PQ_HAS_CPP11 | PQ_HAS_NO_TYPEDEFS | \
+	PQ_HAS_NO_LONG_NAMES | PQ_HAS_NO_TEXT)
 
 // End config checking
 //==================================================================================
@@ -92,7 +108,7 @@ public:
 	//typedef float num;
 	//======================
 
-
+#ifndef NO_TEXT
 	//==================================================================================
 	// CSubString
 	class CSubString
@@ -148,7 +164,7 @@ public:
 	};
 	// End CSubString
 	//==================================================================================
-
+#endif //#ifndef NO_TEXT
 
 
 	//==================================================================================
@@ -163,11 +179,14 @@ public:
 		ENUM_MAX
 	};
 
+#if !defined(NO_TEXT) || defined(PQ_GENCODE)
 	struct UnitDefinition
 	{
 		const char* symbol;
+#ifndef NO_LONG_NAMES
 		const char* longName;
-		const char* plural; // TODO: implement. Maybe #define away? Or the whole thing.
+		const char* plural;
+#endif
 		num factor;
 		const signed char dim[(int)QuantityType::ENUM_MAX];
 		unsigned short flags = 0;
@@ -181,7 +200,9 @@ public:
 	struct Prefix
 	{
 		const char* symbol;
+#ifndef NO_LONG_NAMES
 		const char* longName;
+#endif
 		num factor;
 	};
 	// End unit and dimension stuff
@@ -197,13 +218,16 @@ public:
 	static const int default_hashTableSize_UnitSymbols;
 	static const int default_hashTableSize_UnitLongNames;
 	static const int default_hashTableSize_PrefixSymbols;
+	static const int default_hashTableSize_UnitPlurals;
 #else //PQ_GENCODE
 	// Actual values are written by gencode to hashParams.acpp
 	static const int hashTableSize_UnitSymbols;
 	static const int hashTableSize_UnitLongNames;
 	static const int hashTableSize_PrefixSymbols;
+	static const int hashTableSize_UnitPlurals;
 	static const int hashTableSeed_UnitSymbols;
 	static const int hashTableSeed_UnitLongNames;
+	static const int hashTableSeed_UnitPlurals;
 	static const int hashTableSeed_PrefixSymbols;
 #endif //PQ_GENCODE
 
@@ -228,6 +252,7 @@ public:
 	};
 
 #endif //#ifndef NO_HASHING
+#endif //#if !defined(NO_TEXT) || defined(PQ_GENCODE)
 
 	// End hashing function
 	//==================================================================================
@@ -282,6 +307,7 @@ public:
 	typedef unsigned short unitIndex_t;
 	typedef signed char prefixIndex_t;
 	typedef signed char unitPower_t;
+#ifndef NO_TEXT
 	class UnitListBase
 	{
 		friend class PhysicalQuantity;
@@ -326,6 +352,8 @@ public:
 #else
 	typedef UnitList_dynamic UnitList;
 #endif
+#endif //#ifndef NO_TEXT
+
 	// End formatting stuff
 	//==================================================================================
 
@@ -335,9 +363,11 @@ public:
 	PhysicalQuantity();
 	PhysicalQuantity(const PhysicalQuantity& copy);
 	PhysicalQuantity(PhysicalQuantity&& move) noexcept;
+#ifndef NO_TEXT
 	PhysicalQuantity(num value, const char* unit);
-	PhysicalQuantity(num value);
 	PhysicalQuantity(CSubString str);
+#endif // #ifndef NO_TEXT
+	PhysicalQuantity(num value);
 #if defined(CPP11)
 	constexpr PhysicalQuantity(num value_p, signed char dim_p[(int)QuantityType::ENUM_MAX])
 		: value(value_p), dim {dim_p[0], dim_p[1], dim_p[2], dim_p[3], dim_p[4]} {}
@@ -348,12 +378,13 @@ public:
 	PhysicalQuantity& operator=(const PhysicalQuantity& cp);
 	~PhysicalQuantity() = default;
 
-	// TODO: NO_TEXT
+#ifndef NO_TEXT
 	void parse(const CSubString& text);
 	num convert(const CSubString& units) const;
 	size_t sprint(char* buf, size_t size, const UnitListBase& pu, bool useSlash = true) const;
 	size_t sprint(char* buf, size_t size, const CSubString& sspu, bool useSlash = true) const; // TODO: inline
 	size_t sprint(char* buf, size_t size, const CSubString& sspu, void* puBuf, size_t puBufSize, bool useSlash = true) const;
+#endif #ifndef NO_TEXT
 
 #ifdef NO_INLINE
 	static PhysicalQuantity get1kg();
@@ -363,19 +394,21 @@ public:
 	static PhysicalQuantity get1A();
 	bool isScalar();
 #else // NO_INLINE
-	static PhysicalQuantity get1kg() { char d[5]={1,0,0,0,0}; return PhysicalQuantity(1.0, d); }
-	static PhysicalQuantity get1m() { char d[5]={0,1,0,0,0}; return PhysicalQuantity(1.0, d); }
-	static PhysicalQuantity get1s() { char d[5]={0,0,1,0,0}; return PhysicalQuantity(1.0, d); }
-	static PhysicalQuantity get1K() { char d[5]={0,0,0,1,0}; return PhysicalQuantity(1.0, d); }
-	static PhysicalQuantity get1A() { char d[5]={0,0,0,0,1}; return PhysicalQuantity(1.0, d); }
+	static PhysicalQuantity get1kg() { signed char d[5]={1,0,0,0,0}; return PhysicalQuantity(1.0, d); }
+	static PhysicalQuantity get1m() { signed char d[5]={0,1,0,0,0}; return PhysicalQuantity(1.0, d); }
+	static PhysicalQuantity get1s() { signed char d[5]={0,0,1,0,0}; return PhysicalQuantity(1.0, d); }
+	static PhysicalQuantity get1K() { signed char d[5]={0,0,0,1,0}; return PhysicalQuantity(1.0, d); }
+	static PhysicalQuantity get1A() { signed char d[5]={0,0,0,0,1}; return PhysicalQuantity(1.0, d); }
 	bool isScalar() { return (dim[0] == 0 && dim[1] == 0 && dim[2] == 0 && dim[3] == 0 && dim[5] == 0); }
 #endif // #else of #ifdef NO_INLINE
 
 
+#ifndef NO_TEXT
 #ifndef NO_STD_STRING
 	std::string toString() const;
 	std::string toString(const UnitListBase&) const;
-#endif
+#endif // #ifndef NO_STD_STRING
+#endif //#ifndef NO_TEXT
 
 #if defined(CPP11)
 	constexpr PhysicalQuantity operator* (const PhysicalQuantity& rhs) const 
@@ -456,11 +489,7 @@ public:
 	bool readNetworkBinary(void* buf);
 #endif
 
-	static bool findUnit(CSubString name, unitIndex_t& outUnitIndex, prefixIndex_t& outPrefixIndex);
-	static bool feq(num a, num b, num toleranceFactor);
-	static PhysicalQuantity eval(CSubString str);
-
-	static const int compiledHeaderOptions;
+#if !defined(NO_TEXT) || defined(PQ_GENCODE)
 	static const UnitDefinition KnownUnits[];
 	static const int KnownUnitsLength;
 	static const num KnownUnitOffsets[];
@@ -469,27 +498,44 @@ public:
 	static const Prefix KnownPrefixes[];
 	static const int KnownPrefixesLength;
 	static const prefixIndex_t dekaIndex;
+
+#ifndef NO_TEXT
+	static PhysicalQuantity eval(CSubString str);
+	static bool findUnit(CSubString name, unitIndex_t& outUnitIndex, prefixIndex_t& outPrefixIndex);
+#endif
+#endif //#if !defined(NO_TEXT) || defined(PQ_GENCODE)
+
+	static const int compiledHeaderOptions;
+
 	static num equalityToleranceFactor;
+	static bool feq(num a, num b, num toleranceFactor);
+
 
 private:
 	num value;
 	signed char dim[(int)QuantityType::ENUM_MAX];
 
 	void init();
+	unsigned int magdim() const; // Magnitude of dimension = sum(abs(dim[x]))
+
+#ifndef NO_TEXT
 	static void parseUnits(const CSubString& unitStr, signed char (&dimOut)[(int)QuantityType::ENUM_MAX], num& factorOut, num& offsetOut); // throws if unknown/invalid unit
 	static void mulUnit(signed char (&dimOut)[(int)QuantityType::ENUM_MAX], const UnitDefinition& unit, signed int power, bool invert = false); // deals only with quantity dimension, conversion factors are handled elsewhere
-	unsigned int magdim() const; // Magnitude of dimension = sum(abs(dim[x]))
 	int magdimReduce(const UnitDefinition& unit) const;  // Divide by what power of (unit) to minimize magdim? Used in text output logic.
-
 	// in conjunction with sprint()
 	void sprintHalf(PhysicalQuantity& r, const UnitListBase & pu, bool& hasDenom, bool inDenomNow, int &md, int origmd, bool useSlash, size_t &outofs, size_t size, char * buf) const;
 	//void sprintHalf(const UnitListBase & pu, int &md, PhysicalQuantity &r, int origmd, bool useSlash, int &outofs, int size, char * buf) const;
 	void sprintHalfTryUnit(int iTestUnit, PhysicalQuantity & r, int origmd, bool & hasDenom, bool useSlash, bool inDenomNow, int plen, size_t & outofs, size_t size, char * buf, prefixIndex_t ipre, int & md, bool preferred) const;
 	void WriteOutputUnit(int plen, int ulen, int reduceExp, size_t &outofs, size_t size, char * buf, prefixIndex_t ipre, const PhysicalQuantity::UnitDefinition & testunit) const;
+#endif
+
+
 
 public:
 #ifdef NO_INLINE
 	PhysicalQuantity(const char* str);
+
+#ifndef NO_TEXT
 	static void parseUnits(const char* unitStr, signed char(&unitsOut)[(int)QuantityType::ENUM_MAX], num& factorOut, num& offsetOut);
 	num convert(const char* units) const;
 	static bool findUnit(const char* pcharName, unitIndex_t& outUnitIndex, prefixIndex_t& outPrefixIndex);
@@ -498,9 +544,13 @@ public:
 	void parse(const char* text);
 	//size_t sprint(char* buf, size_t size, const char* pu, bool useSlash = true) const;
 	size_t sprint(char* buf, size_t size, bool useSlash = true) const;
-
-#else
+#endif //#ifndef NO_TEXT
+#ifndef NO_TEXT
 	INLINE_KEYWORD 	PhysicalQuantity(const char* str) { PhysicalQuantity(CSubString(str)); }
+#endif //#ifndef NO_TEXT
+#else //#ifdef NO_INLINE
+
+#ifndef NO_TEXT
 	INLINE_KEYWORD static void parseUnits(const char* unitStr, signed char (&unitsOut)[(int)QuantityType::ENUM_MAX], num& factorOut, num& offsetOut) { return parseUnits(CSubString(unitStr), unitsOut, factorOut, offsetOut); }
 	INLINE_KEYWORD num convert(const char* units) const { return convert(CSubString(units)); }
 	INLINE_KEYWORD static bool findUnit(const char* pcharName, unitIndex_t& outUnitIndex, prefixIndex_t& outPrefixIndex) { return findUnit(CSubString(pcharName), outUnitIndex, outPrefixIndex); }
@@ -509,8 +559,8 @@ public:
 	INLINE_KEYWORD void parse(const char* text) { parse(CSubString(text)); }
 	//INLINE_KEYWORD size_t sprint(char* buf, int size, const char* pu, bool useSlash = true) const { return sprint(buf, size, UnitList(pu), useSlash); }
 	INLINE_KEYWORD size_t sprint(char* buf, size_t size, bool useSlash = true) const { return sprint(buf, size, UnitList(""), useSlash); }
-
-#endif
+#endif //#ifndef NO_TEXT
+#endif //#else of #ifdef NO_INLINE
 	// End main class members
 	//==================================================================================
 };
@@ -583,8 +633,6 @@ public:
 
 
 #if defined(CPP11)
-// Implement the fundamental SI units of each quantity as compile time constants
-
 // Use these in a header
 #define CxLiteral(symbol_no_quotes, Ma, Di, Ti, Te, Cu, factor, offset) \
 	constexpr PhysicalQuantity operator ""_##symbol_no_quotes(long double v) \
@@ -639,8 +687,10 @@ public:
 
 #ifndef NO_TYPEDEFS
 typedef PhysicalQuantity PQ;
+#ifndef NO_TEXT
 typedef PhysicalQuantity::CSubString csubstr;
-#endif
+#endif // #ifndef NO_TEXT
+#endif // #ifndef NO_TYPEDEFS
 
 // Useful for testing if there are any unclosed #if blocks
 //#pragma message("Hello from the end of PhysicalQuantity.h")

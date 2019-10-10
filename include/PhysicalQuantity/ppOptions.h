@@ -1,14 +1,5 @@
 #pragma once
 
-/*
-TODO: 
-	. NO_LONG_NAMES
-	. NO_STRING_LOOKUPS - kills unit definition table and all text functions. Implies...
-	. NO_SPRINTF, NO_SPRINTF_INT, NO_SPRINTF_FLOAT
-	. MINIMAL, probably combining everything except CPP11 for constexpr
-	. CPP11 --> NO_CONSTEXPR ?
-*/
-
 //=================================================================================================================
 // Conditional compilation options:   (See README.txt)
 
@@ -21,10 +12,15 @@ TODO:
 //#define INLINE_KEYWORD inline  // default is __inline
 //#define NO_HASHING       // Do not use hash tables for unit string lookups (Tables can be in ROM). Requires. approx. 1 KB
 //#define NO_THROW         // Do not use 'throw' for errors, instead use an error callback (see errorHandler)
+#define NO_LONG_NAMES    // Do not include full names and plural names for units and prefixes. Symbols only. Saves a little storage space.
+
+//#define NO_TEXT          // Provide no text parsing or output, saves space
+                           // Life might be difficult if you also define NO_LITERALS or have no 'constexpr' support.
+						   // In that case, you would have no conversion between units, which is the whole point.
+						   // See get1kg()/m/s/K/A and isScalar() if you want to divide out units yourself.
 
 // End conditional compilation options
 //=================================================================================================================
-
 
 #ifndef MAX_NUM_TEXT_LENGTH
 // The maximum length of sprintf("%g", (num))
@@ -40,4 +36,11 @@ TODO:
 // +1 for a small safety margin
 #define MAX_NUM_TEXT_LENGTH 26
 #endif
+
+/*
+TODO: 
+. NO_SPRINTF, NO_SPRINTF_INT, NO_SPRINTF_FLOAT
+. MINIMAL, probably combining everything except CPP11 for constexpr
+. CPP11 --> NO_CONSTEXPR ?
+*/
 
