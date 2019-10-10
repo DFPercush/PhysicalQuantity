@@ -105,7 +105,7 @@ PhysicalQuantity::PhysicalQuantity(PhysicalQuantity::num valueArg)
 	memset(dim, 0, sizeof(dim));
 }
 
-#if !defined(CPP11) // || defined(NO_INLINE)
+#if !defined(YES_CONSTEXPR) // || defined(NO_INLINE)
 PhysicalQuantity::PhysicalQuantity(num value_p, signed char dim_p[(int)QuantityType::ENUM_MAX], num offset)
 	: value(value_p), dim {dim_p[0], dim_p[1], dim_p[2], dim_p[3], dim_p[4]} {}
 #endif
@@ -745,7 +745,7 @@ string PhysicalQuantity::toString(const UnitListBase& pu) const
 #endif //#if !defined(NO_STD_STRING) && !defined(NO_PRINTF)
 #endif //#ifndef NO_TEXT
 
-#if !defined(CPP11) || defined(NO_INLINE)
+#if !defined(YES_CONSTEXPR) || defined(NO_INLINE)
 PhysicalQuantity PhysicalQuantity::operator* (const PhysicalQuantity& rhs) const
 {
 	PhysicalQuantity ret;
@@ -767,7 +767,7 @@ PhysicalQuantity PhysicalQuantity::operator/ (const PhysicalQuantity& rhs) const
 	}
 	return ret;
 }
-#endif //#if !defined(CPP11) || defined(NO_INLINE)
+#endif //#if !defined(YES_CONSTEXPR) || defined(NO_INLINE)
 // Otherwise * and / are constexpr in header
 
 PhysicalQuantity PhysicalQuantity::operator+ (const PhysicalQuantity& rhs) const
@@ -802,7 +802,7 @@ PhysicalQuantity PhysicalQuantity::operator- (const PhysicalQuantity& rhs) const
 	return ret;
 }
 
-#if !defined(CPP11) || defined(NO_INLINE)
+#if !defined(YES_CONSTEXPR) || defined(NO_INLINE)
 PhysicalQuantity PhysicalQuantity::operator* (num rhs) const
 {
 	PhysicalQuantity ret(*this);
@@ -816,7 +816,7 @@ PhysicalQuantity PhysicalQuantity::operator/ (num rhs) const
 	ret.value = value / rhs;
 	return ret;
 }
-#endif //#if !defined(CPP11) || defined(NO_INLINE)
+#endif //#if !defined(YES_CONSTEXPR) || defined(NO_INLINE)
 
 PhysicalQuantity PhysicalQuantity::operator+ (num rhs) const
 {

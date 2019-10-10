@@ -48,7 +48,7 @@ void dumpLiterals(string rootpath)
 	source << "#include <PhysicalQuantity.h>\n";
 
 	header << "#ifndef NO_LITERALS\n";
-	header << "#if defined(CPP11)\n";
+	header << "#if defined(YES_CONSTEXPR)\n";
 
 	for (int ui = 0; ui < PQ::KnownUnitsLength; ui++)
 	{
@@ -79,8 +79,8 @@ void dumpLiterals(string rootpath)
 		//}  // offset
 	}
 
-	header << "#else //#if defined(CPP11)\n";
-	source << "#if !defined(CPP11)\n";
+	header << "#else //#if defined(YES_CONSTEXPR)\n";
+	source << "#if !defined(YES_CONSTEXPR)\n";
 
 	for (int i = 0; i < PQ::KnownUnitsLength; i++)
 	{
@@ -104,7 +104,7 @@ void dumpLiterals(string rootpath)
 		//}
 	}
 
-	header << "#endif //#else of #if defined(CPP11)\n\n//Units with additive offsets:\n";
+	header << "#endif //#else of #if defined(YES_CONSTEXPR)\n\n//Units with additive offsets:\n";
 
 	//for (int i = 0; i < PQ::KnownUnitsLength; i++)
 	//{
@@ -129,7 +129,7 @@ void dumpLiterals(string rootpath)
 	//}
 
 	header << "#endif //#ifndef NO_LITERALS\n";
-	source << "#endif //!CPP11\n";
+	source << "#endif //!YES_CONSTEXPR\n";
 	source << "#endif //#ifndef NO_LITERALS\n";
 }
 

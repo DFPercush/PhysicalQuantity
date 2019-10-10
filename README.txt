@@ -61,7 +61,7 @@ What is NOT required:
 	- try/catch (optional)
 
 ppOptions.h contains some conditional compilation options for limited systems:
-	CPP11            // Compiler supports C++11
+	YES_CONSTEXPR            // Compiler supports C++11
 	NO_NEW           // Do not use dynamic memory allocation.
 	NO_STD_STRING    // Do not #include <string> or use std::string. Implied by NO_NEW.
 	NO_LITERALS      // Do not define literal operators like 1_kg. Require a C++11 compiler or newer.

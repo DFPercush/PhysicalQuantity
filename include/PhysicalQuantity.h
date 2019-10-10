@@ -9,10 +9,6 @@
 #define INLINE_KEYWORD __inline
 #endif //#if !defined(NO_INLINE) && !defined(INLINE_KEYWORD)
 
-#ifdef NO_TEXT
-#define NO_HASHING
-#endif
-
 // Set compiled options flags
 #ifdef NO_NEW
 #define PQ_HAS_NO_NEW 0x01
@@ -45,7 +41,7 @@
 #else
 #define PQ_HAS_NO_THROW 0
 #endif
-#ifdef CPP11
+#ifdef YES_CONSTEXPR
 #define PQ_HAS_CPP11 0x80
 #else
 #define PQ_HAS_CPP11 0
@@ -60,6 +56,11 @@
 #else
 #define PQ_HAS_NO_TEXT 0
 #endif
+#ifndef NO_CONSTEXPR
+#define PQ_HAS_NO_CONSTEXPR 0x400
+#else
+#define PQ_HAS_NO_CONSTEXPR 0
+#endif
 // Typedefs wouldn't affect anything at the linker/binary stage, would they?
 //#ifdef NO_TYPEDEFS
 //#define PQ_HAS_NO_TYPEDEFS 0xxxxxx
@@ -69,11 +70,19 @@
 
 #define PQ_HEADER_OPTIONS (PQ_HAS_NO_NEW | PQ_HAS_NO_STD_STRING | PQ_HAS_NO_LITERALS | \
 	PQ_HAS_NO_INLINE | PQ_HAS_NO_HASHING | PQ_HAS_NO_THROW | PQ_HAS_CPP11 | PQ_HAS_NO_TYPEDEFS | \
-	PQ_HAS_NO_LONG_NAMES | PQ_HAS_NO_TEXT)
+	PQ_HAS_NO_LONG_NAMES | PQ_HAS_NO_TEXT | PQ_HAS_NO_CONSTEXPR)
 
 // End config checking
 //==================================================================================
 
+
+#ifdef NO_TEXT
+#define NO_HASHING
+#endif
+
+#ifndef NO_CONSTEXPR
+#define YES_CONSTEXPR
+#endif
 
 // Should be getting this from ppOptions.h, but it really, *really* needs to be defined for sure
 #ifndef MAX_NUM_TEXT_LENGTH
@@ -368,7 +377,7 @@ public:
 	PhysicalQuantity(CSubString str);
 #endif // #ifndef NO_TEXT
 	PhysicalQuantity(num value);
-#if defined(CPP11)
+#if defined(YES_CONSTEXPR)
 	constexpr PhysicalQuantity(num value_p, signed char dim_p[(int)QuantityType::ENUM_MAX])
 		: value(value_p), dim {dim_p[0], dim_p[1], dim_p[2], dim_p[3], dim_p[4]} {}
 #else
@@ -410,7 +419,7 @@ public:
 #endif // #ifndef NO_STD_STRING
 #endif //#ifndef NO_TEXT
 
-#if defined(CPP11)
+#if defined(YES_CONSTEXPR)
 	constexpr PhysicalQuantity operator* (const PhysicalQuantity& rhs) const 
 	{
 		signed char d[(int)QuantityType::ENUM_MAX]
@@ -436,16 +445,16 @@ public:
 		return PhysicalQuantity(value / rhs.value, d);
 	}
 #else
-//#endif //#if defined(CPP11)
+//#endif //#if defined(YES_CONSTEXPR)
 	PhysicalQuantity operator* (const PhysicalQuantity& rhs) const;
 	PhysicalQuantity operator/ (const PhysicalQuantity& rhs) const;
-#endif //#if defined(CPP11)
+#endif //#if defined(YES_CONSTEXPR)
 
 	PhysicalQuantity operator+ (const PhysicalQuantity& rhs) const;
 	PhysicalQuantity operator- (const PhysicalQuantity& rhs) const;
 	PhysicalQuantity pow(int exp);
 
-#if defined(CPP11)
+#if defined(YES_CONSTEXPR)
 	constexpr PhysicalQuantity operator* (num rhs)
 	{
 		signed char d[(int)QuantityType::ENUM_MAX]
@@ -470,10 +479,10 @@ public:
 		};
 		return PhysicalQuantity(value * rhs, d);
 	}
-#else //#if defined(CPP11)
+#else //#if defined(YES_CONSTEXPR)
 	PhysicalQuantity operator* (num rhs) const;
 	PhysicalQuantity operator/ (num rhs) const;
-#endif //#if defined(CPP11)
+#endif //#if defined(YES_CONSTEXPR)
 	PhysicalQuantity operator+ (num rhs) const;
 	PhysicalQuantity operator- (num rhs) const;
 
@@ -632,7 +641,7 @@ public:
 	DefineLiteralBase( Y##symbol_no_quotes, 1e24  ) \
 
 
-#if defined(CPP11)
+#if defined(YES_CONSTEXPR)
 // Use these in a header
 #define CxLiteral(symbol_no_quotes, Ma, Di, Ti, Te, Cu, factor, offset) \
 	constexpr PhysicalQuantity operator ""_##symbol_no_quotes(long double v) \
@@ -674,9 +683,9 @@ public:
 	CxLiteral( Y##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e24  , offset) \
 //----------------------------------------------------------------------------
 
-#else // defined(CPP11) && !defined(NO_INLINE)
-#define CxLiteral(DISABLED, CPP11, NOT, DEFINED, OR, NO_INLINE, ppOptions_h)
-#endif //#if defined(CPP11)
+#else // defined(YES_CONSTEXPR) && !defined(NO_INLINE)
+#define CxLiteral(DISABLED, YES_CONSTEXPR, NOT, DEFINED, OR, NO_INLINE, ppOptions_h)
+#endif //#if defined(YES_CONSTEXPR)
 #endif // !NO_LITERALS
 // End literals
 //==================================================================================
