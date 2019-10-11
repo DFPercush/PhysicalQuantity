@@ -139,6 +139,11 @@ void runLine(csubstr &line, bool useConvert, bool useSprint)
 
 int main(int argc, char** argv)
 {
+	if (!InitLibPQ())
+	{
+		printf("Error: InitLibPQ() failed.\n");
+		return 1;
+	}
 	if (!PQHeaderOptionsMatch) 
 	{
 		printf("Error: library code was compiled with different header options.\n");

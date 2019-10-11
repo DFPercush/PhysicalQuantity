@@ -1,12 +1,13 @@
 /*
 TODO: 
+	! read flash/ROM accessor function
 	. initializer_list ? {1.23, {0,1,0,0,0}}
 	. print a double without sprintf ? Arduino for example can't sprintf floating points
 */
 
 #include <PhysicalQuantity.h>
 #include <math.h>
-#include <memory.h>
+//#include <memory.h>
 #include <string.h>
 #include <stdio.h>
 
@@ -46,16 +47,26 @@ PhysicalQuantity::HeaderConfigException::HeaderConfigException(const char* messa
 
 typedef PhysicalQuantity PQ;
 
+
+bool InitLibPQ(int headerOptionFlags)
+{
+	if (headerOptionFlags != PQ_HEADER_OPTIONS)
+	{
+		return false;
+	}
+	return true;
+}
+
 void PhysicalQuantity::init()
 {
-	if (!(PQHeaderOptionsMatch))
-	{
-#ifdef NO_THROW
-		errorHandler(errorUserContext, E_HEADER_CONFIG);
-#else
-		throw HeaderConfigException("PhysicalQuantity: Module/object was compiled with different header options.");
-#endif
-	}
+//	if (!(PQHeaderOptionsMatch))
+//	{
+//#ifdef NO_THROW
+//		errorHandler(errorUserContext, E_HEADER_CONFIG);
+//#else
+//		throw HeaderConfigException("PhysicalQuantity: Module/object was compiled with different header options.");
+//#endif
+//	}
 	value = 0.0;
 	memset(dim, 0, sizeof(dim));
 }
@@ -68,26 +79,26 @@ PhysicalQuantity::PhysicalQuantity()
 
 PhysicalQuantity::PhysicalQuantity(const PhysicalQuantity& copy)
 {
-	init();
+	//init();
 	value = copy.value;
 	memcpy(dim, copy.dim, sizeof(dim));
 }
 
 PhysicalQuantity::PhysicalQuantity(PhysicalQuantity&& move) noexcept
 {
-	init();
+	//init();
 	value = move.value;
 	memcpy(dim, move.dim, sizeof(dim));
 }
 
 #ifndef NO_TEXT
-PhysicalQuantity::PhysicalQuantity(num value_p, const char* units_p)
+PhysicalQuantity::PhysicalQuantity(num value_p, const char* units_text)
 {
 	init();
 	value = value_p;
 	num unitFactor;
 	num unitOfs;
-	parseUnits(units_p, dim, unitFactor, unitOfs);
+	parseUnits(units_text, dim, unitFactor, unitOfs);
 	value *= unitFactor;
 	value += unitOfs;
 }
@@ -101,12 +112,12 @@ PhysicalQuantity::PhysicalQuantity(CSubString str)
 
 PhysicalQuantity::PhysicalQuantity(PhysicalQuantity::num valueArg)
 {
+	init();
 	value = valueArg;
-	memset(dim, 0, sizeof(dim));
 }
 
 #if !defined(YES_CONSTEXPR) // || defined(NO_INLINE)
-PhysicalQuantity::PhysicalQuantity(num value_p, signed char dim_p[(int)QuantityType::ENUM_MAX], num offset)
+PhysicalQuantity::PhysicalQuantity(num value_p, signed char dim_p[(int)QuantityType::ENUM_MAX])
 	: value(value_p), dim {dim_p[0], dim_p[1], dim_p[2], dim_p[3], dim_p[4]} {}
 #endif
 
@@ -504,12 +515,12 @@ void PhysicalQuantity::sprintHalf(PhysicalQuantity& r, const PhysicalQuantity::U
 	}
 
 	// That's all the preferred units. Is there anything left over?
-	for (int iu = 0; iu < KnownUnitsLength && md != 0; iu++)
+	for (unitIndex_t iu = 0; iu < KnownUnitsLength && md != 0; iu++)
 	{
 		sprintHalfTryUnit(iu, r, origmd, hasDenom, useSlash, inDenomNow, 0, outofs, size, buf, -1, md, false);
 	}
 }
-void PhysicalQuantity::sprintHalfTryUnit(int iTestUnit, PhysicalQuantity & r, int origmd, bool & hasDenom, bool useSlash, bool inDenomNow, int plen, size_t & outofs, size_t size, char * buf, PhysicalQuantity::prefixIndex_t ipre, int & md, bool preferred) const
+void PhysicalQuantity::sprintHalfTryUnit(PQ::unitIndex_t iTestUnit, PhysicalQuantity & r, int origmd, bool & hasDenom, bool useSlash, bool inDenomNow, int plen, size_t & outofs, size_t size, char * buf, PhysicalQuantity::prefixIndex_t ipre, int & md, bool preferred) const
 {
 	const PhysicalQuantity::UnitDefinition & testunit = PQ::KnownUnits[iTestUnit];
 	int ulen = (int)strlen(testunit.symbol);
@@ -745,7 +756,7 @@ string PhysicalQuantity::toString(const UnitListBase& pu) const
 #endif //#if !defined(NO_STD_STRING) && !defined(NO_PRINTF)
 #endif //#ifndef NO_TEXT
 
-#if !defined(YES_CONSTEXPR) || defined(NO_INLINE)
+#if !defined(YES_CONSTEXPR)
 PhysicalQuantity PhysicalQuantity::operator* (const PhysicalQuantity& rhs) const
 {
 	PhysicalQuantity ret;
@@ -802,15 +813,15 @@ PhysicalQuantity PhysicalQuantity::operator- (const PhysicalQuantity& rhs) const
 	return ret;
 }
 
-#if !defined(YES_CONSTEXPR) || defined(NO_INLINE)
-PhysicalQuantity PhysicalQuantity::operator* (num rhs) const
+#if !defined(YES_CONSTEXPR) // || defined(NO_INLINE)
+PhysicalQuantity PhysicalQuantity::operator* (PhysicalQuantity::num rhs) const
 {
 	PhysicalQuantity ret(*this);
 	ret.value = value * rhs;
 	return ret;
 }
 
-PhysicalQuantity PhysicalQuantity::operator/ (num rhs) const
+PhysicalQuantity PhysicalQuantity::operator/ (PhysicalQuantity::num rhs) const
 {
 	PhysicalQuantity ret(*this);
 	ret.value = value / rhs;
@@ -1016,7 +1027,7 @@ bool PhysicalQuantity::findUnit(CSubString name, PhysicalQuantity::unitIndex_t& 
 		// Nothing found so far, revert to slow linear search
 		if (foundUnitLen == 0)
 		{
-			for (int i = 0; i < KnownUnitsLength; i++)
+			for (unitIndex_t i = 0; i < KnownUnitsLength; i++)
 			{
 				sy = KnownUnits[i].symbol; //, 0, foundUnitLen);
 				if (sy.length() > 0 && sy.ends(name))
@@ -1049,7 +1060,7 @@ bool PhysicalQuantity::findUnit(CSubString name, PhysicalQuantity::unitIndex_t& 
 		if (foundUnitLen == 0) { return false; }
 
 		csubstr prefixToFind = csubstr(name, 0, name.length() - foundUnitLen);
-		for (int i = 0; i < KnownPrefixesLength; i++)
+		for (prefixIndex_t i = 0; i < KnownPrefixesLength; i++)
 		{
 			if (prefixToFind == KnownPrefixes[i].symbol
 #ifndef NO_LONG_NAMES
@@ -1150,6 +1161,7 @@ void PhysicalQuantity::UnitListBase::build(const CSubString& unitList, PhysicalQ
 				if (count_ >= storageCapacity)
 				{
 #ifdef NO_NEW
+					if (dynamic) {} // squash compiler warnings about unused parameters
 					// We're out of space, but ignore and finish
 					return;
 #else
@@ -1211,12 +1223,22 @@ PhysicalQuantity::UnitList_static::UnitList_static(const CSubString& unitList, v
 	build(unitList, unitIndeces, capacity, false);
 }
 
+
 PhysicalQuantity::UnitList_static::UnitList_static(const CSubString& unitList_SpaceDelimited)
 {
 	count_ = 0;
 	unitIndeces = nullptr;
 	dynamic = false;
+	if (unitList_SpaceDelimited.length() > 0)
+	{
+#ifdef NO_THROW
+		errorHandler(errorUserContext, E_MEMORY);
+#else
+		throw bad_alloc(); //"Trying to initialize a non empty unit list with no buffer.");
+#endif
+	}
 }
+
 
 const PhysicalQuantity::UnitListBase::UnitPref& PhysicalQuantity::UnitListBase::operator[] (int i) const
 {
@@ -1225,6 +1247,7 @@ const PhysicalQuantity::UnitListBase::UnitPref& PhysicalQuantity::UnitListBase::
 
 PhysicalQuantity PhysicalQuantity::eval(CSubString str)
 {
+	//TODO: bug "(1 + 2) mi" == 3 scalar
 	int pleft = -1;
 	int pright = -1;
 	int plevel = 0;
@@ -1435,7 +1458,7 @@ bool PhysicalQuantity::feq(PhysicalQuantity::num a, PhysicalQuantity::num b, Phy
 	else { return false; }
 }
 
-bool PhysicalQuantity::writeNetworkBinary(void* buf, size_t size)
+bool PhysicalQuantity::writeNetworkBinary(void* buf)
 {
 	short endianTest = 1;
 	if (*(char*)(&endianTest) == 1)
@@ -1480,6 +1503,28 @@ PhysicalQuantity PhysicalQuantity::pow(int x)
 	return ret;
 }
 
+bool PhysicalQuantity::isScalar()
+{
+	for (int i = 0; i < (int)QuantityType::ENUM_MAX; i++)
+	{
+		if (dim[i] != 0) { return false; }
+	}
+	return true;
+}
+
+PhysicalQuantity::num PhysicalQuantity::getScalar()
+{
+	if (!isScalar())
+	{
+#ifdef NO_THROW
+		errorHandler(errorUserContext, E_UNIT_MISMATCH);
+		return 0;
+#else
+		throw UnitMismatchException("Attempting to read a scalar but value has units.");
+#endif
+	}
+	return value;
+}
 
 
 #ifdef NO_INLINE
@@ -1488,8 +1533,8 @@ PhysicalQuantity PhysicalQuantity::get1m() {  signed char d[5]={0,1,0,0,0}; retu
 PhysicalQuantity PhysicalQuantity::get1s() {  signed char d[5]={0,0,1,0,0}; return PhysicalQuantity(1.0, d); }
 PhysicalQuantity PhysicalQuantity::get1K() {  signed char d[5]={0,0,0,1,0}; return PhysicalQuantity(1.0, d); }
 PhysicalQuantity PhysicalQuantity::get1A() {  signed char d[5]={0,0,0,0,1}; return PhysicalQuantity(1.0, d); }
-bool PhysicalQuantity::isScalar() { return (dim[0] == 0 && dim[1] == 0 && dim[2] == 0 && dim[3] == 0 && dim[5] == 0); }
 #endif //#ifdef NO_INLINE
+
 
 
 #ifndef NO_TEXT
@@ -1511,7 +1556,7 @@ void PhysicalQuantity::SetErrorHandler(void (*errorHandler_arg)(void* context, E
 #endif //#ifdef NO_THROW
 
 int PhysicalQuantity::UnitListBase::count() const { return count_; }
-bool PhysicalQuantity::unitsMatch(const PhysicalQuantity& rhs) const { return isLikeQuantity(rhs); }
+//bool PhysicalQuantity::unitsMatch(const PhysicalQuantity& rhs) const { return isLikeQuantity(rhs); }
 
 #ifndef NO_TEXT
 PhysicalQuantity::PhysicalQuantity(const char* str) { PhysicalQuantity(CSubString(str)); }

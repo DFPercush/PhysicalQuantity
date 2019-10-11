@@ -52,4 +52,9 @@
   <ItemGroup>
     <Natvis Include="CSubString.natvis" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="..\src\romtable.acpp">
+      <Filter>Source Files</Filter>
+    </None>
+  </ItemGroup>
 </Project>

@@ -2,7 +2,9 @@
 
 //=================================================================================================================
 // Conditional compilation options:   (See README.txt)
-
+//#define PQ_NUM_TYPE double  // default is double
+                           // Controls type of PQ::num
+//#define LOW_PRECISION    // If 1e100 is an overflow
 //#define NO_CONSTEXPR              // Compiler supports 'constexpr' (C++11)
 //#define NO_TYPEDEFS      // Do not define PQ:: and csubstr:: shortcuts
 //#define NO_NEW           // Do not use dynamic memory allocation.
@@ -18,6 +20,25 @@
                            // Life might be difficult if you also define NO_LITERALS or have no 'constexpr' support.
 						   // In that case, you would have no conversion between units, which is the whole point.
 						   // See get1kg()/m/s/K/A and isScalar() if you want to divide out units yourself.
+
+
+// Put as much as possible in ROM
+//--------- avr systems ------------------------
+#if defined(ARDUINO)
+#include <avr/pgmspace.h>
+
+#define USE_ROM_ACCESSOR  // Necessary if ROM/flash is not directly addressable.
+#define ROM_ACCESSOR pgm_read_byte
+// Remember to put in setup(): PQ::readROM = pgm_read_byte; // [](char* addr) { return pgm_read_byte(addr); }
+
+#define DECLARE_CONST_ARRAY(type, name) const PROGMEM type name[]
+#define DEFINE_CONST_ARRAY(type, name) DECLARE_CONST_ARRAY(type, name)
+                           // How to declare const arrays with extra qualifiers to store in flash / ROM
+						   // If using the Arduino IDE this should happen automatically.
+						   // DECLARE_ happens in header, DEFINE_ happens in .cpp
+#endif //#if defined(ARDUINO)
+//----------- end avr systems -----------------------
+
 
 // End conditional compilation options
 //=================================================================================================================
@@ -41,6 +62,4 @@
 TODO: 
 . NO_SPRINTF, NO_SPRINTF_INT, NO_SPRINTF_FLOAT
 . MINIMAL, probably combining everything except YES_CONSTEXPR for constexpr
-. YES_CONSTEXPR --> NO_CONSTEXPR ?
 */
-

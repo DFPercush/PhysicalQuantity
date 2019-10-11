@@ -377,12 +377,14 @@ double CSubString::atof()
 	// Might involve logarithmic base conversion, not to mention endianness, bleh
 	while (exp > 0)
 	{
+#ifndef LOW_PRECISION
 		if (exp >= 100) 
 		{
 			ret *= 1e100;
 			exp -= 100;
-		}
-		else if (exp >= 10)
+		} else
+#endif
+		if (exp >= 10)
 		{
 			ret *= 1e10;
 			exp -= 10;
@@ -395,12 +397,14 @@ double CSubString::atof()
 	}
 	while (exp < 0)
 	{
+#ifndef LOW_PRECISION
 		if (exp <= -100)
 		{
 			ret /= 1e100;
 			exp += 100;
-		}
-		else if (exp <= -10)
+		} else
+#endif
+		if (exp <= -10)
 		{
 			ret /= 1e10;
 			exp += 10;

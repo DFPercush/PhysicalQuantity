@@ -4,7 +4,7 @@ github.com/DFPercush
 free/open source, just don't plagiarize
 
 
-	PhysicalQuantity is an C++ class library which
+	PhysicalQuantity is an embedded-friendly C++ class library which
 allows direct arithmetic operations on values including the basic units of
 distance, mass, time, temperature, and current, as well as
 any other units derived from these quantities. This allows different teams 
@@ -42,37 +42,36 @@ Sample code:
 
 ===================================================================================================
 System requirements:
-	- A C++ compiler. Preferably C++11 or newer, but there are some #defines to make it compatible
+	- A C++ compiler. Preferably C++14, but there are some #defines to make it compatible
 	   with older/simpler compilers.
-	   Tested on Microsoft Visual Studio in Windows and and gcc/g++ in Linux.
+	   Tested on the following systems:
+	      - Windows / Microsoft Visual Studio 2017
+		  - Linux Mint / g++ 7.4.0
+		  - Arduino IDE 1.8.10 (slight tweak recommended to use C++14, see installation)
 
-	- log10()
+	- For Arduino/avr:
+		With NO_TEXT: 600 bytes flash memory, 15 bytes SRAM.
+		With text parsing, 12.4 KB flash memory, 115 bytes SRAM.
 
-	- approx. 1KB of ROM space for hash tables. This speeds up parsing and output.
-		#define NO_HASHING to disable.
+	- For PC/Windows/Linux:
+		Between 70 and 200 KB memory in "Debug" configuration
+		Up to 700 KB with speed > size optimizations.
+
+	- log10() in standard library
+		(Not required if using NO_TEXT)
 
 	- eval() is recursive, stack usage depends on input.
 
-What is NOT required:
-	- Templates
-	- STL
-	- new/delete dynamic memory allocation (optional)
-	- std::string (optional)
-	- try/catch (optional)
 
-ppOptions.h contains some conditional compilation options for limited systems:
-	YES_CONSTEXPR            // Compiler supports C++11
-	NO_NEW           // Do not use dynamic memory allocation.
-	NO_STD_STRING    // Do not #include <string> or use std::string. Implied by NO_NEW.
-	NO_LITERALS      // Do not define literal operators like 1_kg. Require a C++11 compiler or newer.
-	NO_INLINE        // Do not use inline functions, make all functions normal calls.
-	INLINE_KEYWORD inline  // default is __inline
-	NO_HASHING       // Do not use hash tables for unit string lookups (Tables can be in ROM).
-	NO_THROW         // Do not 'throw' errors, instead use an error callback (see errorHandler)
-	NO_NETWORK       // Do not include read/writeNetworkBinary functions, depends on socket header
+Optional, but not required:
+	- std::string
+	- new/delete dynamic memory allocation
+	- try/catch
+	- Support for sprintf("%g",...) if you want .toString() and .sprint()
+		(Arduino does not support this)
 
-	TODO: NO_CONSTEXPR, NO_SPRINTF, NO_SPRINTF_INT, NO_SPRINTF_FLOAT
 
+ppOptions.h contains some conditional compilation options for limited systems.
 
 
 ===================================================================================================
@@ -83,15 +82,17 @@ Installation/setup:
 		The project uses the 141 toolchain from VS 2017, mainly because of a stupid glitch
 		in 2019pre which fights me every time I try to type a semicolon. (Keyword try. It's infuriating.)
 		If you want to upgrade, tell git to ignore the vcxproj files or revert them before commit.
+		This can be done with git update-index --skip-worktree <files>
 		* I may forget to change this part of the README when I finally do upgrade myself, but just use common sense.
 
 	In Linux, open a shell where you cloned the code and run 'make'.
-		bin/ will contain the test console binary, as well as the 'gencode'
+		bin/ will contain the 'testconsole' binary, as well as the 'gencode'
 		binary used to generate the .ah and .acpp files.
 		lib/ will contain the static library, or object archive, with the API.
 		If you want to produce a .so instead, you can change the compiler flags in
 		config.mk - although the makefile is currently set up with a build rule 
-		to produce an .a file, so that will need to be updated as well.
+		to use 'ar' to produce an .a file, so that will need to be updated as well,
+		using g++ instead, to make a .so.
 
 
 Including in other projects:
@@ -127,6 +128,21 @@ unit lookup hash tables are not included in the repo, for space reasons.
 It also auto generates code for literals like 1_km. If you plan on disabling these
 features, you may not need to do this, in which case, proceed onward...
 
+	Arduino IDE:
+		- You will need a command line / shell environment with 'make'. 
+			(You can still develop with the IDE, but you will need to use 'make' to build this library,
+			because it self-generates certain code during the build process.)
+			If you don't know what this is, download Cygwin.
+		- In this project's directory, type 'make arduino'
+		- Create a folder for the library in your arduino project under libraries/
+		- Copy the contents of arduino/ to a the new library folder
+		- (recommended) Change the compiler options to use C++14
+			- Find the folder/directory where you installed the arduino software
+			- Open arduino-1.x.x\hardware\arduino\avr\platform.txt
+			- On the line that begins with 'compiler.cpp.flags', change or add
+			  -std=gnu++11  ===>  -std=gnu++14
+		- #include "PhysicalQuantity.h" and start coding!
+		  (Note the use of quotes rather than brackets < > )
 
 	If you make changes to any config files for your specific system, and you think you
 might be creating new commits and pull requests in git,
@@ -161,11 +177,6 @@ for this purpose called 'PQHeaderOptionsMatch'.  Here's an example:
 		...
 	}
 
-	This check is performed every time you try to instantiate a PhysicalQuantity 
-object. If the options do not match, an error will be generated. The overhead for
-this operation is a simple comparison between a literal/immediate value and a
-static const stored at a particular address, probably in ROM if you have it.
-
 
 ===================================================================================================
 Performance:
@@ -184,6 +195,17 @@ But eval() has overhead anyway, particularly if you're fond of parentheses.
 Note that there's no built in exponent operator, but you can use sprint() + eval()
 to accomplish this. A word of caution, though: values with units can only be raised
 to integer exponents. 1 meter ^ 2.3  will throw an error. Moving on...
+	As far as the memory footprint, it varies widely depending on your system,
+and which options you enable. The library itself takes hardly any RAM, and values
+are most likely 12 or 16 bytes each. 'gencode info' will tell you the exact size
+with padding taken into account. 
+	The hash tables and unit definition table can be placed in ROM if available,
+and typically require 2-3 KB. During my testing, the compiled binary sizes
+were as follows:
+	Windows x64 / Visual Studio 2017 Debug - 'testconsole.exe': 190 KB
+	Linux Mint x64 / g++ 7.4.0 - 'testconsole' binary: 70 KB (no debug flags)
+	Arduino IDE with NO_TEXT, 'Uno' board config: 600 bytes (!!)
+
 	While I do my best to reduce memory footprint in terms of data, and shove as 
 much as possible into ROM/.rodata, the code itself takes the most space.
 If you only have 32K of storage on an embedded device, this might be a bit heavy 

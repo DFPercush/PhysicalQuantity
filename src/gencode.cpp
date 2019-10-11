@@ -177,8 +177,8 @@ unsigned int dumpHashTable(string rootpath, int& out_bucketSize, float& out_cove
 	if (print)
 	{
 		hh << "struct " << arrayName << "_HashTableEntry_t { PhysicalQuantity::bucketSize_t bucketSize; "
-			<< indexTypeName << " bucket[" << maxCount << "]; };\n" << arrayName
-			<< "_HashTableEntry_t " << arrayName << "_HashTable[] = \n{\n";
+			<< indexTypeName << " bucket[" << maxCount << "]; };\n" 
+			<< "DEFINE_CONST_ARRAY(" << arrayName << "_HashTableEntry_t, " << arrayName << "_HashTable) = \n{\n";
 	}
 	int ib;
 	for (int iTable = 0; iTable < hashTableSize; iTable++)
@@ -630,6 +630,11 @@ void showinfo(string rootpath = "")
 
 int main(int argc, char** argv)
 {
+	if (!InitLibPQ())
+	{
+		cout << "  *** gencode: InitLibPQ() failed. Aborting.";
+		return 1;
+	}
 	int optMaxTableSize = PQ::KnownUnitsLength * 2;
 	int optMaxSeed = 0xFF;
 	int optMinBucketSize = 2;
@@ -910,6 +915,77 @@ int main(int argc, char** argv)
 			cout << " OK\n";
 		}
 #endif
+
+
+		if (writeFiles)
+		{
+			cout << "Generating ROM tables... ";
+			ofstream romtable;
+			romtable.open(rootpath + "src/romtable.acpp");
+			if (!romtable.is_open()) { throw runtime_error("Could not open src/romtable.acpp"); }
+			romtable << "#ifdef USE_ROM_ACCESSOR\n";
+			romtable << "#include <PhysicalQuantity.h>\n";
+			romtable << "typedef PhysicalQuantity PQ;\n";
+			romtable << "#ifndef NO_LONG_NAMES\n";
+			romtable << "#define UN(sy, lo, pl) (sy), (lo), (pl)\n";
+			romtable << "#define PN(sy, lo) (sy), (lo)\n";
+			romtable << "#else\n";
+			romtable << "#define UN(sy, lo, pl) (sy)\n";
+			romtable << "#define PN(sy, lo) (sy)\n";
+			romtable << "#endif\n";
+			for (int ui = 0; ui < PQ::KnownUnitsLength; ui++)
+			{
+				romtable << "DEFINE_CONST_ARRAY(char, unitSymbol_" << PQ::KnownUnits[ui].symbol << ") = \"" 
+					<< PQ::KnownUnits[ui].symbol << "\";\n";
+#ifndef NO_LONG_NAMES
+				romtable << "DEFINE_CONST_ARRAY(char, unitLongName_" << PQ::KnownUnits[ui].symbol << ") = \"" 
+					<< PQ::KnownUnits[ui].longName << "\";\n";
+				romtable << "DEFINE_CONST_ARRAY(char, unitPlural_" << PQ::KnownUnits[ui].symbol << ") = \"" 
+					<< PQ::KnownUnits[ui].plural << "\";\n";
+#endif
+			}
+			for (int pi = 0; pi < PQ::KnownPrefixesLength; pi++)
+			{
+				romtable << "DEFINE_CONST_ARRAY(char, prefixSymbol_" << PQ::KnownPrefixes[pi].symbol << ") = \"" 
+					<< PQ::KnownPrefixes[pi].symbol << "\";\n";
+#ifndef NO_LONG_NAMES
+				romtable << "DEFINE_CONST_ARRAY(char, prefixLongName_" << PQ::KnownPrefixes[pi].symbol << ") = \"" 
+					<< PQ::KnownPrefixes[pi].longName << "\";\n";
+#endif
+			}
+			romtable << "DEFINE_CONST_ARRAY(PhysicalQuantity::UnitDefinition, PhysicalQuantity::KnownUnits) =\n{\n";
+			for (int ui = 0; ui < PQ::KnownUnitsLength; ui++)
+			{
+				romtable << "{UN(unitSymbol_" << PQ::KnownUnits[ui].symbol
+					<< ",unitLongName_" << PQ::KnownUnits[ui].symbol
+					<< ",unitPlural_" << PQ::KnownUnits[ui].symbol
+					<< "), (PQ::num)" << setprecision(20) << PQ::KnownUnits[ui].factor << ", {";
+				for (int ud = 0; ud < (int)PQ::QuantityType::ENUM_MAX; ud++)
+				{
+					if (ud != 0) { romtable << ","; }
+					romtable << (int)PQ::KnownUnits[ui].dim[ud];
+				}
+				romtable << "}, " << PQ::KnownUnits[ui].flags << "},\n";
+					// {UN("m", "meter","meters"),1, {0,1,0,0,0}},
+			}
+			romtable << "};\n";
+			romtable << "const PhysicalQuantity::unitIndex_t PhysicalQuantity::KnownUnitsLength = sizeof(PhysicalQuantity::KnownUnits) / sizeof(PhysicalQuantity::UnitDefinition);\n";
+			romtable << "DEFINE_CONST_ARRAY(PhysicalQuantity::Prefix, PhysicalQuantity::KnownPrefixes) =\n{\n";
+			for (int pi = 0; pi < PQ::KnownPrefixesLength; pi++)
+			{
+				romtable << "{PN(prefixSymbol_" << PQ::KnownPrefixes[pi].symbol
+					<< ",prefixLongName_" << PQ::KnownPrefixes[pi].symbol
+					<< "), (PQ::num)" << setprecision(20) << PQ::KnownPrefixes[pi].factor << "},\n";
+				//{PN("c", "centi"), 1e-2  },
+			}
+			romtable << "};\n";
+			romtable << "const PhysicalQuantity::prefixIndex_t PhysicalQuantity::KnownPrefixesLength = sizeof(PhysicalQuantity::KnownPrefixes) / sizeof(PhysicalQuantity::Prefix);\n";
+			romtable << "#endif //#ifdef USE_ROM_ACCESSOR\n";
+			romtable.close();
+			cout << "OK\n";
+		}
+
+
 #if defined(_MSC_VER) && defined(BEEP_IF_HASH_TABLES_REBUILT)
 		if (beep)
 		{
@@ -920,7 +996,10 @@ int main(int argc, char** argv)
 	}
 	catch (const std::runtime_error& e)
 	{
+		cout.flush();
+		fflush(stdout);
 		fprintf(stderr, "%s", e.what());
+		fflush(stdout);
 		ret = 1;
 		if (beep)
 		{

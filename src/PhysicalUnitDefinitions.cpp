@@ -1,9 +1,10 @@
-
+// cppstart: Begin PhysicalUnitDefinitions.cpp
 #include <PhysicalQuantity.h>
 
 #if !defined(NO_TEXT) || defined(PQ_GENCODE)
 
-const PQ::num PhysicalQuantity::KnownUnitOffsets[] = 
+//const PQ::num PhysicalQuantity::KnownUnitOffsets[] = 
+DEFINE_CONST_ARRAY(PhysicalQuantity::num, PhysicalQuantity::KnownUnitOffsets) = 
 {
 	// Any unit with an additive offset must be at the beginning
 	// of KnownUnits[]
@@ -11,16 +12,24 @@ const PQ::num PhysicalQuantity::KnownUnitOffsets[] =
 	273.15, // degC
 	255.37222222222222222222222222222  // degF
 };
-const int PhysicalQuantity::KnownUnitOffsetsLength = sizeof(KnownUnitOffsets) / sizeof(PQ::num);
+const PhysicalQuantity::unitIndex_t PhysicalQuantity::KnownUnitOffsetsLength = sizeof(KnownUnitOffsets) / sizeof(PQ::num);
 
 #ifndef NO_LONG_NAMES
-#define UN(sy, lo, pl) sy, lo, pl
-#define PN(sy, lo) sy, lo
+#define UN(sy, lo, pl) (sy), (lo), (pl)
+#define PN(sy, lo) (sy), (lo)
+//#define UN(sy, lo, pl) ROMLITERAL(sy), ROMLITERAL(lo), ROMLITERAL(pl)
+//#define PN(sy, lo) ROMLITERAL(sy), ROMLITERAL(lo)
 #else
-#define UN(sy, lo, pl) sy
-#define PN(sy, lo) sy
+#define UN(sy, lo, pl) (sy)
+#define PN(sy, lo) (sy)
+//#define UN(sy, lo, pl) ROMLITERAL(sy)
+//#define PN(sy, lo) ROMLITERAL(sy)
 #endif
-const PhysicalQuantity::UnitDefinition PhysicalQuantity::KnownUnits[] = 
+
+
+#if defined(PQ_GENCODE) || !defined(USE_ROM_ACCESSOR)
+//const PhysicalQuantity::UnitDefinition PhysicalQuantity::KnownUnits[] = 
+DEFINE_CONST_ARRAY(PhysicalQuantity::UnitDefinition, PhysicalQuantity::KnownUnits) =
 {
 // { symbol, longName, plural, factor, { MASS, DISTANCE, TIME, TEMPERATURE, CURRENT }, flags }
 //                        Ma Di Ti Te Cu
@@ -71,11 +80,12 @@ const PhysicalQuantity::UnitDefinition PhysicalQuantity::KnownUnits[] =
 
 
 };
-const int PhysicalQuantity::KnownUnitsLength = sizeof(PhysicalQuantity::KnownUnits) / sizeof(PhysicalQuantity::UnitDefinition);
+const PhysicalQuantity::unitIndex_t PhysicalQuantity::KnownUnitsLength = sizeof(PhysicalQuantity::KnownUnits) / sizeof(PhysicalQuantity::UnitDefinition);
 
 
 
-const PhysicalQuantity::Prefix PhysicalQuantity::KnownPrefixes[] =
+//const PhysicalQuantity::Prefix PhysicalQuantity::KnownPrefixes[] =
+DEFINE_CONST_ARRAY(PhysicalQuantity::Prefix, PhysicalQuantity::KnownPrefixes) =
 {
 // Putting more common ones first
 {PN("c", "centi"), 1e-2  },
@@ -99,7 +109,9 @@ const PhysicalQuantity::Prefix PhysicalQuantity::KnownPrefixes[] =
 {PN("y", "yocto"), 1e-24 },
 {PN("Y", "yotta"), 1e24  }
 };
-const int PhysicalQuantity::KnownPrefixesLength = sizeof(PhysicalQuantity::KnownPrefixes) / sizeof(PhysicalQuantity::Prefix);
+const PhysicalQuantity::prefixIndex_t PhysicalQuantity::KnownPrefixesLength = sizeof(PhysicalQuantity::KnownPrefixes) / sizeof(PhysicalQuantity::Prefix);
+
+#endif //#if defined(PQ_GENCODE) || !defined(USE_ROM_ACCESSOR)
 
 // dekaIndex: If any more prefixes are added, this should be the index of {"da", "deka", 10}
 	// Used to optimize lookups because this is the only prefix longer than 1 char
@@ -107,3 +119,5 @@ const int PhysicalQuantity::KnownPrefixesLength = sizeof(PhysicalQuantity::Known
 const PhysicalQuantity::prefixIndex_t PhysicalQuantity::dekaIndex = 10; // Index, not value, although it's fitting.
 
 #endif //#if !defined(NO_TEXT) || defined(PQ_GENCODE)
+
+// cppend: End PhysicalUnitDefinitions.cpp
