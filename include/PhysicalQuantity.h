@@ -4,8 +4,12 @@
 
 //==================================================================================
 // Config checking
+#ifdef NO_TEXT
+#define NO_HASHING
+#endif
 
 // Set compiled options flags
+
 #ifdef NO_NEW
 #define PQ_HAS_NO_NEW 0x01
 #define NO_STD_STRING
@@ -57,7 +61,7 @@
 #else
 #define PQ_HAS_NO_CONSTEXPR 0
 #endif
-#ifdef USE_ROM_ACCESSOR
+#ifdef ROM_READ_BYTE
 #define PQ_HAS_USE_ROM_ACCESSOR 0x800
 #else
 #define PQ_HAS_USE_ROM_ACCESSOR 0
@@ -66,6 +70,11 @@
 #define PQ_HAS_LOW_PRECISION 0x1000
 #else
 #define PQ_HAS_LOW_PRECISION 0
+#endif
+#ifdef PQ_DEBUG_EVAL
+#define PQ_HAS_DEBUG_EVAL 0x2000
+#else
+#define PQ_HAS_DEBUG_EVAL 0
 #endif
 
 // Typedefs wouldn't affect anything at the linker/binary stage, would they?
@@ -78,15 +87,12 @@
 #define PQ_HEADER_OPTIONS (PQ_HAS_NO_NEW | PQ_HAS_NO_STD_STRING | PQ_HAS_NO_LITERALS | \
 	PQ_HAS_NO_INLINE | PQ_HAS_NO_HASHING | PQ_HAS_NO_THROW | PQ_HAS_CPP11 | PQ_HAS_NO_TYPEDEFS | \
 	PQ_HAS_NO_LONG_NAMES | PQ_HAS_NO_TEXT | PQ_HAS_NO_CONSTEXPR | PQ_HAS_USE_ROM_ACCESSOR | \
-	PQ_HAS_LOW_PRECISION)
+	PQ_HAS_LOW_PRECISION | PQ_HAS_DEBUG_EVAL)
 
 // End config checking
 //==================================================================================
 
 
-#ifdef NO_TEXT
-#define NO_HASHING
-#endif
 
 #ifndef NO_CONSTEXPR
 #define YES_CONSTEXPR
@@ -138,20 +144,23 @@
 #define DEFINE_CONST(type, name) DECLARE_CONST(type, name)
 #endif
 
+#if defined(PQ_DEBUG_EVAL) && defined(NO_STD_STRING)
+#undef PQ_DEBUG_EVAL
+#endif
 
 // Should be getting this from ppOptions.h, but it really, *really* needs to be defined for sure
 #ifndef MAX_NUM_TEXT_LENGTH
 #define MAX_NUM_TEXT_LENGTH 26
 #endif
 
-#ifdef USE_ROM_ACCESSOR
-#ifdef ARDUINO	
-#define ROMLITERAL(str) F(str)
-#else
-#define ROMLITERAL(str) str
-#endif
-char PQ_DefaultRomAccessor(char* addr);
-#endif
+//#ifdef ROM_READ_BYTE
+//#ifdef ARDUINO	
+//#define ROMLITERAL(str) F(str)
+//#else
+//#define ROMLITERAL(str) str
+//#endif
+//char PQ_DefaultRomAccessor(char* addr);
+//#endif
 
 
 //========================================
@@ -173,6 +182,18 @@ char PQ_DefaultRomAccessor(char* addr);
 // end standard library dependencies
 //========================================
 
+
+#ifdef ROM_READ_BYTE
+void romcpy(void* to, const void* from, size_t size);
+size_t romstrlen(const char* s);
+int memcmp_romleft(const char* left, const char* right, size_t len);
+int memcmp_romright(const char* left, const char* right, size_t len);
+int memcmp_romboth(const char* left, const char* right, size_t len);
+#endif
+
+
+//###########################################################################################
+// Main class
 bool InitLibPQ(int headerOptionFlags = PQ_HEADER_OPTIONS);
 
 class PhysicalQuantity
@@ -199,6 +220,9 @@ public:
 		int start;
 		int end; // constructor takes a length to emulate standard behavior, but internally end is easier
 	public:
+#ifdef ROM_READ_BYTE
+		bool rom;
+#endif
 		CSubString();
 		CSubString(const char* str_arg, int start_arg = 0, int len_arg = -1);
 		CSubString(const CSubString& from, int start_arg = 0, int len_arg = -1);
@@ -207,8 +231,8 @@ public:
 		bool operator==(const CSubString& cmp) const;
 		bool begins(const CSubString& test) const;
 		bool ends(const CSubString& test) const;
-		int at(const char* test, int start = 0) const; // where this needle appears in a haystack argument, or -1
-		bool copy(char* buf, int size) const;
+		//int find(const char* test, int start = 0) const; // where this needle appears in a haystack argument, or -1
+		bool copyTo(char* buf, int size) const;
 		int find_first_of(const CSubString& find, int startOfs = 0) const;
 		int find_first_not_of(const CSubString& find, int startOfs = 0) const;
 		int find_first_of(char c, int startOfs = 0) const;
@@ -224,6 +248,9 @@ public:
 		bool isnumber() const;
 		bool isint() const;
 		CSubString trim() const;
+#ifndef NO_STD_STRING
+		std::string toStdString();
+#endif
 
 #ifdef NO_INLINE
 		char operator[](int index) const;
@@ -233,16 +260,42 @@ public:
 		int length() const;
 		int find_first_of(const char* find, int startOfs = 0) const;
 		int find_first_not_of(const char* find, int startOfs = 0) const;
+		bool operator!= (const char* cmp) const;
+		bool operator!=(const CSubString& cmp) const;
+#else
+#ifdef ROM_READ_BYTE
+		INLINE_KEYWORD char operator[](int index) const
+		{
+			if (index < 0 || start + index >= end) { return 0; }
+			if (rom) { return ROM_READ_BYTE(str + start + index); }
+			else { return str[index]; }
+		}
 #else
 		INLINE_KEYWORD char operator[](int index) const { if (index < 0 || start + index >= end) { return 0; } return str[start + index];}
+#endif
 		INLINE_KEYWORD bool begins(const char* test) const { return begins(CSubString(test)); }
 		INLINE_KEYWORD bool ends(const char* test) const { return ends(CSubString(test)); }
 		INLINE_KEYWORD int size() const { return end - start; }
 		INLINE_KEYWORD int length() const { return (end - start) >= 0 ? (end-start) : 0 ; }
 		INLINE_KEYWORD int find_first_of(const char* find, int startOfs = 0) const { return find_first_of(CSubString(find), startOfs); }
 		INLINE_KEYWORD int find_first_not_of(const char* find, int startOfs = 0) const { return find_first_not_of(CSubString(find), startOfs); }
+		INLINE_KEYWORD bool operator!= (const char* cmp) const { return !(operator==(cmp)); }
+		INLINE_KEYWORD bool operator!=(const CSubString& cmp) const { return !(operator==(cmp)); }
+
 #endif
 	};
+
+#ifdef ROM_READ_BYTE
+	class romcsubstr : public CSubString
+	{
+	public:
+		romcsubstr() : CSubString() { rom = true; }
+		romcsubstr(const char* str_arg, int start_arg = 0, int len_arg = -1); // : CSubString(str_arg, start_arg, len_arg) { rom = true; }
+		romcsubstr(const CSubString& from, int start_arg = 0, int len_arg = -1) : CSubString(from, start_arg, len_arg) { rom = true; }
+	};
+#else
+	typedef CSubString romcsubstr;
+#endif
 	// End CSubString
 	//==================================================================================
 #endif //#ifndef NO_TEXT
@@ -586,8 +639,13 @@ public:
 	static const prefixIndex_t KnownPrefixesLength;
 	static const prefixIndex_t dekaIndex;
 
+	// Because the standard unit is the kilogram...
+	static const prefixIndex_t kiloIndex;
+	static const unitIndex_t gramIndex;
+
 #ifndef NO_TEXT
 	static PhysicalQuantity eval(CSubString str);
+	//static PhysicalQuantity eval1(CSubString str);
 	static bool findUnit(CSubString name, unitIndex_t& outUnitIndex, prefixIndex_t& outPrefixIndex);
 #endif
 #endif //#if !defined(NO_TEXT) || defined(PQ_GENCODE)
@@ -649,6 +707,18 @@ public:
 	// End main class members
 	//==================================================================================
 };
+
+#ifdef NO_INLINE
+PhysicalQuantity operator*(PhysicalQuantity::num left, const PhysicalQuantity& right);
+PhysicalQuantity operator/(PhysicalQuantity::num left, const PhysicalQuantity& right);
+PhysicalQuantity operator+(PhysicalQuantity::num left, const PhysicalQuantity& right);
+PhysicalQuantity operator-(PhysicalQuantity::num left, const PhysicalQuantity& right);
+#else
+INLINE_KEYWORD PhysicalQuantity operator*(PhysicalQuantity::num left, const PhysicalQuantity& right) { return PhysicalQuantity(left) * right; }
+INLINE_KEYWORD PhysicalQuantity operator/(PhysicalQuantity::num left, const PhysicalQuantity& right) { return PhysicalQuantity(left) / right; }
+INLINE_KEYWORD PhysicalQuantity operator+(PhysicalQuantity::num left, const PhysicalQuantity& right) { return PhysicalQuantity(left) + right; }
+INLINE_KEYWORD PhysicalQuantity operator-(PhysicalQuantity::num left, const PhysicalQuantity& right) { return PhysicalQuantity(left) - right; }
+#endif
 
 #define PQHeaderOptionsMatch (PQ_HEADER_OPTIONS == PhysicalQuantity::compiledHeaderOptions)
 

@@ -13,6 +13,11 @@ DEFINE_CONST_ARRAY(PhysicalQuantity::num, PhysicalQuantity::KnownUnitOffsets) =
 	255.37222222222222222222222222222  // degF
 };
 const PhysicalQuantity::unitIndex_t PhysicalQuantity::KnownUnitOffsetsLength = sizeof(KnownUnitOffsets) / sizeof(PQ::num);
+// dekaIndex: If any more prefixes are added, this should be the index of {"da", "deka", 10}
+// Used to optimize lookups because this is the only prefix longer than 1 char
+// If that changes, might need to change findUnit()
+const PhysicalQuantity::prefixIndex_t PhysicalQuantity::dekaIndex = 10; // Index, not value, although it's fitting.
+const PhysicalQuantity::prefixIndex_t PhysicalQuantity::kiloIndex = 1; // Index, not value.
 
 #ifndef NO_LONG_NAMES
 #define UN(sy, lo, pl) (sy), (lo), (pl)
@@ -26,9 +31,13 @@ const PhysicalQuantity::unitIndex_t PhysicalQuantity::KnownUnitOffsetsLength = s
 //#define PN(sy, lo) ROMLITERAL(sy)
 #endif
 
+const PhysicalQuantity::unitIndex_t PhysicalQuantity::gramIndex = 7;
 
-#if defined(PQ_GENCODE) || !defined(USE_ROM_ACCESSOR)
+
+#if defined(PQ_GENCODE) || !defined(ROM_READ_BYTE)
 //const PhysicalQuantity::UnitDefinition PhysicalQuantity::KnownUnits[] = 
+
+
 DEFINE_CONST_ARRAY(PhysicalQuantity::UnitDefinition, PhysicalQuantity::KnownUnits) =
 {
 // { symbol, longName, plural, factor, { MASS, DISTANCE, TIME, TEMPERATURE, CURRENT }, flags }
@@ -44,6 +53,8 @@ DEFINE_CONST_ARRAY(PhysicalQuantity::UnitDefinition, PhysicalQuantity::KnownUnit
 // Conflicts with fundamental charge
 //{"e", "e",         { 0, 0, 0, 0, 0}, 0, 2.7182818284590452353602874713527, NO_PREFIX},
 
+{UN("g", "gram","grams"),0.001, {1,0,0,0,0}}, // Note: Update gramIndex if this shifts!
+
 {UN("m", "meter","meters"),1, {0,1,0,0,0}},
 {UN("mi", "mile","miles"),1609.3439999931,     { 0, 1, 0, 0, 0}, NOPREFIX},
 {UN("yd", "yard","yards"),0.9144, {0,1,0,0,0}, NOPREFIX},
@@ -52,7 +63,7 @@ DEFINE_CONST_ARRAY(PhysicalQuantity::UnitDefinition, PhysicalQuantity::KnownUnit
 
 
 {UN("ang","angstrom","angstroms"),1e-10, {0,1,0,0,0}},  // unicode wchar_t is not supported at this time
-{UN("g", "gram","grams"),0.001, {1,0,0,0,0}},
+//{UN("kg", "kilogram","kilograms"),1, {1,0,0,0,0}},
 //                  Ma Di Ti Te Cu
 {UN("s", "second","seconds"),1, {0,0,1,0,0}, NOPREFIX},
 {UN("Hz", "hertz",""),1, {0,0,-1,0,0}},
@@ -63,7 +74,8 @@ DEFINE_CONST_ARRAY(PhysicalQuantity::UnitDefinition, PhysicalQuantity::KnownUnit
 
 {UN("J","joule","joules"),1, {1,2,-2,0,0}},
 {UN("N","newton","newtons"),1, {1,1,-2,0,0}},
-{UN("lb","pound","pounds"),4.448221615260501, {1,1,-2,0,0}, NOPREFIX},
+{UN("lb","pound","lbs"),4.448221615260501, {1,1,-2,0,0}, NOPREFIX},
+{UN("lbs","pound","pounds"),4.448221615260501, {1,1,-2,0,0}, NOPREFIX},
 //                  Ma Di Ti Te Cu
 
 {UN("C","coulomb","coulombs"),1, {0,0,1,0,1}},
@@ -77,11 +89,10 @@ DEFINE_CONST_ARRAY(PhysicalQuantity::UnitDefinition, PhysicalQuantity::KnownUnit
 //                   M  D Ti Te Cu
 // V=J/C
 // 1 ohm = 1 V/A = 1 m^2 kg s^-3 A^–2
-
+// hp, bhp, lumens, candlesomething
 
 };
 const PhysicalQuantity::unitIndex_t PhysicalQuantity::KnownUnitsLength = sizeof(PhysicalQuantity::KnownUnits) / sizeof(PhysicalQuantity::UnitDefinition);
-
 
 
 //const PhysicalQuantity::Prefix PhysicalQuantity::KnownPrefixes[] =
@@ -111,12 +122,8 @@ DEFINE_CONST_ARRAY(PhysicalQuantity::Prefix, PhysicalQuantity::KnownPrefixes) =
 };
 const PhysicalQuantity::prefixIndex_t PhysicalQuantity::KnownPrefixesLength = sizeof(PhysicalQuantity::KnownPrefixes) / sizeof(PhysicalQuantity::Prefix);
 
-#endif //#if defined(PQ_GENCODE) || !defined(USE_ROM_ACCESSOR)
+#endif //#if defined(PQ_GENCODE) || !defined(ROM_READ_BYTE)
 
-// dekaIndex: If any more prefixes are added, this should be the index of {"da", "deka", 10}
-	// Used to optimize lookups because this is the only prefix longer than 1 char
-	// If that changes, might need to change findUnit()
-const PhysicalQuantity::prefixIndex_t PhysicalQuantity::dekaIndex = 10; // Index, not value, although it's fitting.
 
 #endif //#if !defined(NO_TEXT) || defined(PQ_GENCODE)
 

@@ -12,7 +12,7 @@
 //#define NO_LITERALS      // Do not define literal operators like 1_kg. Require a C++11 compiler or newer.
 //#define NO_INLINE        // Do not use inline functions, make all functions normal calls.
 //#define INLINE_KEYWORD inline  // default is __inline
-//#define NO_HASHING       // Do not use hash tables for unit string lookups (Tables can be in ROM). Requires. approx. 1 KB
+//#define NO_HASHING       // Do not use hash tables for unit string lookups (Tables can be in ROM).
 //#define NO_THROW         // Do not use 'throw' for errors, instead use an error callback (see errorHandler)
 //#define NO_LONG_NAMES    // Do not include full names and plural names for units and prefixes. Symbols only. Saves a little storage space.
 
@@ -21,14 +21,18 @@
 						   // In that case, you would have no conversion between units, which is the whole point.
 						   // See get1kg()/m/s/K/A and isScalar() if you want to divide out units yourself.
 
+//#define ROM_READ_BYTE(addr)  // Necessary if ROM/flash is not directly addressable.
+
+#define PQ_DEBUG_EVAL
 
 // Put as much as possible in ROM
 //--------- avr systems ------------------------
 #if defined(ARDUINO)
 #include <avr/pgmspace.h>
 
-#define USE_ROM_ACCESSOR  // Necessary if ROM/flash is not directly addressable.
-#define ROM_ACCESSOR pgm_read_byte
+#ifndef ROM_READ_BYTE
+#define ROM_READ_BYTE pgm_read_byte
+#endif
 // Remember to put in setup(): PQ::readROM = pgm_read_byte; // [](char* addr) { return pgm_read_byte(addr); }
 
 #define DECLARE_CONST_ARRAY(type, name) const PROGMEM type name[]
@@ -38,6 +42,13 @@
 						   // DECLARE_ happens in header, DEFINE_ happens in .cpp
 #endif //#if defined(ARDUINO)
 //----------- end avr systems -----------------------
+
+
+// TODO: comment out
+// For testing... makes it slower. Don't define if you don't need.
+//#ifndef ROM_READ_BYTE
+//#define ROM_READ_BYTE(addr) (*(char*)(addr))  // For testing
+//#endif
 
 
 // End conditional compilation options

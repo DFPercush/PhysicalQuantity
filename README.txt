@@ -47,13 +47,14 @@ System requirements:
 	   Tested on the following systems:
 	      - Windows / Microsoft Visual Studio 2017
 		  - Linux Mint / g++ 7.4.0
-		  - Arduino IDE 1.8.10 (slight tweak recommended to use C++14, see installation)
+		  - Arduino IDE 1.8.10 / avr-g++ 7.3.0 
+			(slight tweak recommended to use C++14, see installation)
 
 	- For Arduino/avr:
-		With NO_TEXT: 600 bytes flash memory, 15 bytes SRAM.
-		With text parsing, 12.4 KB flash memory, 115 bytes SRAM.
+		With NO_TEXT: 444 bytes flash memory, 9 bytes SRAM.
+		With text parsing/printing, 14.1 KB flash memory, 109 bytes SRAM.
 
-	- For PC/Windows/Linux:
+	- For PC/Windows/Linux: ('testconsole' binary)
 		Between 70 and 200 KB memory in "Debug" configuration
 		Up to 700 KB with speed > size optimizations.
 
@@ -219,6 +220,9 @@ A: Yes.
 Q: Can it be sent over a network in binary?
 A: I wrote a long answer for this, then I wrote readNetworkBinary() and
    writeNetworkBinary(). Byte order matters, basically.
+   Do make sure the other end is using this library to load the value,
+   and not just reading a double. That is the whole point after all.
+   It might be safer to just toString()/sprint() and parse it on the other end.
 
 Q: Does the structure store references or pointers to any external buffers?
 A: Not the main data type, no. CSubStrings don't either.

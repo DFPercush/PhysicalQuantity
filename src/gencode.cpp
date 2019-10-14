@@ -923,8 +923,8 @@ int main(int argc, char** argv)
 			ofstream romtable;
 			romtable.open(rootpath + "src/romtable.acpp");
 			if (!romtable.is_open()) { throw runtime_error("Could not open src/romtable.acpp"); }
-			romtable << "#ifdef USE_ROM_ACCESSOR\n";
 			romtable << "#include <PhysicalQuantity.h>\n";
+			romtable << "#ifdef ROM_READ_BYTE\n";
 			romtable << "typedef PhysicalQuantity PQ;\n";
 			romtable << "#ifndef NO_LONG_NAMES\n";
 			romtable << "#define UN(sy, lo, pl) (sy), (lo), (pl)\n";
@@ -980,7 +980,7 @@ int main(int argc, char** argv)
 			}
 			romtable << "};\n";
 			romtable << "const PhysicalQuantity::prefixIndex_t PhysicalQuantity::KnownPrefixesLength = sizeof(PhysicalQuantity::KnownPrefixes) / sizeof(PhysicalQuantity::Prefix);\n";
-			romtable << "#endif //#ifdef USE_ROM_ACCESSOR\n";
+			romtable << "#endif //#ifdef ROM_READ_BYTE\n";
 			romtable.close();
 			cout << "OK\n";
 		}

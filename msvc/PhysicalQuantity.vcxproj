@@ -328,7 +328,9 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\src\romtable.acpp" />
+    <ClCompile Include="..\src\romtable.acpp">
+      <FileType>Document</FileType>
+    </ClCompile>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

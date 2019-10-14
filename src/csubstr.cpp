@@ -17,6 +17,9 @@ CSubString::CSubString(const char* str_arg, int start_arg, int len_arg)
 	{
 		end = (int)(start + len_arg);
 	}
+#ifdef ROM_READ_BYTE
+	rom = false;
+#endif
 }
 
 bool CSubString::operator== (const char* cmp) const
@@ -26,11 +29,11 @@ bool CSubString::operator== (const char* cmp) const
 		return true; 
 	}
 	if ((end - start == 0) && cmp[0] != 0) { return false; }
-	for (int i = start; (i < end) && (*cmp != 0) && (str[i] != 0); i++)
+	for (int i = start; (i < end) && (*cmp != 0) && ((*this)[i - start] != 0); i++)
 	{
-		if (str[i] != *cmp) { return false; }
-		if (str[i] == 0) { return true; }
-		if (*cmp == 0) { return false; }
+		if ((*this)[i - start] != *cmp) { return false; }
+		//if ((*this)[i - start] == 0) { return true; }
+		//if (*cmp == 0) { return false; }
 		cmp++;
 	}
 	return true;
@@ -43,12 +46,23 @@ bool CSubString::operator==(const CSubString& cmp) const
 	int iCmp = cmp.start;
 	while (iMe < end && iCmp < cmp.end)
 	{
-		if (str[start + iMe] != cmp[cmp.start + iCmp]) { return false; }
+		if ((*this)[iMe - start] != cmp[iCmp - cmp.start]) { return false; }
 		iMe++;
 		iCmp++;
 	}
 	return true;
 }
+
+#ifdef NO_INLINE
+bool CSubString::operator!= (const char* cmp) const
+{
+	return !(operator==(cmp));
+}
+bool CSubString::operator!=(const CSubString& cmp) const
+{
+	return !(operator==(cmp));
+}
+#endif
 
 bool CSubString::ends(const CSubString& test) const
 {
@@ -57,7 +71,7 @@ bool CSubString::ends(const CSubString& test) const
 	int iTest = tlen - (end - start);
 	for (int i = start; i < end; i++)
 	{
-		if (str[i] != test[iTest]) { return false; }
+		if ((*this)[i - start] != test[iTest]) { return false; }
 		if (test[iTest] == 0) { return false; }
 		iTest++;
 	}
@@ -70,40 +84,47 @@ bool CSubString::begins(const CSubString& test) const
 	int iTest = test.start; //tlen - (end - start);
 	for (int i = start; i < end; i++)
 	{
-		if (str[i] != test.str[iTest]) { return false; }
-		if (str[i] == 0) { return true; }
+		if ((*this)[i - start] != test[iTest]) { return false; }
+		if ((*this)[i - start] == 0) { return true; }
 		iTest++;
 	}
 	return true;
 }
 
-bool CSubString::copy(char* buf, int size) const
+bool CSubString::copyTo(char* buf, int size) const
 {
 	int len = end - start;
 	if (size <= len) { return false; }
+#ifdef ROM_READ_BYTE
+	if (rom) { romcpy(buf, str + start, len); }
+	else { memcpy(buf, &str[start], len); }
+#else
 	memcpy(buf, &str[start], len);
+#endif
 	buf[len] = 0;
 	return true;
 }
 
-int CSubString::at(const char* test, int startArg) const
+/******************************************
+int CSubString::find(const char* test, int startArg) const
 {
 	bool match;
 	int mylen = end - start;
-	for (int iStart = startArg; test[iStart] != 0; iStart++)
+	int testpos;
+	for (int iStart = startArg; test[iStart] != 0 && (*this)[iStart] != 0; iStart++)
 	{
-		if (test[iStart] == 0) { return -1; }
-		if (test[iStart] == str[start])
+		//if (test[iStart] == 0) { return -1; }
+		if (test[0] == (*this)[iStart])
 		{
 			match = true;
 			for (int i = 0; i < mylen; i++)
 			{
-				if (test[iStart + i] != str[start + i])
+				if (test[iStart + i] != (*this)[start + i])
 				{
 					match = false;
 					break;
 				}
-				if (str[start + i] == 0) { return iStart; }
+				if ((*this)[start + i] == 0) { return iStart; }
 				if (test[iStart + i] == 0) { return -1; }
 			}
 			if (match) { return iStart; }
@@ -111,12 +132,16 @@ int CSubString::at(const char* test, int startArg) const
 	}
 	return -1;
 }
+******************************************/
 
 CSubString& CSubString::operator=(const CSubString& cp)
 {
 	str = cp.str;
 	start = cp.start;
 	end = cp.end;
+#ifdef ROM_READ_BYTE
+	rom = cp.rom;
+#endif
 	return *this;
 }
 
@@ -125,6 +150,9 @@ CSubString::CSubString()
 	str = nullptr;
 	start = 0;
 	end = 0;
+#ifdef ROM_READ_BYTE
+	rom = false;
+#endif
 }
 
 int CSubString::find_first_of(const CSubString& find, int startOfs) const
@@ -134,7 +162,7 @@ int CSubString::find_first_of(const CSubString& find, int startOfs) const
 		//for (int iFind = 0; find[iFind]; iFind++)
 		for (int iFind = 0; iFind < find.length(); iFind++)
 		{
-			if (str[iMe] == find[iFind]) { return iMe - start; }
+			if ((*this)[iMe - start] == find[iFind]) { return iMe - start; }
 		}
 	}
 	return -1;
@@ -149,7 +177,7 @@ int CSubString::find_first_not_of(const CSubString& find, int startOfs) const
 		//for (int iFind = 0; find[iFind]; iFind++)
 		for (int iFind = 0; iFind < find.length(); iFind++)
 		{
-			if (str[iMe] == find[iFind]) 
+			if ((*this)[iMe - start] == find[iFind]) 
 			{
 				found = true;
 				break; 
@@ -167,7 +195,7 @@ int CSubString::find_first_of(char c, int startOfs) const
 {
 	for (int iMe = start + startOfs; iMe < end; iMe++)
 	{
-		if (str[iMe] == c) { return iMe - start; }
+		if ((*this)[iMe - start] == c) { return iMe - start; }
 	}
 	return -1;
 }
@@ -176,13 +204,23 @@ int CSubString::find_first_not_of(char c, int startOfs) const
 {
 	for (int iMe = start + startOfs; iMe < end; iMe++)
 	{
-		if (str[iMe] != c) { return iMe - start; }
+		if ((*this)[iMe - start] != c) { return iMe - start; }
 	}
 	return -1;
 }
 
-int CSubString::find_last_of(const CSubString& find, int startOfs) const
+int CSubString::find_last_of(const CSubString& chars, int startOfs) const
 {
+	for (int iMe = length() - 1; iMe >= 0; iMe--)
+	{
+		for (int iFind = 0; iFind < chars.length(); iFind++)
+		{
+			if ((*this)[iMe] == chars[iFind]) { return iMe; }
+		}
+	}
+	return -1;
+
+	/*
 	//for (int iMe = start + startOfs; iMe < end; iMe++)
 	int iMe;
 	if (startOfs < 0)
@@ -199,14 +237,36 @@ int CSubString::find_last_of(const CSubString& find, int startOfs) const
 	{
 		for (int iFind = 0; iFind < find.length(); iFind++)
 		{
-			if (str[iMe] == find[iFind]) { return iMe - start; }
+			if ((*this)[iMe - start] == find[iFind]) { return iMe - start; }
 		}
 	}
 	return -1;
+	*/
 }
 
-int CSubString::find_last_not_of(const CSubString& find, int startOfs) const
+int CSubString::find_last_not_of(const CSubString& chars, int startOfs) const
 {
+	/*
+	bool match;
+	if (startOfs >= 0) { startOfs = -1; } // throw?
+	// startOfs is negative
+	for (int iMe = length() + startOfs; iMe >= 0; iMe--)
+	{
+		match = false;
+		for (int ifind = 0; ifind < chars.length(); ifind++)
+		{
+			if ((*this)[iMe] == chars[ifind])
+			{
+				match = true;
+				break;
+			}
+		}
+		if (!match) return iMe;
+	}
+	return -1;
+	*/ 
+
+	// /
 	int iMe;
 	if (startOfs < 0)
 	{
@@ -223,9 +283,9 @@ int CSubString::find_last_not_of(const CSubString& find, int startOfs) const
 		bool found;
 		found = false;
 		//for (int iFind = 0; find[iFind]; iFind++)
-		for (int iFind = 0; iFind < find.length(); iFind++)
+		for (int iFind = 0; iFind < chars.length(); iFind++)
 		{
-			if (str[iMe] == find[iFind]) 
+			if ((*this)[iMe - start] == chars[iFind]) 
 			{
 				found = true;
 				break; 
@@ -234,6 +294,7 @@ int CSubString::find_last_not_of(const CSubString& find, int startOfs) const
 		if (!found) { return iMe - start; }
 	}
 	return -1;
+	// */
 }
 
 int CSubString::find_last_of(char c, int startOfs) const
@@ -251,7 +312,7 @@ int CSubString::find_last_of(char c, int startOfs) const
 	}
 	for (; iMe >= start; iMe--)
 	{
-		if (str[iMe] == c) { return iMe - start; }
+		if ((*this)[iMe - start] == c) { return iMe - start; }
 	}
 	return -1;
 }
@@ -272,7 +333,7 @@ int CSubString::find_last_not_of(char c, int startOfs) const
 	}
 	for (; iMe >= start; iMe--)
 	{
-		if (str[iMe] != c) { return iMe - start; }
+		if ((*this)[iMe - start] != c) { return iMe - start; }
 	}
 	return -1;
 }
@@ -290,6 +351,9 @@ CSubString::CSubString(const CSubString& from, int start_arg, int len_arg)
 	{
 		end = start + (int)len_arg;
 	}
+#ifdef ROM_READ_BYTE
+	rom = from.rom;
+#endif
 }
 
 double CSubString::atof()
@@ -310,7 +374,7 @@ double CSubString::atof()
 	for (i = start; i < end; i++)
 	{
 		prev = c;
-		c = str[i];
+		c = (*this)[i - start];
 		if (c == ' ' || c == '\t')
 		{
 			if (haveSeenFirst) { break; }
@@ -428,7 +492,7 @@ int CSubString::atoi()
 	bool haveSeenFirst = false;
 	for (i = start; i < end; i++)
 	{
-		c = str[i];
+		c = (*this)[i - start];
 		if (c == ' ')
 		{
 			if (haveSeenFirst) { break; }
@@ -458,14 +522,19 @@ int CSubString::atoi()
 
 CSubString CSubString::substr(int startArg, int lenArg) const
 {
-	return CSubString(*this, startArg, lenArg);
+	CSubString ret(*this, startArg, lenArg);
+	//return CSubString(*this, startArg, lenArg);
+#ifdef ROM_READ_BYTE
+	ret.rom = rom;
+#endif
+	return ret;
 }
 
 CSubString CSubString::trim() const
 {
 	int firstNotSpace = find_first_not_of(" \t");
 	if (firstNotSpace == -1) { firstNotSpace = 0; }
-	int lastNotSpace = find_last_of(" \t", firstNotSpace);
+	int lastNotSpace = find_last_not_of(" \t");
 	if (lastNotSpace == -1) { lastNotSpace = length() - 1; }
 	return substr(firstNotSpace, lastNotSpace - firstNotSpace + 1);
 }
@@ -494,11 +563,45 @@ bool CSubString::isint() const
 	return (t.find_first_not_of("0123456789") == -1);
 }
 
+#ifndef NO_STD_STRING
+std::string CSubString::toStdString()
+{
+	std::string ret = "";
+	for (int i = 0; i < length(); i++)
+	{
+		ret += (*this)[i];
+	}
+	return ret;
+}
+#endif
 
+#ifdef ROM_READ_BYTE
+PhysicalQuantity::romcsubstr::romcsubstr(const char* str_arg, int start_arg = 0, int len_arg = -1)
+{
+	rom = true;
+	str = str_arg;
+	start = start_arg;
+	if (len == -1)
+	{
+		end = start + romstrlen(str_arg + start_arg);
+	}
+	else
+	{
+		end = start + len_arg;
+	}
+}
+#endif
 
 // Separate CSubString for later maybe
 #ifdef NO_INLINE
-char CSubString::operator[](int index) const { if (index < 0 || start + index >= end) { return 0; } return str[start + index];}
+char CSubString::operator[](int index) const 
+{
+	if (index < 0 || start + index >= end) { return 0; }
+#ifdef ROM_READ_BYTE
+	if (rom) { return ROM_READ_BYTE(str + start + index); }
+#endif
+	return str[start + index];
+}
 bool CSubString::begins(const char* test) const { return begins(CSubString(test)); }
 bool CSubString::ends(const char* test) const { return ends(CSubString(test)); }
 int CSubString::size() const { return end - start; }

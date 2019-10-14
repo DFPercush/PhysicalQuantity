@@ -27,6 +27,15 @@ typedef PhysicalQuantity::CSubString csubstr;
 #pragma warning(disable:4996)
 #endif
 
+#ifdef PQ_DEBUG_EVAL
+#define DEBUG_LR_STR(leftstr, rightstr, op) printf("  %s : \"%s\"  <<< %s >>>  \"%s\"\n", op, leftstr.toStdString().c_str(), op, rightstr.toStdString().c_str())
+#define DEBUG_LR_RESULT(left, right, op, result) printf("    #: %s  <<< %s >>>  %s ==> %s\n", left.toString().c_str(), op, right.toString().c_str(), result.toString().c_str())
+#else
+#define DEBUG_LR_STR(leftstr, rightstr, op)
+#define DEBUG_LR_RESULT(left, right, op, result)
+#endif
+
+
 PhysicalQuantity::num PhysicalQuantity::equalityToleranceFactor = 1e-6;
 const int PhysicalQuantity::compiledHeaderOptions = PQ_HEADER_OPTIONS;
 
@@ -47,6 +56,65 @@ PhysicalQuantity::HeaderConfigException::HeaderConfigException(const char* messa
 
 typedef PhysicalQuantity PQ;
 
+
+#ifdef ROM_READ_BYTE
+#define IFROM(normal_expr, rom_expr) rom_expr
+void romcpy(void* to, const void* from, size_t size)
+{
+	for (size_t i = 0; i < size; i++)
+	{
+		*(((char*)to) + i) = ROM_READ_BYTE((char*)from + i);
+	}
+}
+size_t romstrlen(const char* s)
+{
+	size_t ret = 0;
+	while (ROM_READ_BYTE(s + ret)) { ret++; }
+	return ret;
+}
+int memcmp_romleft(const char* left, const char* right, size_t len)
+{
+	char cleft;
+	char cright;
+	for (size_t i = 0; i < len; i++)
+	{
+		cleft = ROM_READ_BYTE(left + i);
+		cright = right[i];
+		if (cleft < cright) { return -1; }
+		if (cleft > cright) { return 1; }
+	}
+	return 0;
+}
+int memcmp_romright(const char* left, const char* right, size_t len)
+{
+	char cleft;
+	char cright;
+	for (size_t i = 0; i < len; i++)
+	{
+		cleft = left[i];
+		cright = ROM_READ_BYTE(right + i);
+		if (cleft < cright) { return -1; }
+		if (cleft > cright) { return 1; }
+	}
+	return 0;
+}
+int memcmp_romboth(const char* left, const char* right, size_t len)
+{
+	char cleft;
+	char cright;
+	for (size_t i = 0; i < len; i++)
+	{
+		cleft = ROM_READ_BYTE(left + i);
+		cright = ROM_READ_BYTE(right + i);
+		if (cleft < cright) { return -1; }
+		if (cleft > cright) { return 1; }
+	}
+	return 0;
+}
+
+#else
+#define IFROM(normal_expr, rom_expr) normal_expr
+#endif
 
 bool InitLibPQ(int headerOptionFlags)
 {
@@ -242,6 +310,11 @@ void PhysicalQuantity::parseUnits(const CSubString& unitStr, signed char (&units
 	bool denomNext = false;
 	char hasOffsetMask = 0;
 
+#ifdef ROM_READ_BYTE
+	char foundUnitVal[sizeof(UnitDefinition)]; // const array dim means we have to be roundabout
+	Prefix foundPrefixVal;
+#endif
+
 	for (int i = wordStart; i <= ulen; i++)
 	{
 		if (denomNext) { denom = true; }
@@ -338,9 +411,17 @@ void PhysicalQuantity::parseUnits(const CSubString& unitStr, signed char (&units
 #endif
 					}
 				
+#ifdef ROM_READ_BYTE
+					romcpy(&foundUnitVal, &(KnownUnits[foundUnit]), sizeof(UnitDefinition));
 					if (foundPrefix >= 0)
 					{
-						factorOut *= KnownPrefixes[foundPrefix].factor;
+						romcpy(&foundPrefixVal, &(KnownPrefixes[foundPrefix]), sizeof(Prefix));
+					}
+#endif
+					if (foundPrefix >= 0)
+					{
+						//factorOut *= KnownPrefixes[foundPrefix].factor;
+						factorOut *= IFROM(KnownPrefixes[foundPrefix], foundPrefixVal).factor;
 					}
 					if (foundUnit < KnownUnitOffsetsLength)
 					{
@@ -362,18 +443,25 @@ void PhysicalQuantity::parseUnits(const CSubString& unitStr, signed char (&units
 							throw InvalidExpressionException("Can not handle an offset unit with a power greater than 1. (e.g. degrees F squared)");
 #endif
 						}
+						
+#ifdef ROM_READ_BYTE
+						romcpy(&tempOfs, &(KnownUnitOffsets[foundUnit]), sizeof(KnownUnitOffsets[0]));
+#else
 						tempOfs = KnownUnitOffsets[foundUnit];
+#endif
 
 						for (int iSetOffsetFlags = 0; iSetOffsetFlags < (int)QuantityType::ENUM_MAX; iSetOffsetFlags++)
 						{
-							if (KnownUnits[foundUnit].dim[iSetOffsetFlags] != 0)
+							if (IFROM(KnownUnits[foundUnit].dim[iSetOffsetFlags],
+								((UnitDefinition*)foundUnitVal)->dim[iSetOffsetFlags])
+								!= 0)
 							{
 								hasOffsetMask |= (1 << iSetOffsetFlags);
 							}
 						}
 					}
-					factorOut *= KnownUnits[foundUnit].factor;
-					mulUnit(unitsOut, KnownUnits[foundUnit], upow, denom);
+					factorOut *= IFROM(KnownUnits[foundUnit].factor, ((UnitDefinition*)foundUnitVal)->factor);
+					mulUnit(unitsOut, IFROM(KnownUnits[foundUnit], *(UnitDefinition*)foundUnitVal), upow, denom);
 				}  //if (ssUnitName.length() > 0)
 			} // end 'else' meaning not a key word / char
 
@@ -423,7 +511,7 @@ void PhysicalQuantity::mulUnit(signed char(&unitsOut)[(int)QuantityType::ENUM_MA
 
 void PhysicalQuantity::parse(const CSubString& text_arg)
 {
-	CSubString text(text_arg);
+	CSubString text = text_arg.trim();
 	int firstNotSpace = (int)text.find_first_not_of(' ');
 	if (firstNotSpace > 0) { text = text.substr(firstNotSpace); }
 	if (text.length() == 0)
@@ -483,7 +571,11 @@ void PhysicalQuantity::WriteOutputUnit(int plen, int ulen, int reduceExp, size_t
 		// write prefix
 		if (plen > 0 && ipre != -1) 
 		{
+#ifdef ROM_READ_BYTE
+			romcpy(buf + outofs, KnownPrefixes[ipre].symbol, plen);
+#else
 			memcpy(buf + outofs, KnownPrefixes[ipre].symbol, plen); 
+#endif
 			outofs += plen;
 		}
 		// write unit
@@ -510,19 +602,32 @@ void PhysicalQuantity::sprintHalf(PhysicalQuantity& r, const PhysicalQuantity::U
 		prefixIndex_t ipre = pu[ipu].iPrefix;
 		int plen;
 		if (ipre == -1) { plen = 0; }
-		else { plen = (int)strlen(KnownPrefixes[ipre].symbol); }
+		else { plen = (int)IFROM(strlen, romstrlen)(KnownPrefixes[ipre].symbol); }
 		sprintHalfTryUnit(pu[ipu].iUnit, r, origmd, hasDenom, useSlash, inDenomNow, plen, outofs, size, buf, ipre, md, true);
 	}
 
 	// That's all the preferred units. Is there anything left over?
-	for (unitIndex_t iu = 0; iu < KnownUnitsLength && md != 0; iu++)
+	if (dim[(int)QuantityType::MASS] > 0)
+	{
+		// Try kilogram first as a special case, because its standard unit combines a prefix.
+		sprintHalfTryUnit(gramIndex, r, origmd, hasDenom, useSlash, inDenomNow, 1, outofs, size, buf, kiloIndex, md, false);
+	}
+ 	for (unitIndex_t iu = 0; iu < KnownUnitsLength && md != 0; iu++)
 	{
 		sprintHalfTryUnit(iu, r, origmd, hasDenom, useSlash, inDenomNow, 0, outofs, size, buf, -1, md, false);
 	}
 }
 void PhysicalQuantity::sprintHalfTryUnit(PQ::unitIndex_t iTestUnit, PhysicalQuantity & r, int origmd, bool & hasDenom, bool useSlash, bool inDenomNow, int plen, size_t & outofs, size_t size, char * buf, PhysicalQuantity::prefixIndex_t ipre, int & md, bool preferred) const
 {
+#ifdef ROM_READ_BYTE	
+	char testUnitBuf[sizeof(UnitDefinition)];
+	romcpy(testUnitBuf, &(KnownUnits[iTestUnit]), sizeof(UnitDefinition));
+	const UnitDefinition& testunit = *(UnitDefinition*)testUnitBuf;
+	Prefix preval;
+	if (ipre >= 0) { romcpy(&preval, &KnownPrefixes[ipre], sizeof(Prefix)); }
+#else
 	const PhysicalQuantity::UnitDefinition & testunit = PQ::KnownUnits[iTestUnit];
+#endif
 	int ulen = (int)strlen(testunit.symbol);
 	int reduceExp;
 	unsigned int mdorig = magdim();
@@ -557,11 +662,17 @@ void PhysicalQuantity::sprintHalfTryUnit(PQ::unitIndex_t iTestUnit, PhysicalQuan
 		// if it reduces the overall dimension of the value, use it.
 		if (origmd == 1 && iTestUnit < KnownUnitOffsetsLength)
 		{
+		#ifdef ROM_READ_BYTE
+			num rrofs;
+			romcpy(&rrofs, &KnownUnitOffsets[iTestUnit], sizeof(num));
+			r.value -= rrofs;
+		#else
 			r.value -= PQ::KnownUnitOffsets[iTestUnit];
+		#endif
 		}
 		r.value /= testunit.factor;
 		mulUnit(r.dim, testunit, reduceExp, true);
-		if (ipre != -1) { r.value /= KnownPrefixes[ipre].factor; }
+		if (ipre != -1) { r.value /= ::pow(IFROM(KnownPrefixes[ipre].factor, preval.factor), reduceExp); }
 		bool goForOutput = false;
 		if (reduceExp < 0)
 		{
@@ -582,6 +693,7 @@ void PhysicalQuantity::sprintHalfTryUnit(PQ::unitIndex_t iTestUnit, PhysicalQuan
 }
 size_t PhysicalQuantity::sprint(char* buf, size_t size, const UnitListBase& pu, bool useSlash) const
 {
+	// TODO: BUG: power of unit affects value factor
 	PhysicalQuantity r = *this;
 	int md, origmd;
 	origmd = magdim();
@@ -891,17 +1003,33 @@ bool PhysicalQuantity::findUnit(CSubString name, PhysicalQuantity::unitIndex_t& 
 
 	char firstLetter[2];
 
+#ifdef ROM_READ_BYTE
+	char kubuf[sizeof(UnitDefinition)];
+	const UnitDefinition& ku = *(UnitDefinition*)kubuf;
+	Prefix preval;
+#endif
+
+
 	if ((nlen > 2) && (name[0] == 'd') && (name[1] == 'a'))
 	{
 		possibleUnitPart = csubstr(name, 2);
 		hashRaw = (unsigned int)hashUnitSymbol(possibleUnitPart);
 		hashSymbol = hashRaw % hashTableSize_UnitSymbols;
+#ifdef ROM_READ_BYTE
+		UnitSymbols_HashTableEntry_t usent;
+		romcpy(&usent, &UnitSymbols_HashTable[hashSymbol], sizeof(usent));
+#endif
 		for (iBucket = 0; iBucket < UnitSymbols_HashTable[hashSymbol].bucketSize; iBucket++)
 		{
-			if (possibleUnitPart == KnownUnits[UnitSymbols_HashTable[hashSymbol].bucket[iBucket]].symbol)
+#ifdef ROM_READ_BYTE
+			romcpy(kubuf, &(KnownUnits[usent.bucket[iBucket]]), sizeof(UnitDefinition));
+#endif
+			if (possibleUnitPart == IFROM(
+				KnownUnits[UnitSymbols_HashTable[hashSymbol].bucket[iBucket]].symbol,
+				((UnitDefinition*)kubuf)->symbol))
 			{
 				outPrefixIndex = dekaIndex;
-				outUnitIndex = UnitSymbols_HashTable[hashSymbol].bucket[iBucket];
+				outUnitIndex = IFROM(UnitSymbols_HashTable[hashSymbol].bucket[iBucket], usent.bucket[iBucket]);
 				return true;
 			}
 		}
@@ -909,39 +1037,66 @@ bool PhysicalQuantity::findUnit(CSubString name, PhysicalQuantity::unitIndex_t& 
 #ifndef NO_LONG_NAMES
 		hashRaw = (unsigned int)hashUnitLongName(possibleUnitPart);
 		hashLongName = hashRaw % hashTableSize_UnitLongNames;
+#ifdef ROM_READ_BYTE
+		UnitLongNames_HashTableEntry_t ulent;
+		romcpy(&ulent, &UnitLongNames_HashTable[hashLongName], sizeof(ulent));
+#endif
 		for (iBucket = 0; iBucket < UnitLongNames_HashTable[hashLongName].bucketSize; iBucket++)
 		{
-			if (possibleUnitPart == KnownUnits[UnitLongNames_HashTable[hashLongName].bucket[iBucket]].longName)
+#ifdef ROM_READ_BYTE
+			romcpy(kubuf, &(KnownUnits[ulent.bucket[iBucket]]), sizeof(UnitDefinition));
+#endif
+			if (possibleUnitPart == IFROM(
+				KnownUnits[UnitLongNames_HashTable[hashLongName].bucket[iBucket]].longName,
+				((UnitDefinition*)kubuf)->longName))
 			{
 				outPrefixIndex = dekaIndex;
-				outUnitIndex = UnitLongNames_HashTable[hashLongName].bucket[iBucket];
+				outUnitIndex = IFROM(UnitLongNames_HashTable[hashLongName].bucket[iBucket], ulent.bucket[iBucket]);
 				return true;
 			}
 		}
 
 		hashRaw = (unsigned int)hashUnitPlural(possibleUnitPart);
 		hashPlural = hashRaw % hashTableSize_UnitPlurals;
+#ifdef ROM_READ_BYTE
+		UnitPlurals_HashTableEntry_t upent;
+		romcpy(&upent, &UnitPlurals_HashTable[hashLongName], sizeof(upent));
+#endif
 		for (iBucket = 0; iBucket < UnitPlurals_HashTable[hashPlural].bucketSize; iBucket++)
 		{
-			if (possibleUnitPart == KnownUnits[UnitPlurals_HashTable[hashPlural].bucket[iBucket]].plural)
+#ifdef ROM_READ_BYTE
+			romcpy(kubuf, &(KnownUnits[upent.bucket[iBucket]]), sizeof(UnitDefinition));
+#endif
+			if (possibleUnitPart == IFROM(KnownUnits[UnitPlurals_HashTable[hashPlural].bucket[iBucket]].plural,
+				((UnitDefinition*)kubuf)->plural))
 			{
 				outPrefixIndex = dekaIndex;
-				outUnitIndex = UnitPlurals_HashTable[hashPlural].bucket[iBucket];
+				outUnitIndex = IFROM(UnitPlurals_HashTable[hashPlural].bucket[iBucket], upent.bucket[iBucket]);
 				return true;
 			}
 		}
 #endif // #ifndef NO_LONG_NAMES
-	}
+	} // deka
 
 	firstLetter[0] = name[0];
 	firstLetter[1] = 0;
 	hashSymbol = (unsigned int)hashPrefixSymbol(firstLetter) % hashTableSize_PrefixSymbols;
+#ifdef ROM_READ_BYTE
+	PrefixSymbols_HashTableEntry_t psent;
+	romcpy(&psent, &PrefixSymbols_HashTable[hashSymbol], sizeof(psent));
+#endif
 	for (iBucket = 0; iBucket < PrefixSymbols_HashTable[hashSymbol].bucketSize; iBucket++)
 	{
+#ifdef ROM_READ_BYTE
+		romcpy(&preval, &(KnownPrefixes[psent.bucket[iBucket]]), sizeof(Prefix));
+		char firstchartest = ROM_READ_BYTE(preval.symbol);
+		if (name[0] == firstchartest)
+#else
 		if (name[0] == KnownPrefixes[PrefixSymbols_HashTable[hashSymbol].bucket[iBucket]].symbol[0])
+#endif
 		{
-			iPrefix = PrefixSymbols_HashTable[hashSymbol].bucket[iBucket];
-			foundPrefixLen = (int)strlen(KnownPrefixes[iPrefix].symbol);
+			iPrefix = IFROM(PrefixSymbols_HashTable[hashSymbol], psent).bucket[iBucket];
+			foundPrefixLen = (int) IFROM(strlen(KnownPrefixes[iPrefix].symbol), romstrlen(preval.symbol));
 			break;
 		}
 	}
@@ -956,12 +1111,20 @@ bool PhysicalQuantity::findUnit(CSubString name, PhysicalQuantity::unitIndex_t& 
 	{
 		hashRaw = (unsigned int)hashUnitSymbol(tryUnitNames[iTryUnitName]);
 		hashSymbol = hashRaw % hashTableSize_UnitSymbols;
+#ifdef ROM_READ_BYTE
+		UnitSymbols_HashTableEntry_t usent;
+		romcpy(&usent, &UnitSymbols_HashTable[hashSymbol], sizeof(usent));
+#endif
 		for (iBucket = 0; iBucket < UnitSymbols_HashTable[hashSymbol].bucketSize; iBucket++)
 		{
-			if (tryUnitNames[iTryUnitName] == KnownUnits[UnitSymbols_HashTable[hashSymbol].bucket[iBucket]].symbol)
+#ifdef ROM_READ_BYTE
+			romcpy(kubuf, &KnownUnits[psent.bucket[iBucket]], sizeof(UnitDefinition));
+#endif
+			if (tryUnitNames[iTryUnitName] == IFROM(KnownUnits[UnitSymbols_HashTable[hashSymbol].bucket[iBucket]].symbol,
+				ku.symbol))
 			{
-				iUnit = UnitSymbols_HashTable[hashSymbol].bucket[iBucket];
-				foundUnitLen = (int)strlen(KnownUnits[iUnit].symbol);
+				iUnit = IFROM(UnitSymbols_HashTable[hashSymbol].bucket[iBucket], usent.bucket[iBucket]);
+				foundUnitLen = IFROM((int)strlen(KnownUnits[iUnit].symbol), (int)romstrlen(ku.symbol));
 				break;
 			}
 		}
@@ -970,12 +1133,19 @@ bool PhysicalQuantity::findUnit(CSubString name, PhysicalQuantity::unitIndex_t& 
 		if (foundUnitLen > 0) { break; }
 		hashRaw = (unsigned int)hashUnitLongName(tryUnitNames[iTryUnitName]);
 		hashLongName = hashRaw % hashTableSize_UnitLongNames;
-		for (iBucket = 0; iBucket < UnitLongNames_HashTable[hashLongName].bucketSize; iBucket++)
+#ifdef ROM_READ_BYTE
+		UnitLongNames_HashTableEntry_t ulent;
+		romcpy(&ulent, &UnitLongNames_HashTable[hashLongName], sizeof(ulent));
+#endif
+		for (iBucket = 0; iBucket < IFROM(UnitLongNames_HashTable[hashLongName].bucketSize, ulent.bucketSize); iBucket++)
 		{
-			if (tryUnitNames[iTryUnitName] == KnownUnits[UnitLongNames_HashTable[hashLongName].bucket[iBucket]].longName)
+		#ifdef ROM_READ_BYTE
+			romcpy(kubuf, &KnownUnits[ulent.bucket[iBucket]], sizeof(UnitDefinition));
+		#endif
+			if (tryUnitNames[iTryUnitName] == IFROM(KnownUnits[UnitLongNames_HashTable[hashLongName].bucket[iBucket]].longName,	ku.longName))
 			{
-				iUnit = UnitLongNames_HashTable[hashLongName].bucket[iBucket];
-				foundUnitLen = (int)strlen(KnownUnits[iUnit].longName);
+				iUnit = IFROM(UnitLongNames_HashTable[hashLongName].bucket[iBucket], ulent.bucket[iBucket]);
+				foundUnitLen = (int) IFROM(strlen(KnownUnits[iUnit].longName), romstrlen(ku.longName));
 				break;
 			}
 		}
@@ -984,12 +1154,19 @@ bool PhysicalQuantity::findUnit(CSubString name, PhysicalQuantity::unitIndex_t& 
 
 		hashRaw = (unsigned int)hashUnitPlural(tryUnitNames[iTryUnitName]);
 		hashPlural = hashRaw % hashTableSize_UnitPlurals;
-		for (iBucket = 0; iBucket < UnitPlurals_HashTable[hashPlural].bucketSize; iBucket++)
+#ifdef ROM_READ_BYTE
+		UnitPlurals_HashTableEntry_t upent;
+		romcpy(&upent, &UnitPlurals_HashTable[hashPlural], sizeof(upent));
+#endif
+		for (iBucket = 0; iBucket < IFROM(UnitPlurals_HashTable[hashPlural], upent).bucketSize; iBucket++)
 		{
-			if (tryUnitNames[iTryUnitName] == KnownUnits[UnitPlurals_HashTable[hashPlural].bucket[iBucket]].plural)
+#ifdef ROM_READ_BYTE
+			romcpy(kubuf, &KnownUnits[upent.bucket[iBucket]], sizeof(UnitDefinition));
+#endif
+			if (tryUnitNames[iTryUnitName] == IFROM(KnownUnits[UnitPlurals_HashTable[hashPlural].bucket[iBucket]].plural, ku.plural))
 			{
-				iUnit = UnitPlurals_HashTable[hashPlural].bucket[iBucket];
-				foundUnitLen = (int)strlen(KnownUnits[iUnit].plural);
+				iUnit = IFROM(UnitPlurals_HashTable[hashPlural].bucket[iBucket], upent.bucket[iBucket]);
+				foundUnitLen = (int) IFROM(strlen(KnownUnits[iUnit].plural), romstrlen(ku.plural));
 				break;
 			}
 		}
@@ -1021,7 +1198,7 @@ bool PhysicalQuantity::findUnit(CSubString name, PhysicalQuantity::unitIndex_t& 
 	//csubstr ss(nullptr, 0, 0);
 	//if (iUnit == -1 || (foundUnitLen < nlen))
 	//if (foundUnitLen == 0 || (foundUnitLen < nlen))
-	csubstr sy, lo, pl;
+	romcsubstr sy, lo, pl;
 	if (foundUnitLen < nlen)
 	{
 		// Nothing found so far, revert to slow linear search
@@ -1059,12 +1236,12 @@ bool PhysicalQuantity::findUnit(CSubString name, PhysicalQuantity::unitIndex_t& 
 		} // if (foundUnitLen == 0)
 		if (foundUnitLen == 0) { return false; }
 
-		csubstr prefixToFind = csubstr(name, 0, name.length() - foundUnitLen);
+		csubstr prefixToFind(name, 0, name.length() - foundUnitLen);
 		for (prefixIndex_t i = 0; i < KnownPrefixesLength; i++)
 		{
-			if (prefixToFind == KnownPrefixes[i].symbol
+			if (prefixToFind == romcsubstr(KnownPrefixes[i].symbol)
 #ifndef NO_LONG_NAMES
-			 ||	prefixToFind == KnownPrefixes[i].longName
+			 ||	prefixToFind == romcsubstr(KnownPrefixes[i].longName)
 #endif
 			 )
 			{
@@ -1245,20 +1422,44 @@ const PhysicalQuantity::UnitListBase::UnitPref& PhysicalQuantity::UnitListBase::
 	return unitIndeces[i];
 }
 
+//PhysicalQuantity PhysicalQuantity::eval(CSubString str)
+//{
+//	return eval1(str);
+//	char c = 0;
+//	char prev = 0;
+//	PQ acc = 0.0; // accumulator
+//	for (int i = 0; i < str.length(); i++)
+//	{
+//		prev = c;
+//		c = str[i];
+//
+//	}
+//}
+
 PhysicalQuantity PhysicalQuantity::eval(CSubString str)
 {
 	//TODO: bug "(1 + 2) mi" == 3 scalar
+	str = str.trim();
 	int pleft = -1;
 	int pright = -1;
 	int plevel = 0;
 	PQ left;
 	PQ right;
+	PQ ret;
 	char c;
 	int len = str.length();
 	plevel = 0;
+	int rightmostNonSpace = -1;
+	csubstr leftstr;
+	csubstr rightstr;
+
 	for (int i = len - 1; i >= 0; i--)
 	{
 		c = str[i];
+		leftstr = str.substr(0, i);
+		rightstr = str.substr(i + 1);
+
+		if (c != ' ' && rightmostNonSpace == -1) { rightmostNonSpace = i; }
 		if (c == ')')
 		{
 			if (plevel == 0) { pright = i; }
@@ -1278,17 +1479,29 @@ PhysicalQuantity PhysicalQuantity::eval(CSubString str)
 			pleft = i;
 			plevel--;
 		}
-		else if (c == '+' && plevel == 0 && str[i+1] == ' ')
+		else if (c == '+' && plevel == 0 && str[i - 1] != 'e' && str[i - 1] != 'E')
 		{
-			left = eval(str.substr(0, i - 1));
-			right = eval(str.substr(i + 1));
-			return left + right;
+			//left = eval(str.substr(0, i));
+			//right = eval(str.substr(i + 1));
+			//return left + right;
+			DEBUG_LR_STR(leftstr, rightstr, "+");
+			left = eval(leftstr);
+			right = eval(rightstr);
+			ret = left + right;
+			DEBUG_LR_RESULT(left, right, "+", ret);
+			return ret;
 		}
-		else if (c == '-' && plevel == 0 && str[i+1] == ' ')
+		else if (c == '-' && plevel == 0 && str[i - 1] != 'e' && str[i - 1] != 'E')
 		{
-			left = eval(str.substr(0, i - 1));
-			right = eval(str.substr(i + 1));
-			return left - right;
+			//left = eval(str.substr(0, i));
+			//right = eval(str.substr(i + 1));
+			//return left - right;
+			DEBUG_LR_STR(leftstr, rightstr, "-");
+			left = eval(leftstr);
+			right = eval(rightstr);
+			ret = left - right;
+			DEBUG_LR_RESULT(left, right, "-", ret);
+			return ret;
 		}
 	}
 
@@ -1296,6 +1509,8 @@ PhysicalQuantity PhysicalQuantity::eval(CSubString str)
 	for (int i = len - 1; i >= 0; i--)
 	{
 		c = str[i];
+		leftstr = str.substr(0, i);
+		rightstr = str.substr(i + 1);
 		if (c == ')')
 		{
 			if (plevel == 0) { pright = i; }
@@ -1315,17 +1530,30 @@ PhysicalQuantity PhysicalQuantity::eval(CSubString str)
 			pleft = i;
 			plevel--;
 		}
+		//else if ((c == '*' || c == ' ') && plevel == 0)
 		else if (c == '*' && plevel == 0)
 		{
-			left = eval(str.substr(0, i - 1));
-			right = eval(str.substr(i + 1));
-			return left * right;
+			//left = eval(str.substr(0, i));
+			//right = eval(str.substr(i + 1));
+			//return left * right;
+			DEBUG_LR_STR(leftstr, rightstr, "*");
+			left = eval(leftstr);
+			right = eval(rightstr);
+			ret = left * right;
+			DEBUG_LR_RESULT(left, right, "*", ret);
+			return ret;
 		}
 		else if (c == '/' && plevel == 0)
 		{
-			left = eval(str.substr(0, i));
-			right = eval(str.substr(i + 1));
-			return left / right;
+			//left = eval(str.substr(0, i));
+			//right = eval(str.substr(i + 1));
+			//return left / right;
+			DEBUG_LR_STR(leftstr, rightstr, "/");
+			left = eval(leftstr);
+			right = eval(rightstr);
+			ret = left / right;
+			DEBUG_LR_RESULT(left, right, "/", ret);
+			return ret;
 		}
 	}
 
@@ -1333,6 +1561,8 @@ PhysicalQuantity PhysicalQuantity::eval(CSubString str)
 	for (int i = len - 1; i >= 0; i--)
 	{
 		c = str[i];
+		leftstr = str.substr(0, i);
+		rightstr = str.substr(i + 1);
 		if (c == ')')
 		{
 			if (plevel == 0) { pright = i; }
@@ -1359,11 +1589,15 @@ PhysicalQuantity PhysicalQuantity::eval(CSubString str)
 			(!(str[i - 1] >= 'A' && str[i - 1] <= 'Z'))
 			)
 		{
-			PQ mant = eval(str.substr(0, i - 1));
-			PQ exp(str.substr(i + 1));
-			for (int i = 0; i < (int)QuantityType::ENUM_MAX; i++)
+			DEBUG_LR_STR(leftstr, rightstr, "^");
+			left = eval(leftstr);
+			right = eval(rightstr);
+
+			PQ mant = left; //eval(str.substr(0, i));
+			const PQ& exp = right; //(str.substr(i + 1));
+			for (int id = 0; id < (int)QuantityType::ENUM_MAX; id++)
 			{
-				if (exp.dim[i] != 0)
+				if (exp.dim[id] != 0)
 				{
 #ifdef NO_THROW
 					errorHandler(errorUserContext, E_INVALID_EXPRESSION);
@@ -1375,9 +1609,9 @@ PhysicalQuantity PhysicalQuantity::eval(CSubString str)
 			}
 			if (exp.value != (num)((int)exp.value))
 			{
-				for (int i = 0; i < (int)QuantityType::ENUM_MAX; i++)
+				for (int id = 0; id < (int)QuantityType::ENUM_MAX; id++)
 				{
-					if (mant.dim[i] != 0)
+					if (mant.dim[id] != 0)
 					{
 #ifdef NO_THROW
 						errorHandler(errorUserContext, E_INVALID_EXPRESSION);
@@ -1390,9 +1624,9 @@ PhysicalQuantity PhysicalQuantity::eval(CSubString str)
 			}
 			mant.value = ::pow(mant.value, exp.value);
 			signed char newdim[(int)QuantityType::ENUM_MAX];
-			for (int i = 0; i < (int)QuantityType::ENUM_MAX; i++)
+			for (int id = 0; id < (int)QuantityType::ENUM_MAX; id++)
 			{
-				signed int newpow = (signed int)mant.dim[i] * (signed int)exp.value;
+				signed int newpow = (signed int)mant.dim[id] * (signed int)exp.value;
 				if (newpow > 127 || newpow < -128)
 				{
 #ifdef NO_THROW
@@ -1402,9 +1636,10 @@ PhysicalQuantity PhysicalQuantity::eval(CSubString str)
 					throw overflow_error("Unit exponent too large");
 #endif
 				}
-				newdim[i] = (signed char)newpow;
+				newdim[id] = (signed char)newpow;
 			}
 			memcpy(mant.dim, newdim, sizeof(newdim));
+			DEBUG_LR_RESULT(left, right, "^", mant);
 			return mant;
 		}
 	}
@@ -1427,9 +1662,22 @@ PhysicalQuantity PhysicalQuantity::eval(CSubString str)
 	{
 		return PQ(str);
 	}
+	//left = eval(str.substr(pleft + 1, pright - pleft - 1));
+	leftstr = str.substr(pleft + 1, pright - pleft - 1);
+	left = eval(leftstr);
+	if (rightmostNonSpace > pright)
+	{
+		//right = eval(str.substr(pright + 1));
+		//return left * right;
+		rightstr = str.substr(pright + 1);
+		DEBUG_LR_STR(leftstr, rightstr, "(implicit)*");
+		right = eval(rightstr);
+		ret = left * right;
+		DEBUG_LR_RESULT(left, right, "(implicit)*", ret);
+		return ret;
+	}
 	else 
 	{
-		left = eval(str.substr(pleft + 1, pright - pleft - 1));
 		return left;
 	}
 }
@@ -1533,6 +1781,10 @@ PhysicalQuantity PhysicalQuantity::get1m() {  signed char d[5]={0,1,0,0,0}; retu
 PhysicalQuantity PhysicalQuantity::get1s() {  signed char d[5]={0,0,1,0,0}; return PhysicalQuantity(1.0, d); }
 PhysicalQuantity PhysicalQuantity::get1K() {  signed char d[5]={0,0,0,1,0}; return PhysicalQuantity(1.0, d); }
 PhysicalQuantity PhysicalQuantity::get1A() {  signed char d[5]={0,0,0,0,1}; return PhysicalQuantity(1.0, d); }
+PhysicalQuantity operator*(PhysicalQuantity::num left, const PhysicalQuantity& right) { return PhysicalQuantity(left) * right; }
+PhysicalQuantity operator/(PhysicalQuantity::num left, const PhysicalQuantity& right) { return PhysicalQuantity(left) / right; }
+PhysicalQuantity operator+(PhysicalQuantity::num left, const PhysicalQuantity& right) { return PhysicalQuantity(left) + right; }
+PhysicalQuantity operator-(PhysicalQuantity::num left, const PhysicalQuantity& right) { return PhysicalQuantity(left) - right; }
 #endif //#ifdef NO_INLINE
 
 
