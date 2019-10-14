@@ -215,7 +215,7 @@ public:
 	// CSubString
 	class CSubString
 	{
-	private:
+	protected:
 		const char* str;
 		int start;
 		int end; // constructor takes a length to emulate standard behavior, but internally end is easier
@@ -268,7 +268,7 @@ public:
 		{
 			if (index < 0 || start + index >= end) { return 0; }
 			if (rom) { return ROM_READ_BYTE(str + start + index); }
-			else { return str[index]; }
+			else { return str[start + index]; }
 		}
 #else
 		INLINE_KEYWORD char operator[](int index) const { if (index < 0 || start + index >= end) { return 0; } return str[start + index];}

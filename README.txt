@@ -52,7 +52,7 @@ System requirements:
 
 	- For Arduino/avr:
 		With NO_TEXT: 444 bytes flash memory, 9 bytes SRAM.
-		With text parsing/printing, 14.1 KB flash memory, 109 bytes SRAM.
+		With text parsing/printing, 15 KB flash memory, 109 bytes SRAM.
 
 	- For PC/Windows/Linux: ('testconsole' binary)
 		Between 70 and 200 KB memory in "Debug" configuration

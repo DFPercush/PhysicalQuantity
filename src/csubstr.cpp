@@ -211,17 +211,6 @@ int CSubString::find_first_not_of(char c, int startOfs) const
 
 int CSubString::find_last_of(const CSubString& chars, int startOfs) const
 {
-	for (int iMe = length() - 1; iMe >= 0; iMe--)
-	{
-		for (int iFind = 0; iFind < chars.length(); iFind++)
-		{
-			if ((*this)[iMe] == chars[iFind]) { return iMe; }
-		}
-	}
-	return -1;
-
-	/*
-	//for (int iMe = start + startOfs; iMe < end; iMe++)
 	int iMe;
 	if (startOfs < 0)
 	{
@@ -235,38 +224,16 @@ int CSubString::find_last_of(const CSubString& chars, int startOfs) const
 	}
 	for (; iMe >= start; iMe--)
 	{
-		for (int iFind = 0; iFind < find.length(); iFind++)
+		for (int iFind = 0; iFind < chars.length(); iFind++)
 		{
-			if ((*this)[iMe - start] == find[iFind]) { return iMe - start; }
+			if ((*this)[iMe - start] == chars[iFind]) { return iMe - start; }
 		}
 	}
 	return -1;
-	*/
 }
 
 int CSubString::find_last_not_of(const CSubString& chars, int startOfs) const
 {
-	/*
-	bool match;
-	if (startOfs >= 0) { startOfs = -1; } // throw?
-	// startOfs is negative
-	for (int iMe = length() + startOfs; iMe >= 0; iMe--)
-	{
-		match = false;
-		for (int ifind = 0; ifind < chars.length(); ifind++)
-		{
-			if ((*this)[iMe] == chars[ifind])
-			{
-				match = true;
-				break;
-			}
-		}
-		if (!match) return iMe;
-	}
-	return -1;
-	*/ 
-
-	// /
 	int iMe;
 	if (startOfs < 0)
 	{
@@ -282,7 +249,6 @@ int CSubString::find_last_not_of(const CSubString& chars, int startOfs) const
 	{
 		bool found;
 		found = false;
-		//for (int iFind = 0; find[iFind]; iFind++)
 		for (int iFind = 0; iFind < chars.length(); iFind++)
 		{
 			if ((*this)[iMe - start] == chars[iFind]) 
@@ -294,7 +260,6 @@ int CSubString::find_last_not_of(const CSubString& chars, int startOfs) const
 		if (!found) { return iMe - start; }
 	}
 	return -1;
-	// */
 }
 
 int CSubString::find_last_of(char c, int startOfs) const
@@ -576,14 +541,14 @@ std::string CSubString::toStdString()
 #endif
 
 #ifdef ROM_READ_BYTE
-PhysicalQuantity::romcsubstr::romcsubstr(const char* str_arg, int start_arg = 0, int len_arg = -1)
+PhysicalQuantity::romcsubstr::romcsubstr(const char* str_arg, int start_arg, int len_arg)
 {
 	rom = true;
 	str = str_arg;
 	start = start_arg;
-	if (len == -1)
+	if (len_arg == -1)
 	{
-		end = start + romstrlen(str_arg + start_arg);
+		end = start + (int)romstrlen(str_arg + start_arg);
 	}
 	else
 	{

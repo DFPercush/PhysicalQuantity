@@ -44,7 +44,6 @@
 //----------- end avr systems -----------------------
 
 
-// TODO: comment out
 // For testing... makes it slower. Don't define if you don't need.
 //#ifndef ROM_READ_BYTE
 //#define ROM_READ_BYTE(addr) (*(char*)(addr))  // For testing

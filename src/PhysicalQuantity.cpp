@@ -421,7 +421,7 @@ void PhysicalQuantity::parseUnits(const CSubString& unitStr, signed char (&units
 					if (foundPrefix >= 0)
 					{
 						//factorOut *= KnownPrefixes[foundPrefix].factor;
-						factorOut *= IFROM(KnownPrefixes[foundPrefix], foundPrefixVal).factor;
+						factorOut *= ::pow(IFROM(KnownPrefixes[foundPrefix], foundPrefixVal).factor, upow);
 					}
 					if (foundUnit < KnownUnitOffsetsLength)
 					{
@@ -460,7 +460,7 @@ void PhysicalQuantity::parseUnits(const CSubString& unitStr, signed char (&units
 							}
 						}
 					}
-					factorOut *= IFROM(KnownUnits[foundUnit].factor, ((UnitDefinition*)foundUnitVal)->factor);
+					factorOut *= ::pow(IFROM(KnownUnits[foundUnit].factor, ((UnitDefinition*)foundUnitVal)->factor), upow);
 					mulUnit(unitsOut, IFROM(KnownUnits[foundUnit], *(UnitDefinition*)foundUnitVal), upow, denom);
 				}  //if (ssUnitName.length() > 0)
 			} // end 'else' meaning not a key word / char
@@ -670,7 +670,7 @@ void PhysicalQuantity::sprintHalfTryUnit(PQ::unitIndex_t iTestUnit, PhysicalQuan
 			r.value -= PQ::KnownUnitOffsets[iTestUnit];
 		#endif
 		}
-		r.value /= testunit.factor;
+		r.value /= ::pow(testunit.factor, reduceExp);
 		mulUnit(r.dim, testunit, reduceExp, true);
 		if (ipre != -1) { r.value /= ::pow(IFROM(KnownPrefixes[ipre].factor, preval.factor), reduceExp); }
 		bool goForOutput = false;
@@ -1118,7 +1118,7 @@ bool PhysicalQuantity::findUnit(CSubString name, PhysicalQuantity::unitIndex_t& 
 		for (iBucket = 0; iBucket < UnitSymbols_HashTable[hashSymbol].bucketSize; iBucket++)
 		{
 #ifdef ROM_READ_BYTE
-			romcpy(kubuf, &KnownUnits[psent.bucket[iBucket]], sizeof(UnitDefinition));
+			romcpy(kubuf, &KnownUnits[usent.bucket[iBucket]], sizeof(UnitDefinition));
 #endif
 			if (tryUnitNames[iTryUnitName] == IFROM(KnownUnits[UnitSymbols_HashTable[hashSymbol].bucket[iBucket]].symbol,
 				ku.symbol))
