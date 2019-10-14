@@ -81,9 +81,20 @@ $(ObjPath)TestConsole.o: src/TestConsole.cpp $(AllHeaders)
 	$(CommonIntCompile)TestConsole.o src/TestConsole.cpp
 
 #----------
+
+#sed s/#include\\\ \<\\\(Physical.\*\\\)\>/#include\\\ \\\"\\\1\\\"/ | sed s/PhysicalQuantity\\///
+#sed s/#include\\\ \<\\\(Physical.\*\\\)\>/#include\\\ \\\"\\1\\\"/ | sed s/PhysicalQuantity\\\/// > arduino/PhysicalQuantity.h
+
+MakeIncludesLocal=sed s/\#include\\\ \<\\\(Physical.\*\\\)\>/\#include\\\ \\\"\\\1\\\"/ | sed s/PhysicalQuantity\\///
 arduino/libpq.cpp: $(LibPath)PhysicalQuantity.a src/hashParams.acpp src/literals.acpp include/PhysicalQuantity/hashTables.ah include/PhysicalQuantity/literals.ah src/romtable.acpp $(AllHeaders)
-	cat src/csubstr.cpp src/hash.cpp src/hashParams.acpp src/literals.acpp src/PhysicalQuantity.cpp src/PhysicalUnitDefinitions.cpp src/romtable.acpp | sed s/#include\\\ \<\\\(Physical.\*\\\)\>/#include\\\ \\\"\\\1\\\"/ | sed s/PhysicalQuantity\\/// > arduino/libpq.cpp
-	cat include/PhysicalQuantity.h | sed s/#include\\\ \<\\\(Physical.\*\\\)\>/#include\\\ \\\"\\1\\\"/ | sed s/PhysicalQuantity\\\/// > arduino/PhysicalQuantity.h
+	cat src/csubstr.cpp | $(MakeIncludesLocal) > arduino/csubstr.cpp
+	cat src/hash.cpp | $(MakeIncludesLocal) > arduino/hash.cpp
+	cat src/hashParams.acpp | $(MakeIncludesLocal) > arduino/hashParams.cpp
+	cat src/literals.acpp | $(MakeIncludesLocal) > arduino/literals.cpp
+	cat src/PhysicalQuantity.cpp | $(MakeIncludesLocal) > arduino/PhysicalQuantity.cpp
+	cat src/PhysicalUnitDefinitions.cpp | $(MakeIncludesLocal) > arduino/PhysicalUnitDefinitions.cpp
+	cat src/romtable.acpp | $(MakeIncludesLocal) > arduino/romtable.cpp
+	cat include/PhysicalQuantity.h | $(MakeIncludesLocal) > arduino/PhysicalQuantity.h	
 	cp -f include/PhysicalQuantity/literals.ah arduino/literals.ah
 	cp -f include/PhysicalQuantity/hashTables.ah arduino/hashTables.ah
 	cp -f include/PhysicalQuantity/ppOptions.h arduino/
@@ -91,6 +102,9 @@ arduino/libpq.cpp: $(LibPath)PhysicalQuantity.a src/hashParams.acpp src/literals
 	echo "#define NO_THROW" >> arduino/ppOptions.h
 	echo "#define NO_NEW" >> arduino/ppOptions.h
 	echo "#define LOW_PRECISION" >> arduino/ppOptions.h
+	echo "#define NO_SPRINTF_FLOAT" >> arduino/ppOptions.h
+#	cat include/PhysicalQuantity.h | sed s/#include\\\ \<\\\(Physical.\*\\\)\>/#include\\\ \\\"\\1\\\"/ | sed s/PhysicalQuantity\\\/// > arduino/PhysicalQuantity.h
+#	cat src/csubstr.cpp src/hash.cpp src/hashParams.acpp src/literals.acpp src/PhysicalQuantity.cpp src/PhysicalUnitDefinitions.cpp src/romtable.acpp | sed s/#include\\\ \<\\\(Physical.\*\\\)\>/#include\\\ \\\"\\\1\\\"/ | sed s/PhysicalQuantity\\/// > arduino/libpq.cpp
 #	echo "#define NO_TEXT" >> arduino/ppOptions.h
 
 
@@ -107,6 +121,7 @@ clean:
 	rm -f src/*.acpp
 	rm -f include/PhysicalQuantity/*.ah
 	rm -f arduino/*.cpp
+	rm -f arduino/*.acpp
 	rm -f arduino/*.h
 	rm -f arduino/*.ah
 	

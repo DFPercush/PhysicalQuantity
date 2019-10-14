@@ -862,7 +862,6 @@ int main(int argc, char** argv)
 
 			remove((rootpath + "include/PhysicalQuantity/hashTables.ah").c_str());
 			cout << "gencode: Generating hash tables...";
-			// TODO: Optimize
 			int iTrash;
 			float fTrash;
 			dumpHashTable(rootpath, iTrash, fTrash,

@@ -78,7 +78,7 @@ void runLine(csubstr &line, bool useConvert, bool useSprint)
 		}
 		else if (useSprint)
 		{
-			val.sprint(buf, 1000, units);
+			val.sprint(buf, 1000, 15, units);
 			printf("%s\n", buf);
 		}
 		else

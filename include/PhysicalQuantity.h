@@ -8,6 +8,27 @@
 #define NO_HASHING
 #endif
 
+#ifndef DECLARE_CONST_ARRAY
+#if defined(ARDUINO)
+#define DECLARE_CONST_ARRAY(type, name) const PROGMEM type name[]
+#else
+#define DECLARE_CONST_ARRAY(type, name) const type name[]
+#endif
+#endif
+
+#ifndef DECLARE_CONST
+#if defined(ARDUINO)
+#define DECLARE_CONST(type, name) const PROGMEM type name
+#else
+#define DECLARE_CONST(type, name) const type name
+#endif
+#endif
+
+#if defined(ARDUINO) && !defined(NO_SPRINTF_FLOAT)
+#define	NO_SPRINTF_FLOAT
+#endif
+
+
 // Set compiled options flags
 
 #ifdef NO_NEW
@@ -41,11 +62,12 @@
 #else
 #define PQ_HAS_NO_THROW 0
 #endif
-#ifdef YES_CONSTEXPR
-#define PQ_HAS_CPP11 0x80
-#else
-#define PQ_HAS_CPP11 0
-#endif
+// 0x80 is free
+//#ifdef YES_CONSTEXPR
+//#define PQ_HAS_CONSTEXPR 0x80
+//#else
+//#define PQ_HAS_CONSTEXPR 0
+//#endif
 #ifdef NO_LONG_NAMES
 #define PQ_HAS_NO_LONG_NAMES 0x100
 #else
@@ -76,7 +98,11 @@
 #else
 #define PQ_HAS_DEBUG_EVAL 0
 #endif
-
+#ifdef NO_SPRINTF_FLOAT
+#define PQ_HAS_NO_SPRINTF_FLOAT 0x4000
+#else
+#define PQ_HAS_NO_SPRINTF_FLOAT 0
+#endif
 // Typedefs wouldn't affect anything at the linker/binary stage, would they?
 //#ifdef NO_TYPEDEFS
 //#define PQ_HAS_NO_TYPEDEFS 0xxxxxx
@@ -85,9 +111,9 @@
 //#endif
 
 #define PQ_HEADER_OPTIONS (PQ_HAS_NO_NEW | PQ_HAS_NO_STD_STRING | PQ_HAS_NO_LITERALS | \
-	PQ_HAS_NO_INLINE | PQ_HAS_NO_HASHING | PQ_HAS_NO_THROW | PQ_HAS_CPP11 | PQ_HAS_NO_TYPEDEFS | \
+	PQ_HAS_NO_INLINE | PQ_HAS_NO_HASHING | PQ_HAS_NO_THROW | PQ_HAS_NO_TYPEDEFS | \
 	PQ_HAS_NO_LONG_NAMES | PQ_HAS_NO_TEXT | PQ_HAS_NO_CONSTEXPR | PQ_HAS_USE_ROM_ACCESSOR | \
-	PQ_HAS_LOW_PRECISION | PQ_HAS_DEBUG_EVAL)
+	PQ_HAS_LOW_PRECISION | PQ_HAS_DEBUG_EVAL | PQ_HAS_NO_SPRINTF_FLOAT)
 
 // End config checking
 //==================================================================================
@@ -116,22 +142,6 @@
 #define DECLARE_CONST(type, name) const type name
 #ifdef _MSC_VER
 #pragma warning(default:4005)
-#endif
-#endif
-
-#ifndef DECLARE_CONST_ARRAY
-#if defined(ARDUINO)
-#define DECLARE_CONST_ARRAY(type, name) const PROGMEM type name[]
-#else
-#define DECLARE_CONST_ARRAY(type, name) const type name[]
-#endif
-#endif
-
-#ifndef DECLARE_CONST
-#if defined(ARDUINO)
-#define DECLARE_CONST(type, name) const PROGMEM type name
-#else
-#define DECLARE_CONST(type, name) const type name
 #endif
 #endif
 
@@ -451,7 +461,7 @@ public:
 		{
 			unitIndex_t iUnit;
 			prefixIndex_t iPrefix;
-			unitPower_t power; // TODO
+			unitPower_t power; // TODO, for convert()
 		};
 		virtual ~UnitListBase();
 	protected:
@@ -504,7 +514,7 @@ public:
 #endif // #ifndef NO_TEXT
 	PhysicalQuantity(num value);
 #if defined(YES_CONSTEXPR)
-	constexpr PhysicalQuantity(num value_p, signed char dim_p[(int)QuantityType::ENUM_MAX])
+	constexpr PhysicalQuantity(num value_p, const signed char dim_p[(int)QuantityType::ENUM_MAX])
 		: value(value_p), dim {dim_p[0], dim_p[1], dim_p[2], dim_p[3], dim_p[4]} {}
 #else
 	PhysicalQuantity(num value_p, signed char dim_p[(int)QuantityType::ENUM_MAX]);
@@ -516,10 +526,11 @@ public:
 #ifndef NO_TEXT
 	void parse(const CSubString& text);
 	num convert(const CSubString& units) const;
-	size_t sprint(char* buf, int size, bool useSlash) const;
-	size_t sprint(char* buf, size_t size, const UnitListBase& pu, bool useSlash = true) const;
-	size_t sprint(char* buf, size_t size, const CSubString& sspu, bool useSlash = true) const; // TODO: inline
-	size_t sprint(char* buf, size_t size, const CSubString& sspu, void* puBuf, size_t puBufSize, bool useSlash = true) const;
+	size_t sprint(char* buf, int bufsize, unsigned int precision, bool useSlash = true) const;
+	size_t sprint(char* buf, size_t bufsize, unsigned int precision, const UnitListBase& pu, bool useSlash = true) const;
+	size_t sprint(char* buf, size_t bufsize, unsigned int precision, const CSubString& sspu, bool useSlash = true) const; // TODO: inline
+	size_t sprint(char* buf, size_t bufsize, unsigned int precision, const CSubString& sspu, void* puBuf, size_t puBufSize, bool useSlash = true) const;
+	static size_t printNum(char* buf, size_t size, num value, unsigned int precision);
 #endif //#ifndef NO_TEXT
 
 #ifdef NO_INLINE
@@ -529,11 +540,11 @@ public:
 	static PhysicalQuantity get1K();
 	static PhysicalQuantity get1A();
 #else // NO_INLINE
-	static PhysicalQuantity get1kg() { signed char d[5]={1,0,0,0,0}; return PhysicalQuantity(1.0, d); }
-	static PhysicalQuantity get1m() { signed char d[5]={0,1,0,0,0}; return PhysicalQuantity(1.0, d); }
-	static PhysicalQuantity get1s() { signed char d[5]={0,0,1,0,0}; return PhysicalQuantity(1.0, d); }
-	static PhysicalQuantity get1K() { signed char d[5]={0,0,0,1,0}; return PhysicalQuantity(1.0, d); }
-	static PhysicalQuantity get1A() { signed char d[5]={0,0,0,0,1}; return PhysicalQuantity(1.0, d); }
+	static PhysicalQuantity get1kg() { const signed char d[5]={1,0,0,0,0}; return PhysicalQuantity(1.0, d); }
+	static PhysicalQuantity get1m() { const signed char d[5]={0,1,0,0,0}; return PhysicalQuantity(1.0, d); }
+	static PhysicalQuantity get1s() { const signed char d[5]={0,0,1,0,0}; return PhysicalQuantity(1.0, d); }
+	static PhysicalQuantity get1K() { const signed char d[5]={0,0,0,1,0}; return PhysicalQuantity(1.0, d); }
+	static PhysicalQuantity get1A() { const signed char d[5]={0,0,0,0,1}; return PhysicalQuantity(1.0, d); }
 #endif // #else of #ifdef NO_INLINE
 
 	bool isScalar();
@@ -701,7 +712,7 @@ public:
 	//INLINE_KEYWORD bool unitsMatch(const PhysicalQuantity& rhs) const { return isLikeQuantity(rhs); }
 	INLINE_KEYWORD void parse(const char* text) { parse(CSubString(text)); }
 	//INLINE_KEYWORD size_t sprint(char* buf, int size, const char* pu, bool useSlash = true) const { return sprint(buf, size, UnitList(pu), useSlash); }
-	INLINE_KEYWORD size_t sprint(char* buf, size_t size, bool useSlash = true) const { return sprint(buf, size, UnitList(""), useSlash); }
+	INLINE_KEYWORD size_t sprint(char* buf, size_t size, unsigned int precision, bool useSlash = true) const { return sprint(buf, size, precision, UnitList(""), useSlash); }
 #endif //#ifndef NO_TEXT
 #endif //#else of #ifdef NO_INLINE
 	// End main class members

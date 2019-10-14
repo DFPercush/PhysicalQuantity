@@ -1,8 +1,6 @@
 /*
 TODO: 
-	! read flash/ROM accessor function
 	. initializer_list ? {1.23, {0,1,0,0,0}}
-	. print a double without sprintf ? Arduino for example can't sprintf floating points
 */
 
 #include <PhysicalQuantity.h>
@@ -691,9 +689,8 @@ void PhysicalQuantity::sprintHalfTryUnit(PQ::unitIndex_t iTestUnit, PhysicalQuan
 	}
 	md = r.magdim();
 }
-size_t PhysicalQuantity::sprint(char* buf, size_t size, const UnitListBase& pu, bool useSlash) const
+size_t PhysicalQuantity::sprint(char* buf, size_t size, unsigned int precision, const UnitListBase& pu, bool useSlash) const
 {
-	// TODO: BUG: power of unit affects value factor
 	PhysicalQuantity r = *this;
 	int md, origmd;
 	origmd = magdim();
@@ -721,9 +718,9 @@ size_t PhysicalQuantity::sprint(char* buf, size_t size, const UnitListBase& pu, 
 #endif
 	}
 
-	// TODO: Some systems do not support sprintf("%g...");
 	if (outofs + MAX_NUM_TEXT_LENGTH > size) { return outofs + MAX_NUM_TEXT_LENGTH; }
-	sprintf(buf + outofs, "%g", r.value);
+	//sprintf(buf + outofs, "%g", r.value);
+	printNum(buf + outofs, size - outofs, r.value, precision);
 	size_t numofs = outofs;
 	size_t numlen = strlen(buf + numofs);
 	outofs += numlen;
@@ -753,7 +750,13 @@ std::string PhysicalQuantity::toString() const
 	// TODO: human friendly readability
 
 	char numbuf[100];
-	sprintf(numbuf, "%g", value);
+	//sprintf(numbuf, "%g", value);
+	printNum(numbuf, 100, value, 
+#ifdef LOW_PRECISION
+	8);
+#else
+	18);
+#endif
 	ret = numbuf; 
 
 	if (dim[(int)QuantityType::MASS] > 0) { ret += " kg"; }
@@ -858,7 +861,13 @@ string PhysicalQuantity::toString(const UnitListBase& pu) const
 		if (buf) delete [] buf;
 		buf = new char[needbuflen];
 		buflen = needbuflen;
-		needbuflen = sprint(buf, buflen, pu);
+		needbuflen = sprint(buf, buflen,
+#ifdef LOW_PRECISION
+			8
+#else
+			18
+#endif
+			,pu);
 	}
 	ret = buf;
 	delete [] buf;
@@ -1438,7 +1447,6 @@ const PhysicalQuantity::UnitListBase::UnitPref& PhysicalQuantity::UnitListBase::
 
 PhysicalQuantity PhysicalQuantity::eval(CSubString str)
 {
-	//TODO: bug "(1 + 2) mi" == 3 scalar
 	str = str.trim();
 	int pleft = -1;
 	int pright = -1;
@@ -1682,14 +1690,14 @@ PhysicalQuantity PhysicalQuantity::eval(CSubString str)
 	}
 }
 
-size_t PhysicalQuantity::sprint(char* buf, size_t size, const PhysicalQuantity::CSubString& sspu, bool useSlash) const
+size_t PhysicalQuantity::sprint(char* buf, size_t size, unsigned int precision, const PhysicalQuantity::CSubString& sspu, bool useSlash) const
 {
-	return sprint(buf, size, UnitList(sspu), useSlash);
+	return sprint(buf, size, precision, UnitList(sspu), useSlash);
 }
 
-size_t PhysicalQuantity::sprint(char* buf, size_t size, const CSubString& sspu, void* puBuf, size_t puBufSize, bool useSlash) const
+size_t PhysicalQuantity::sprint(char* buf, size_t size, unsigned int precision, const CSubString& sspu, void* puBuf, size_t puBufSize, bool useSlash) const
 {
-	return sprint(buf, size, UnitList_static(sspu, puBuf, puBufSize), useSlash);
+	return sprint(buf, size, precision, UnitList_static(sspu, puBuf, puBufSize), useSlash);
 }
 #endif // #ifndef NO_TEXT
 
@@ -1774,6 +1782,86 @@ PhysicalQuantity::num PhysicalQuantity::getScalar()
 	return value;
 }
 
+#ifdef NO_SPRINTF_FLOAT
+size_t PhysicalQuantity::printNum(char* buf, size_t size, PhysicalQuantity::num val, unsigned int precision)
+{
+	unsigned int iOut = 0;
+	if (iOut == size - 1) { buf[size - 1] = 0; return size; }
+	if (val < 0)
+	{
+		buf[iOut++] = '-';
+		if (iOut == size - 1) { buf[size - 1] = 0; return size; }
+		val *= -1.0;
+	}
+	int exp = 1;
+	num expCompare = 10;
+	while (val > expCompare)
+	{
+		exp++;
+		expCompare *= 10.0;
+	}
+	while (val < expCompare)
+	{
+		exp--;
+		expCompare /= 10.0;
+	}
+	if (iOut + 2 == size - 1) { buf[size - 1] = 0; return iOut + 2; }
+	val /= expCompare;
+	buf[iOut++] = '0' + ((char)((int)val));
+	buf[iOut++] = '.';
+	val = (val - ((int)val)) * 10.0;
+	while (val > 0.0 && precision > 0)
+//#ifdef LOW_PRECISION
+//		10
+//#else
+//		20
+//#endif
+//		)
+	{
+		buf[iOut++] = '0' + ((char)((int)val));
+		if (iOut == size - 1) { buf[size - 1] = 0; return size; }
+		val = (val - ((int)val)) * 10.0;
+		precision--;
+	} 
+	if (val > 5.0)
+	{
+		// round
+		for (int ci = iOut - 1; ci >= 0; ci--)
+		{
+			if (buf[ci] >= '0' && buf[ci] <= '8')
+			{
+				(buf[ci])++;
+				break;
+			}
+			else if (buf[ci] == '9')
+			{
+				buf[ci] = '0';
+				iOut--;
+			}
+		}
+	}
+
+
+	if (exp != 0)
+	{
+		buf[iOut++] = 'e';
+		if (iOut + 4 >= size) { buf[iOut] = 0; return iOut + 4; }
+		sprintf(buf + iOut, "%d", exp);
+		iOut += (int)strlen(buf + iOut);
+	}
+	buf[iOut++] = 0;
+	return iOut;
+}
+#else
+size_t PhysicalQuantity::printNum(char* buf, size_t size, PhysicalQuantity::num val, unsigned int precision)
+{
+	char formatbuf[20];
+	sprintf(formatbuf, "%%.%ug", precision);
+	sprintf(buf, formatbuf, val);
+	return strlen(buf);
+}
+#endif
+
 
 #ifdef NO_INLINE
 PhysicalQuantity PhysicalQuantity::get1kg() { signed char d[5]={1,0,0,0,0}; return PhysicalQuantity(1.0, d); }
@@ -1817,7 +1905,7 @@ PhysicalQuantity::num PhysicalQuantity::convert(const char* units) const { retur
 bool PhysicalQuantity::findUnit(const char* pcharName, unitIndex_t& outUnitIndex, prefixIndex_t& outPrefixIndex) { return findUnit(CSubString(pcharName), outUnitIndex, outPrefixIndex); }
 void PhysicalQuantity::parse(const char* text) { parse(csubstr(text)); }
 //size_t PhysicalQuantity::sprint(char* buf, int size, const char* pu, bool useSlash) const { return sprint(buf, size, UnitList(pu), useSlash); }
-size_t PhysicalQuantity::sprint(char* buf, int size, bool useSlash) const {	return sprint(buf, size, UnitList(""), useSlash); }
+size_t PhysicalQuantity::sprint(char* buf, int size, unsigned int precision. bool useSlash) const { return sprint(buf, size, UnitList(""), useSlash); }
 #endif //#ifndef NO_TEXT
 
 #ifndef NO_HASHING
