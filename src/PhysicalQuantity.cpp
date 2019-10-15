@@ -934,6 +934,19 @@ PhysicalQuantity PhysicalQuantity::operator- (const PhysicalQuantity& rhs) const
 	return ret;
 }
 
+PhysicalQuantity& PhysicalQuantity::operator++()
+{
+	(*this) = (*this) + 1.0;
+	return *this;
+}
+
+PhysicalQuantity& PhysicalQuantity::operator--()
+{
+	(*this) = (*this) - 1.0;
+	return *this;
+}
+
+
 #if !defined(YES_CONSTEXPR) // || defined(NO_INLINE)
 PhysicalQuantity PhysicalQuantity::operator* (PhysicalQuantity::num rhs) const
 {

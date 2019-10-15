@@ -590,6 +590,8 @@ public:
 
 	PhysicalQuantity operator+ (const PhysicalQuantity& rhs) const;
 	PhysicalQuantity operator- (const PhysicalQuantity& rhs) const;
+	PhysicalQuantity& operator++(); // Will throw an error if not scalar
+	PhysicalQuantity& operator--();
 	PhysicalQuantity pow(int exp);
 
 #if defined(YES_CONSTEXPR)

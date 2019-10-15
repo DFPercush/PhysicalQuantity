@@ -17,24 +17,24 @@ generating text output, and .convert() for extraction of numeric values in code*
 	Test console included. 
 
 Sample code:
+	InitLibPQ(); // mainly for #define option checking
+	// Initializing with text:
 	PhysicalQuantity q("12 cm^3");
+	
+	// Initializing with compile-time literals:
 	auto start = 1.23_km;
 	auto end = 3.7_mi;
 	auto speed = (end - start) / 15_min;
 	cout << speed.toString(); // "7.98286 m / s"
 	cout << speed.toString("mph"); // "17.8571 mph"
 
-* whitespace between values is important!
+* whitespace between numbers and units is important!
 	eval() examples:
-		Bad: 2km
-		Good: 2 km
-		Bad: 1+2
-		Good: 1 + 2
-		Bad: (1 m+2 km)/s
-		Good: (1 m + 2 ft) / s
-			Note: You can add different units as long as they are like quantities.
-		"3 m^2"   !=   ("3 m ^ 2" == "(3 m) ^ 2" == "9 m^2")
-		"5 * m^2" == "5 m^2"
+		Bad: "2km"
+		Good: "2 km"
+		Good: "2 kg*m/s"   ==   "2 kg m/s"
+		Note: "3 m^2"   !=   ("3 m ^ 2"   ==   "(3 m) ^ 2"   ==   "9 m^2")
+		Note: "5 * m^2" == "5 m^2"
 
 ** Before you read out a numeric value, consider that the point of this whole thing is to keep track
    of units at low cost while you're doing math. So it's best to keep values inside of PhysicalQuantity
@@ -42,7 +42,7 @@ Sample code:
 
 ===================================================================================================
 System requirements:
-	- A C++ compiler. Preferably C++14, but there are some #defines to make it compatible
+	- C++14 recommended, but there are some #defines to make it compatible
 	   with older/simpler compilers.
 	   Tested on the following systems:
 	      - Windows / Microsoft Visual Studio 2017
@@ -65,11 +65,9 @@ System requirements:
 
 
 Optional, but not required:
-	- std::string
+	- std::string for toString()
 	- new/delete dynamic memory allocation
 	- try/catch
-	- Support for sprintf("%g",...) if you want .toString() and .sprint()
-		(Arduino does not support this)
 
 
 ppOptions.h contains some conditional compilation options for limited systems.
@@ -82,11 +80,13 @@ Installation/setup:
 	In Windows / Visual Studio, open the solution in msvc/ and hit Rebuild Solution.
 		The project uses the 141 toolchain from VS 2017, mainly because of a stupid glitch
 		in 2019pre which fights me every time I try to type a semicolon. (Keyword try. It's infuriating.)
-		If you want to upgrade, tell git to ignore the vcxproj files or revert them before commit.
+		Feel free to upgrade the toolset version on your system, but if you make any pull requests,
+		tell git to ignore the vcxproj files or revert them before commit.
 		This can be done with git update-index --skip-worktree <files>
 		* I may forget to change this part of the README when I finally do upgrade myself, but just use common sense.
 
 	In Linux, open a shell where you cloned the code and run 'make'.
+	    config.mk has several options you may be interested in, but most systems will build it out of the box.
 		bin/ will contain the 'testconsole' binary, as well as the 'gencode'
 		binary used to generate the .ah and .acpp files.
 		lib/ will contain the static library, or object archive, with the API.
@@ -95,6 +95,8 @@ Installation/setup:
 		to use 'ar' to produce an .a file, so that will need to be updated as well,
 		using g++ instead, to make a .so.
 
+	For Arduino development, you will need to run 'make arduino' in linux or a cygwin shell.
+		Some code must be self-generated before you copy it as an arduino library. See below.
 
 Including in other projects:
 
@@ -126,8 +128,7 @@ Now you can #include <PhysicalQuantity.h> instead of
 you will need to use the PC tool chain to build and run 
 'gencode' before you try to cross compile for the target system, because the
 unit lookup hash tables are not included in the repo, for space reasons.
-It also auto generates code for literals like 1_km. If you plan on disabling these
-features, you may not need to do this, in which case, proceed onward...
+It also auto generates code for literals like 1_km.
 
 	Arduino IDE:
 		- You will need a command line / shell environment with 'make'. 
@@ -154,7 +155,7 @@ This can be done with:
 
 	If you need to change VS project configuration, it's a good idea to create a new
 property sheet and put the settings there, so you're not committing
-your personal settings in the shared git repo.
+your personal settings in the shared git repo. View > Property Manager.
 
 
 
@@ -199,28 +200,24 @@ to integer exponents. 1 meter ^ 2.3  will throw an error. Moving on...
 	As far as the memory footprint, it varies widely depending on your system,
 and which options you enable. The library itself takes hardly any RAM, and values
 are most likely 12 or 16 bytes each. 'gencode info' will tell you the exact size
-with padding taken into account. 
-	The hash tables and unit definition table can be placed in ROM if available,
-and typically require 2-3 KB. During my testing, the compiled binary sizes
-were as follows:
-	Windows x64 / Visual Studio 2017 Debug - 'testconsole.exe': 190 KB
-	Linux Mint x64 / g++ 7.4.0 - 'testconsole' binary: 70 KB (no debug flags)
-	Arduino IDE with NO_TEXT, 'Uno' board config: 600 bytes (!!)
+with padding taken into account. Not so accurate for cross compilation though.
+	The hash tables and unit definitions can be placed in ROM if available.
+This mode is controlled by the ROM_READ_BYTE and DECLARE_CONST_ARRAY macros.
+The header will recognize the arduino environment automatically via
+ARDUINO being #defined, so you shouldn't have to to anything else.
+	You can also save a lot of space by #define'ing NO_TEXT. Most of the code
+size is dealing with input, output, and conversion of text.
 
-	While I do my best to reduce memory footprint in terms of data, and shove as 
-much as possible into ROM/.rodata, the code itself takes the most space.
-If you only have 32K of storage on an embedded device, this might be a bit heavy 
-for it. At the time of this writing, my test console binary (all preprocessor options 
-enabled) is about ~190 KB on Windows, and ~70 KB on Linux. That might come down
-with a minimal build option omitting certain text functions, WIP.
 
+========================================================================
 Q: Can a PhysicalQuantity be binary copied with memcpy() or DMA?
 A: Yes.
 
 Q: Can it be sent over a network in binary?
 A: I wrote a long answer for this, then I wrote readNetworkBinary() and
    writeNetworkBinary(). Byte order matters, basically.
-   Do make sure the other end is using this library to load the value,
+   Do make sure the other end is using the same version of this library,
+   with the same #define options, to load the value,
    and not just reading a double. That is the whole point after all.
    It might be safer to just toString()/sprint() and parse it on the other end.
 
@@ -251,63 +248,30 @@ A: Not necessarily. You must tell toString() and sprint() what units to use
    exact same string output back. Multiplying by 1.0 does not usually introduce
    precision errors.
 
-===================================================================================================
-Memory usage:
-	tl;dr ./bin/gencode info
-	  ^ May not be accurate if cross compiling, but will give you a ballpark estimate.
-	testconsole compiles to between 70-180 KB on a x64 PC, depending on OS and compiler,
-with all options on.
-	Aside from the size of the code itself, there are a few read only tables which take
-approx. 2-3 KB of storage. That will grow if more units are added. Otherwise,
-actual data values are very light. The precision of values is governed by
-the typedef 'num' in the main header file. By default, this is 'double'.
-Each value currently requires space for a 'num' plus 5 bytes,
-so a total of 13 bytes per value, out of the box. Changing the 'num' typedef
-to 'float' would bring that down to 9.
-	In reality, the addition of padding bytes will probably mean that for double
-precision, the size will be 16 bytes, and for float, 12.
-	Theoretically, it might be possible to modify the unit storage as a struct of
-bit fields to perhaps 2 bytes instead of 5. Not often does one run into units 
-of the 127th power, but that is possible in the default configuration.
-Bit fields would make calculations slightly slower, requiring an extra 
-fetch/shift/or operation on every read/write, and speed is also
-important. But if you really need to save space, it might be worth looking into.
-That is, if your compiler supports it. This would involve modifying code, a little
-more involved than a simple preprocessor option. There are a lot of places where
-memcmp() is used to check these bytes, and that might not work so well if there are
-extra undefined bits. I didn't see the need to cram bits like that, but
-that's how I would go about it if I had to.
-	STL containers are strictly avoided, with the exception of std::string, which
-you can disable. Dynamic memory allocation can be turned off with NO_NEW. 
-The main place memory buffers are required is the UnitList class. It can operate
-in dynamic or static mode.
-	UnitList is how you specify the units of text output. It is basically a cache 
-of unit lookups which you can reuse in subsequent toString() calls, rather than 
-having to parse the units each time.
-	In the static case, you need to give UnitList a storage buffer of size
-sizeof(PhysicalQuantity::UnitListBase::UnitPref) * [however many units you tell it]
-when constructed. Note that the size parameter is specified in bytes, not elements.
-A buffer which is too small will not generate an error, but it may cause 
-toString() output to show the wrong units. None of this is required if you
-just want to get the value, though.
-	For any code in which you need to read and work with the numeric value,
-rather than displaying or logging it, you should use convert() which does
-not have any buffer storage requirements. convert(), however, is more strict
+
+===========================================================================
+	For any code in which you need to read and work with the numeric value 
+directly, rather than displaying or logging it, you should use convert().
+This function is more strict than toString() / sprint(),
 in that you must request a value of a specific unit, and if the dimensions of
 that unit do not match the stored value, an error occurs.
 	For example, if you perform a calculation of energy in terms of Joules,
 you can convert("kWh") just fine, because kWh is another unit of energy.
-But trying to convert("cm") will produce an error.
+But trying to convert("cm") will produce an error. sprint() or toString()
+would happily divide out cm from the value, and express the remainder to you
+in terms of kilograms and seconds.
 
 
 A note about vectors:
-	You may decide to code a vector of PhysicalQuantity's, but the class itself can not
-represent a vector. It represents a single numeric value and its associated units.
+	You may decide to code a vector of PhysicalQuantity's,
+but the class itself can not represent a vector, nor imaginary numbers.
+It only represents a single numeric value and its associated units.
 You can, however, compare the dimensions of two values to see if they represent the
-same kind of quantity. a.unitsMatch(b), alias a.isLikeQuantity(b)
+same kind of quantity with a.like(b);
 	Any template code which performs vector math on a template type should work with
-PQ objects, as most of the basic arithmetic operators are implemented. 
-Exceptions are modulo (%), increment (++) and decrement (--).
+PQ objects, as most of the basic arithmetic operators are implemented, with the 
+exception of modulo (%). Increment ++ and decrement -- will cause errors if the
+value is not a scalar, but they are there.
 Bitwise and logical operators are not supported, but boolean comparisons like > and <= are,
 with the caveat that the values must have like dimensions (same kind of units) or
 an error will be thrown/called.
@@ -332,9 +296,10 @@ nature of these units means that certain otherwise parseable values, such as
 "16 degF^2" will produce an error, never mind that the square of a temperature
 doesn't really make sense. Be careful that any units with an offset (degF and degC)
 only have a power of 1 or -1 when parsing. Additionally, if the value contains any
-other dimensions, such as degrees C/F per second, the offset will not be applied and 
-the internal value will represent the delta-T in Kelvin / sec.
-	If any of you science types out there think this is a bad idea, feel free to 
+other dimensions, such as degrees C per second, the offset will not be applied and 
+the internal value will represent the delta-T in Kelvin / sec, or K/m, or whatever.
+1 degree C per second is 1 K / sec, not 274.
+	If any science types out there think this is a bad idea, feel free to 
 contact me or comment on github.
 
 
@@ -395,37 +360,30 @@ call stack and restore them before return;. The main point is to be careful
 not to use junk values after an error and let it propagate through the system.
 
 
-
+================================================================================================
 How to add more units:
 	You may want to implement a unit that is not part of the library yet. Here is
 	a step by step guide on how to implement new units:
 
 	1. In PhysicalUnitDefinitions.cpp, find the KnownUnits[] array, and add a line.
 		The format should be commented in there, but just in case, you'll need
-		the symbol, the long name, the dimensions/powers of 
+		the symbol, the long name, plural of the long name, the dimensions/powers of 
 		{mass, distance, time, temperature, current}, the offset amount
 		(probably 0, mostly used in temperature scales), and finally,
 		the almighty conversion factor. Conversion factors are expressed
-		in terms of kilograms, meters, seconds, Kelvin, and Coulombs.
+		in terms of kilograms, meters, seconds, Kelvin, and Amps.
 		You remember that ice cube tray method from high school, right?
 		What are they teaching you kids these days?
 
 	2. Rebuild / make to invoke gencode.
-		Or manually: ./bin/gencode generate
+		Or manually: ./bin/gencode generate optimize
 		This will rebuild hash tables and literal definitions in code.
 		The files build with this tool have extension .ah and .acpp
 		the 'a' standing for automatic.
 	
-	5. Examine hashTables.ah or ./bin/gencode ingo to see if the bucket size is obnoxious,
-	    i.e. lots of hashing collisions.
-		If so, there is a method for reducing that size:
-			a) Recompile and run gencode find-seed
-			b) In hash.cpp, change PhysicalQuantity::defaultHashSeed to that value.
-			c) Rebuild or make to run 'gencode generate' again. gencode needs to
-			   be recompiled with the new value before you run it.
-			d) If the bucket size / collision rate is still too high, increase the hash
-			   table size, also in hash.cpp
-			   Repeat from a) until satisfied.
+	5. Run 'gencode info' or examine hashTables.ah or to see 
+		if the bucket size is obnoxious, i.e. lots of hashing collisions.
+		If so, run gencode again and pass --max-table-size (a bigger number) and --max-seed (more)
 		It may also be beneficial to modify the hashing function in hash.cpp, but this may
 		have to run on embedded hardware, so don't make it too complicated.
 		
