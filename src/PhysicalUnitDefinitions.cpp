@@ -12,7 +12,7 @@ DEFINE_CONST_ARRAY(PhysicalQuantity::num, PhysicalQuantity::KnownUnitOffsets) =
 	273.15, // degC
 	255.37222222222222222222222222222  // degF
 };
-const PhysicalQuantity::unitIndex_t PhysicalQuantity::KnownUnitOffsetsLength = sizeof(KnownUnitOffsets) / sizeof(PQ::num);
+const PhysicalQuantity::unitIndex_t PhysicalQuantity::KnownUnitOffsetsLength = sizeof(KnownUnitOffsets) / sizeof(PhysicalQuantity::num);
 // dekaIndex: If any more prefixes are added, this should be the index of {"da", "deka", 10}
 // Used to optimize lookups because this is the only prefix longer than 1 char
 // If that changes, might need to change findUnit()

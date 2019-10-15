@@ -5,7 +5,7 @@
 //#define PQ_NUM_TYPE double  // default is double
                            // Controls type of PQ::num
 //#define LOW_PRECISION    // If 1e100 is an overflow
-//#define NO_CONSTEXPR              // Compiler supports 'constexpr' (C++11)
+//#define NO_CONSTEXPR     // No 'constexpr' support (need C++14, 11 won't cut it)
 //#define NO_TYPEDEFS      // Do not define PQ:: and csubstr:: shortcuts
 //#define NO_NEW           // Do not use dynamic memory allocation.
 //#define NO_STD_STRING    // Do not #include <string> or use std::string .
@@ -24,7 +24,8 @@
 
 //#define ROM_READ_BYTE(addr)  // Necessary if ROM/flash is not directly addressable.
 
-//#define PQ_DEBUG_EVAL    // print verbose parsing steps to stdout when eval() is called
+//#define PQ_DEBUG_EVAL    // Print verbose parsing steps to stdout when eval() is called.
+                           // Useful in test console. Library must see this flag as well.
 
 // Put as much as possible in ROM
 //--------- avr systems ------------------------

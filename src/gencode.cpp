@@ -470,7 +470,11 @@ void showinfo(string rootpath = "")
 		//hashTableSeed_UnitLongNames;
 		//hashTableSeed_PrefixSymbols;	
 		//hashTableSize_UnitPlurals;
+#ifdef NO_HASHING
+		+ 0
+#else
 		+ sizeof(PQ::defaultHashSeed         )
+#endif
 		+ sizeof(PQ::compiledHeaderOptions   )
 		+ sizeof(PQ::KnownUnitsLength        )
 		+ sizeof(PQ::KnownUnitOffsetsLength  )

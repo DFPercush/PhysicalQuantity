@@ -183,7 +183,7 @@ PhysicalQuantity::PhysicalQuantity(PhysicalQuantity::num valueArg)
 }
 
 #if !defined(YES_CONSTEXPR) // || defined(NO_INLINE)
-PhysicalQuantity::PhysicalQuantity(num value_p, signed char dim_p[(int)QuantityType::ENUM_MAX])
+PhysicalQuantity::PhysicalQuantity(num value_p, const signed char dim_p[(int)QuantityType::ENUM_MAX])
 	: value(value_p), dim {dim_p[0], dim_p[1], dim_p[2], dim_p[3], dim_p[4]} {}
 #endif
 
@@ -1905,7 +1905,7 @@ PhysicalQuantity::num PhysicalQuantity::convert(const char* units) const { retur
 bool PhysicalQuantity::findUnit(const char* pcharName, unitIndex_t& outUnitIndex, prefixIndex_t& outPrefixIndex) { return findUnit(CSubString(pcharName), outUnitIndex, outPrefixIndex); }
 void PhysicalQuantity::parse(const char* text) { parse(csubstr(text)); }
 //size_t PhysicalQuantity::sprint(char* buf, int size, const char* pu, bool useSlash) const { return sprint(buf, size, UnitList(pu), useSlash); }
-size_t PhysicalQuantity::sprint(char* buf, int size, unsigned int precision. bool useSlash) const { return sprint(buf, size, UnitList(""), useSlash); }
+size_t PhysicalQuantity::sprint(char* buf, int size, unsigned int precision, bool useSlash) const { return sprint(buf, size, precision, UnitList(""), useSlash); }
 #endif //#ifndef NO_TEXT
 
 #ifndef NO_HASHING
