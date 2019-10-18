@@ -73,12 +73,26 @@ DEFINE_CONST_ARRAY(PhysicalQuantity::UnitDefinition, PhysicalQuantity::KnownUnit
 {UN("mph","MilePerHour","MilesPerHour"),1609.3439999931/3600, {0,1,-1,0,0}, NOPREFIX},
 
 {UN("J","joule","joules"),1, {1,2,-2,0,0}},
-{UN("N","newton","newtons"),1, {1,1,-2,0,0}},
+{UN("N","newton","newtons"),1, {1,1,-2,0,0}, NOBASELITERAL},
+// Conditions subject to change...
+//#if defined(__GNUC__) && defined(__arm__)
+//#pragma message("no base literal for N")
+//NOBASELITERAL // _n and _N is a reserved suffix in some compilers
+//#endif
+//},
+
 {UN("lb","pound","lbs"),4.448221615260501, {1,1,-2,0,0}, NOPREFIX},
 {UN("lbs","pound","pounds"),4.448221615260501, {1,1,-2,0,0}, NOPREFIX},
 //                  Ma Di Ti Te Cu
 
-{UN("C","coulomb","coulombs"),1, {0,0,1,0,1}},
+{UN("C","coulomb","coulombs"),1, {0,0,1,0,1}, NOBASELITERAL},
+// Conditions subject to change...
+//#if defined(__GNUC__) && defined(__arm__)
+//#pragma message("no base literal for C")
+//NOBASELITERAL // _C is reserved on some compilers
+//#endif
+//},
+
 {UN("A","amp","amps"),1, {0,0,0,0,1}},
 {UN("e","FundamentalCharge","FundamentalCharges"),1.6021765314e-19, {0,0,1,0,1}, NOPREFIX},
 //{"e-","ElectronChargeNegative", {0,0,1,0,1},0, -1.6021765314e-19, NO_PREFIX},

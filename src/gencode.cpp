@@ -61,6 +61,10 @@ void dumpLiterals(string rootpath)
 			{
 				header << "CxLiteral(";
 			}
+			else if (u.flags & NOBASELITERAL)
+			{
+				header << "CxLiteralWithPrefixesNoBase(";
+			}
 			else
 			{
 				header << "CxLiteralWithPrefixes(";

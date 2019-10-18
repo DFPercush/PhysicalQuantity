@@ -718,7 +718,17 @@ size_t PhysicalQuantity::sprint(char* buf, size_t size, unsigned int precision, 
 #endif
 	}
 
-	if (outofs + MAX_NUM_TEXT_LENGTH > size) { return outofs + MAX_NUM_TEXT_LENGTH; }
+	//if (outofs + MAX_NUM_TEXT_LENGTH > size) { return outofs + MAX_NUM_TEXT_LENGTH; }
+	// -1.e-1024\0
+	if (outofs + precision + 10 > size) 
+	{
+#ifdef NO_THROW
+		errorHandler(errorUserContext, E_MEMORY);
+#else
+		throw std::overflow_error("Buffer not large enough to print number.");
+#endif
+		return outofs + precision + 10; 
+	}
 	//sprintf(buf + outofs, "%g", r.value);
 	printNum(buf + outofs, size - outofs, r.value, precision);
 	size_t numofs = outofs;
@@ -1918,7 +1928,7 @@ PhysicalQuantity::num PhysicalQuantity::convert(const char* units) const { retur
 bool PhysicalQuantity::findUnit(const char* pcharName, unitIndex_t& outUnitIndex, prefixIndex_t& outPrefixIndex) { return findUnit(CSubString(pcharName), outUnitIndex, outPrefixIndex); }
 void PhysicalQuantity::parse(const char* text) { parse(csubstr(text)); }
 //size_t PhysicalQuantity::sprint(char* buf, int size, const char* pu, bool useSlash) const { return sprint(buf, size, UnitList(pu), useSlash); }
-size_t PhysicalQuantity::sprint(char* buf, int size, unsigned int precision, bool useSlash) const { return sprint(buf, size, precision, UnitList(""), useSlash); }
+size_t PhysicalQuantity::sprint(char* buf, size_t size, unsigned int precision, bool useSlash) const { return sprint(buf, size, precision, UnitList(""), useSlash); }
 #endif //#ifndef NO_TEXT
 
 #ifndef NO_HASHING

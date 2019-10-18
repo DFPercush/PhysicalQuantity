@@ -340,6 +340,9 @@ public:
 #define CANPREFIX 0
 #define NOLITERAL 0x02
 #define MAKELITERAL 0
+#define NOBASELITERAL 0x04
+
+// Because some compilers (g++/arm 7.2.1 for example) have reserved literals like _N and _C
 
 
 	struct Prefix
@@ -526,7 +529,7 @@ public:
 #ifndef NO_TEXT
 	void parse(const CSubString& text);
 	num convert(const CSubString& units) const;
-	size_t sprint(char* buf, int bufsize, unsigned int precision, bool useSlash = true) const;
+	//size_t sprint(char* buf, size_t bufsize, unsigned int precision, bool useSlash = true) const;
 	size_t sprint(char* buf, size_t bufsize, unsigned int precision, const UnitListBase& pu, bool useSlash = true) const;
 	size_t sprint(char* buf, size_t bufsize, unsigned int precision, const CSubString& sspu, bool useSlash = true) const; // TODO: inline
 	size_t sprint(char* buf, size_t bufsize, unsigned int precision, const CSubString& sspu, void* puBuf, size_t puBufSize, bool useSlash = true) const;
@@ -701,7 +704,7 @@ public:
 	//bool unitsMatch(const PhysicalQuantity& rhs) const;
 	void parse(const char* text);
 	//size_t sprint(char* buf, size_t size, const char* pu, bool useSlash = true) const;
-	size_t sprint(char* buf, size_t size, bool useSlash = true) const;
+	size_t sprint(char* buf, size_t size, unsigned int precision, bool useSlash = true) const;
 #endif //#ifndef NO_TEXT
 #else //#ifdef NO_INLINE
 
@@ -714,7 +717,7 @@ public:
 	//INLINE_KEYWORD bool unitsMatch(const PhysicalQuantity& rhs) const { return isLikeQuantity(rhs); }
 	INLINE_KEYWORD void parse(const char* text) { parse(CSubString(text)); }
 	//INLINE_KEYWORD size_t sprint(char* buf, int size, const char* pu, bool useSlash = true) const { return sprint(buf, size, UnitList(pu), useSlash); }
-	INLINE_KEYWORD size_t sprint(char* buf, size_t size, unsigned int precision, bool useSlash = true) const { return sprint(buf, size, precision, UnitList(""), useSlash); }
+	INLINE_KEYWORD size_t sprint(char* buf, size_t size, unsigned int precision, bool useSlash = true) const { return PhysicalQuantity::sprint(buf, size, precision, UnitList(""), useSlash); }
 #endif //#ifndef NO_TEXT
 #endif //#else of #ifdef NO_INLINE
 	// End main class members
@@ -803,13 +806,13 @@ INLINE_KEYWORD PhysicalQuantity operator-(PhysicalQuantity::num left, const Phys
 #if defined(YES_CONSTEXPR)
 // Use these in a header
 #define CxLiteral(symbol_no_quotes, Ma, Di, Ti, Te, Cu, factor, offset) \
-	constexpr PhysicalQuantity operator ""_##symbol_no_quotes(long double v) \
+	constexpr PhysicalQuantity operator "" _##symbol_no_quotes(long double v) \
 	{ \
 		signed char d[(int)PhysicalQuantity::QuantityType::ENUM_MAX]  \
 		{Ma, Di, Ti, Te, Cu}; \
 		return PhysicalQuantity(((PhysicalQuantity::num)factor * (PhysicalQuantity::num)v) + offset, d); \
 	} \
-	constexpr PhysicalQuantity operator ""_##symbol_no_quotes(unsigned long long v) \
+	constexpr PhysicalQuantity operator "" _##symbol_no_quotes(unsigned long long v) \
 	{ \
 		signed char d[(int)PhysicalQuantity::QuantityType::ENUM_MAX]  \
 		{Ma, Di, Ti, Te, Cu}; \
@@ -817,9 +820,30 @@ INLINE_KEYWORD PhysicalQuantity operator-(PhysicalQuantity::num left, const Phys
 	}
 
 //----------------------------------------------------------------------------
-#define BLANK(x)
 #define CxLiteralWithPrefixes(symbol_no_quotes, Ma, Di, Ti, Te, Cu, factor, offset) \
 	CxLiteral( symbol_no_quotes,  Ma, Di, Ti, Te, Cu, factor, offset) \
+	CxLiteral( c##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e-2  , offset) \
+	CxLiteral( k##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e3   , offset) \
+	CxLiteral( m##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e-3  , offset) \
+	CxLiteral( M##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e6   , offset) \
+	CxLiteral( u##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e-6  , offset) \
+	CxLiteral( G##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e9   , offset) \
+	CxLiteral( n##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e-9  , offset) \
+	CxLiteral( T##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e12  , offset) \
+	CxLiteral( p##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e-12 , offset) \
+	CxLiteral( P##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e15  , offset) \
+	CxLiteral(da##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 10.0  , offset) \
+	CxLiteral( f##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e-15 , offset) \
+	CxLiteral( d##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 0.1   , offset) \
+	CxLiteral( h##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 100.0 , offset) \
+	CxLiteral( E##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e18  , offset) \
+	CxLiteral( a##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e-18 , offset) \
+	CxLiteral( z##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e-21 , offset) \
+	CxLiteral( Z##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e21  , offset) \
+	CxLiteral( y##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e-24 , offset) \
+	CxLiteral( Y##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e24  , offset) \
+
+#define CxLiteralWithPrefixesNoBase(symbol_no_quotes, Ma, Di, Ti, Te, Cu, factor, offset) \
 	CxLiteral( c##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e-2  , offset) \
 	CxLiteral( k##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e3   , offset) \
 	CxLiteral( m##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e-3  , offset) \
