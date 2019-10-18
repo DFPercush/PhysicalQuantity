@@ -50,7 +50,7 @@ System requirements:
 		  - Arduino IDE 1.8.10 / avr-g++ 7.3.0 
 			(slight tweak recommended to use C++14, see installation)
 
-	- For Arduino/avr:
+	- For Arduino/avr (Uno board):
 		With NO_TEXT: 444 bytes flash memory, 9 bytes SRAM.
 		With text parsing/printing, 15 KB flash memory, 109 bytes SRAM.
 
