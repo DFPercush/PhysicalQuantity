@@ -112,6 +112,8 @@ int memcmp_romboth(const char* left, const char* right, size_t len)
 
 #else
 #define IFROM(normal_expr, rom_expr) normal_expr
+#define romcpy memcpy
+#define romstrlen strlen
 #endif
 
 bool InitLibPQ(int headerOptionFlags)
@@ -1139,8 +1141,10 @@ bool PhysicalQuantity::findUnit(CSubString name, PhysicalQuantity::unitIndex_t& 
 	unitIndex_t iTryUnitName = 0;
 
 	// look up unit symbol
+	const char* pKnownUnitCmp;
 	while(iTryUnitName < 2)
 	{
+		if (tryUnitNames[iTryUnitName].length() == 0) { iTryUnitName++; continue; }
 		hashRaw = (unsigned int)hashUnitSymbol(tryUnitNames[iTryUnitName]);
 		hashSymbol = hashRaw % hashTableSize_UnitSymbols;
 #ifdef ROM_READ_BYTE
@@ -1152,8 +1156,9 @@ bool PhysicalQuantity::findUnit(CSubString name, PhysicalQuantity::unitIndex_t& 
 #ifdef ROM_READ_BYTE
 			romcpy(kubuf, &KnownUnits[usent.bucket[iBucket]], sizeof(UnitDefinition));
 #endif
-			if (tryUnitNames[iTryUnitName] == IFROM(KnownUnits[UnitSymbols_HashTable[hashSymbol].bucket[iBucket]].symbol,
-				ku.symbol))
+			pKnownUnitCmp = IFROM(KnownUnits[UnitSymbols_HashTable[hashSymbol].bucket[iBucket]].symbol, ku.symbol);
+			if ((tryUnitNames[iTryUnitName] == pKnownUnitCmp)
+				&& strlen(pKnownUnitCmp) > 0)
 			{
 				iUnit = IFROM(UnitSymbols_HashTable[hashSymbol].bucket[iBucket], usent.bucket[iBucket]);
 				foundUnitLen = IFROM((int)strlen(KnownUnits[iUnit].symbol), (int)romstrlen(ku.symbol));
@@ -1174,7 +1179,8 @@ bool PhysicalQuantity::findUnit(CSubString name, PhysicalQuantity::unitIndex_t& 
 		#ifdef ROM_READ_BYTE
 			romcpy(kubuf, &KnownUnits[ulent.bucket[iBucket]], sizeof(UnitDefinition));
 		#endif
-			if (tryUnitNames[iTryUnitName] == IFROM(KnownUnits[UnitLongNames_HashTable[hashLongName].bucket[iBucket]].longName,	ku.longName))
+			pKnownUnitCmp = IFROM(KnownUnits[UnitLongNames_HashTable[hashLongName].bucket[iBucket]].longName, ku.longName);
+			if (tryUnitNames[iTryUnitName] == pKnownUnitCmp && strlen(pKnownUnitCmp) > 0)
 			{
 				iUnit = IFROM(UnitLongNames_HashTable[hashLongName].bucket[iBucket], ulent.bucket[iBucket]);
 				foundUnitLen = (int) IFROM(strlen(KnownUnits[iUnit].longName), romstrlen(ku.longName));
@@ -1195,7 +1201,8 @@ bool PhysicalQuantity::findUnit(CSubString name, PhysicalQuantity::unitIndex_t& 
 #ifdef ROM_READ_BYTE
 			romcpy(kubuf, &KnownUnits[upent.bucket[iBucket]], sizeof(UnitDefinition));
 #endif
-			if (tryUnitNames[iTryUnitName] == IFROM(KnownUnits[UnitPlurals_HashTable[hashPlural].bucket[iBucket]].plural, ku.plural))
+			pKnownUnitCmp = IFROM(KnownUnits[UnitPlurals_HashTable[hashPlural].bucket[iBucket]].plural, ku.plural);
+			if (tryUnitNames[iTryUnitName] == pKnownUnitCmp && strlen(pKnownUnitCmp) > 0)
 			{
 				iUnit = IFROM(UnitPlurals_HashTable[hashPlural].bucket[iBucket], upent.bucket[iBucket]);
 				foundUnitLen = (int) IFROM(strlen(KnownUnits[iUnit].plural), romstrlen(ku.plural));
@@ -1211,13 +1218,13 @@ bool PhysicalQuantity::findUnit(CSubString name, PhysicalQuantity::unitIndex_t& 
 	}
 
 
-	if (foundUnitLen == nlen)
+	if ((foundUnitLen > 0) && (foundUnitLen == nlen))
 	{
 		outPrefixIndex = -1;
 		outUnitIndex = iUnit;
 		return true;
 	}
-	else if (foundPrefixLen + foundUnitLen == nlen)
+	else if ((foundUnitLen > 0) && (foundPrefixLen + foundUnitLen == nlen))
 	{
 		outPrefixIndex = iPrefix;
 		outUnitIndex = iUnit;
