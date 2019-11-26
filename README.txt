@@ -33,7 +33,11 @@ Sample code:
 		Bad: "2km"
 		Good: "2 km"
 		Good: "2 kg*m/s"   ==   "2 kg m/s"
-		Note: "3 m^2"   !=   ("3 m ^ 2"   ==   "(3 m) ^ 2"   ==   "9 m^2")
+		Bad: 1 km-2 m
+		Bad: 1 km -2 m
+		Good: 1 km - 2 m
+		OK: 1 km - -2 m
+		Note: "3 m^2"   !=   ( "3 m ^ 2" == "(3 m) ^ 2" == "9 m^2")
 		Note: "5 * m^2" == "5 m^2"
 
 ** Before you read out a numeric value, consider that the point of this whole thing is to keep track

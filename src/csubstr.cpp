@@ -29,14 +29,15 @@ bool CSubString::operator== (const char* cmp) const
 		return true; 
 	}
 	if ((end - start == 0) && cmp[0] != 0) { return false; }
-	for (int i = start; (i < end) && (*cmp != 0) && ((*this)[i - start] != 0); i++)
+	int i;
+	for (i = start; (i < end) && (*cmp != 0) && ((*this)[i - start] != 0); i++)
 	{
 		if ((*this)[i - start] != *cmp) { return false; }
 		//if ((*this)[i - start] == 0) { return true; }
 		//if (*cmp == 0) { return false; }
 		cmp++;
 	}
-	return true;
+	return ((*this)[i - start] == *cmp);
 }
 
 bool CSubString::operator==(const CSubString& cmp) const

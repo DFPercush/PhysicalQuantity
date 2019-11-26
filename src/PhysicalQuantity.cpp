@@ -1478,6 +1478,7 @@ const PhysicalQuantity::UnitListBase::UnitPref& PhysicalQuantity::UnitListBase::
 PhysicalQuantity PhysicalQuantity::eval(CSubString str)
 {
 	str = str.trim();
+	if (str.length() == 0) { return PQ((num)0); }
 	int pleft = -1;
 	int pright = -1;
 	int plevel = 0;
@@ -1517,27 +1518,45 @@ PhysicalQuantity PhysicalQuantity::eval(CSubString str)
 			pleft = i;
 			plevel--;
 		}
-		else if (c == '+' && plevel == 0 && str[i - 1] != 'e' && str[i - 1] != 'E')
+		else if (c == '+' && plevel == 0 && str[i - 1] != 'e' && str[i - 1] != 'E' && ((str[i + 1] < '0') || (str[i + 1] > '9')))
 		{
 			//left = eval(str.substr(0, i));
 			//right = eval(str.substr(i + 1));
 			//return left + right;
 			DEBUG_LR_STR(leftstr, rightstr, "+");
-			left = eval(leftstr);
-			right = eval(rightstr);
-			ret = left + right;
+			if (leftstr == "")
+			{
+				left = (num)0;
+				right = eval(rightstr);
+				ret = right; // (num)(-1) * right;
+			}
+			else
+			{
+				left = eval(leftstr);
+				right = eval(rightstr);
+				ret = left + right;
+			}
 			DEBUG_LR_RESULT(left, right, "+", ret);
 			return ret;
 		}
-		else if (c == '-' && plevel == 0 && str[i - 1] != 'e' && str[i - 1] != 'E')
+		else if (c == '-' && plevel == 0 && str[i - 1] != 'e' && str[i - 1] != 'E' && ((str[i + 1] < '0') || (str[i + 1] > '9')))
 		{
 			//left = eval(str.substr(0, i));
 			//right = eval(str.substr(i + 1));
 			//return left - right;
 			DEBUG_LR_STR(leftstr, rightstr, "-");
-			left = eval(leftstr);
-			right = eval(rightstr);
-			ret = left - right;
+			if (leftstr == "")
+			{
+				left = (num)0;
+				right = eval(rightstr);
+				ret = (num)(-1) * right;
+			}
+			else
+			{
+				left = eval(leftstr);
+				right = eval(rightstr);
+				ret = left - right;
+			}
 			DEBUG_LR_RESULT(left, right, "-", ret);
 			return ret;
 		}
