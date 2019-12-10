@@ -1,4 +1,4 @@
-// cppstart: Begin PhysicalUnitDefinitions.cpp
+﻿// cppstart: Begin PhysicalUnitDefinitions.cpp
 #include <PhysicalQuantity.h>
 
 #if !defined(NO_TEXT) || defined(PQ_GENCODE)
@@ -65,7 +65,7 @@ DEFINE_CONST_ARRAY(PhysicalQuantity::UnitDefinition, PhysicalQuantity::KnownUnit
 {UN("ang","angstrom","angstroms"),1e-10, {0,1,0,0,0}},  // unicode wchar_t is not supported at this time
 //{UN("kg", "kilogram","kilograms"),1, {1,0,0,0,0}},
 //                  Ma Di Ti Te Cu
-{UN("s", "second","seconds"),1, {0,0,1,0,0}, NOPREFIX},
+{UN("s", "second","seconds"),1, {0,0,1,0,0}}, //, NOPREFIX},
 {UN("Hz", "hertz",""),1, {0,0,-1,0,0}},
 {UN("min", "minute","minutes"),60, {0,0,1,0,0}, NOPREFIX},
 {UN("hr", "hour","hours"),3600, {0,0,1,0,0}, NOPREFIX},
@@ -76,8 +76,12 @@ DEFINE_CONST_ARRAY(PhysicalQuantity::UnitDefinition, PhysicalQuantity::KnownUnit
 
 //                        Ma Di Ti Te Cu
 {"W", "watt", "watts", 1, {1,2,-3,0,0}},
+{"hp", "horsepower","", 745.699872, {1,2,-3,0,0}},
+{"hp_electric", "electrichorsepower", "", 746, {1,2,-3,0,0}},
+{"hp_metric", "metrichorsepower", "", 735.49875, {1,2,-3,0,0}},
 
-{UN("N","newton","newtons"),1, {1,1,-2,0,0}, NOBASELITERAL},
+
+{UN("N","newton","newtons"),1, {1,1,-2,0,0}}, //, NOBASELITERAL},
 {UN("lb","pound","lbs"),4.448221615260501, {1,1,-2,0,0}, NOPREFIX},
 {UN("lbs","pound","pounds"),4.448221615260501, {1,1,-2,0,0}, NOPREFIX},
 
@@ -91,7 +95,7 @@ DEFINE_CONST_ARRAY(PhysicalQuantity::UnitDefinition, PhysicalQuantity::KnownUnit
 //},
 //                  Ma Di Ti Te Cu
 
-{UN("C","coulomb","coulombs"),1, {0,0,1,0,1}, NOBASELITERAL},
+{UN("C","coulomb","coulombs"),1, {0,0,1,0,1}}, //, NOBASELITERAL},
 // Conditions subject to change...
 //#if defined(__GNUC__) && defined(__arm__)
 //#pragma message("no base literal for C")
@@ -100,16 +104,44 @@ DEFINE_CONST_ARRAY(PhysicalQuantity::UnitDefinition, PhysicalQuantity::KnownUnit
 //},
 
 {UN("A","amp","amps"),1, {0,0,0,0,1}},
+{UN("","ampere","amperes"),1, {0,0,0,0,1}},
 {UN("e","FundamentalCharge","FundamentalCharges"),1.6021765314e-19, {0,0,1,0,1}, NOPREFIX},
 //{"e-","ElectronChargeNegative", {0,0,1,0,1},0, -1.6021765314e-19, NO_PREFIX},
 
+//                           Ma Di Ti Te Cu
+{UN("V", "volt", "volts"), 1, {1,2,-3,0,-1}},
+{UN("ohm", "ohm", "ohms"), 1, {1,2,-3,0,-2}}, // TODO: Test unicode support? I think UTF-8 would still work with strcmp() for equality testing
+{UN("S", "siemens", ""), 1, {-1,-2,3,0,2}}, // conductance
+{UN("F", "farad", "farads"), 1, {-1,-2,4,0,2}}, // capacitance
+{UN("Wb", "weber", "webers"), 1, {1,2,-2,0,-1}},
+{UN("T", "tesla", "teslas"), 1, {1,0,-2,0,-1}}, // some of these plurals might not be accurate, but will be permissive of user error when we know what they're talking about
+{UN("H", "henry", "henrys"), 1, {1,2,-2,0,-1}},
 
-// Coulombs <==> electron charge
-// 1C = 6.24150975*10^18e or 1e = 1.60217646*10^-19C
-//                   M  D Ti Te Cu
-// V=J/C
-// 1 ohm = 1 V/A = 1 m^2 kg s^-3 A^�2
-// hp, bhp, lumens, candlesomething
+//                      Ma Di Ti Te Cu
+// Radiation
+{UN("Bq", "becquerel", "becquerels"), 1, {0,0,-1,0,0}}, // radionuclide activity, counts per second
+{UN("Gy", "gray", "grays"), 1, {0,2,-2,0,0}},  // dose
+{UN("Sv", "sievert", "sieverts"), 1, {0,2,-2,0,0}},  // dose
+//TODO: kat, katal, s^-1*mol, catalytic activity
+
+
+// TODO: candela, lumens etc
+// dyne, kip, sthene
+
+//                      Ma Di Ti Te Cu
+// Pressure
+{UN("Pa", "pascal","pascals"), 1,{1,-1,-2,0,0}},
+{UN("bar", "bar","bars"), 100000,{1,-1,-2,0,0}},
+{UN("psi", "",""), 6894.757293178,{1,-1,-2,0,0}},
+{UN("torr", "Torr",""), 133.3223684211,{1,-1,-2,0,0}},
+{UN("mmHg", "",""), 133.322,{1,-1,-2,0,0}},
+{UN("cmHg", "",""), 1333.22,{1,-1,-2,0,0}},
+{UN("atm", "atmosphere","atmospheres"), 101325,{1,-1,-2,0,0}},
+{UN("Ba", "bary","barye"), 0.1,{1,-1,-2,0,0}},
+{UN("", "pièze","pieze"), 1000,{1,-1,-2,0,0}},
+//{UN("", "",""), ,{1,-1,-2,0,0}},
+
+// 
 
 };
 const PhysicalQuantity::unitIndex_t PhysicalQuantity::KnownUnitsLength = sizeof(PhysicalQuantity::KnownUnits) / sizeof(PhysicalQuantity::UnitDefinition);

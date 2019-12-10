@@ -15,6 +15,7 @@
 #include <iomanip>
 #include <limits>
 #include <stdexcept>
+#include <sstream>
 using namespace std;
 
 typedef PhysicalQuantity PQ;
@@ -44,6 +45,7 @@ void dumpLiterals(string rootpath)
 		throw runtime_error("Could not open src/literals.acpp");
 	}
 
+	//source << "#pragma once\n";
 	source << "#ifndef NO_LITERALS\n";
 	source << "#include <PhysicalQuantity.h>\n";
 
@@ -53,34 +55,68 @@ void dumpLiterals(string rootpath)
 	for (int ui = 0; ui < PQ::KnownUnitsLength; ui++)
 	{
 		const PQ::UnitDefinition& u = PQ::KnownUnits[ui];
+		//stringstream literalDefLines; // = "";
+		//stringstream macroPushLines;
+		stringstream macroInnards;
+		string useMacro = "";
 		if (u.flags & NOLITERAL) { continue; }
-		//if (u.offset == 0.0)
-		//if (ui >= PQ::KnownUnitOffsetsLength)
-		//{
-			if (u.flags & NOPREFIX)
-			{
-				header << "CxLiteral(";
-			}
-			else if (u.flags & NOBASELITERAL)
-			{
-				header << "CxLiteralWithPrefixesNoBase(";
-			}
-			else
-			{
-				header << "CxLiteralWithPrefixes(";
-			}
-			header << u.symbol << ",";
+		if (strlen(u.symbol) > 0)
+		{
+			macroInnards << u.symbol << ",";
 			for (int di = 0; di < (int)PQ::QuantityType::ENUM_MAX; di++)
 			{
-				//fprintf(header, "%d,", u.dim[di]);
-				header << (signed int)u.dim[di] << ",";
+				macroInnards << (signed int)u.dim[di] << ",";
 			}
-			//fprintf(header, "%")
-			header << setprecision(std::numeric_limits<long double>::digits10 + 1)
+			macroInnards << setprecision(std::numeric_limits<long double>::digits10 + 1)
 				<< u.factor << ","
-				<< ((ui < PQ::KnownUnitOffsetsLength) ? PQ::KnownUnitOffsets[ui] : 0)
-				<< ")" << endl;
-		//}  // offset
+				<< ((ui < PQ::KnownUnitOffsetsLength) ? PQ::KnownUnitOffsets[ui] : 0);
+				//<< ")" << endl;
+
+			if (u.flags & NOPREFIX)
+			{
+				useMacro = "CxLiteral";
+			}
+			else 
+			{
+				if (u.flags & NOBASELITERAL) { useMacro = "CxLiteralWithPrefixesNoBase"; }
+				else { useMacro = "CxLiteralWithPrefixes"; }
+				//literalDefLines << "CxLiteralWithPrefixesNoBase(";
+			}
+
+			if (((u.flags & NOBASELITERAL) == 0) && (u.flags & NOPREFIX))
+			{
+				header << "#pragma push_macro(\"_" << u.symbol << "\")\n#undef " << u.symbol << "\n"
+					<< useMacro << "(" << macroInnards.str() << ")\n#pragma pop_macro(\"_" << u.symbol << "\")\n";
+			}
+			if ((u.flags & NOPREFIX) == 0)
+			{
+				header << "#pragma push_macro(\"_" << u.symbol << "\")\n#undef _" << u.symbol << endl;
+				for (int pi = 0; pi < PQ::KnownPrefixesLength; pi++)
+				{
+					string unitWithPrefix = PQ::KnownPrefixes[pi].symbol;
+					unitWithPrefix += u.symbol;
+					header << "#pragma push_macro(\"_" << unitWithPrefix << "\")\n#undef _" << unitWithPrefix << "\n";
+				}
+				header << useMacro << "(" << macroInnards.str() << ")\n";
+				for (int pi = 0; pi < PQ::KnownPrefixesLength; pi++)
+				{
+					string unitWithPrefix = PQ::KnownPrefixes[pi].symbol;
+					unitWithPrefix += u.symbol;
+					header << "#pragma pop_macro(\"_" << unitWithPrefix << "\")\n";
+				}
+				header << "#pragma pop_macro(\"_" << u.symbol << "\")\n";
+			}
+			macroInnards.clear();
+
+			//else
+			//{
+			//	//literalDefLines << "CxLiteralWithPrefixes(";
+			//}
+
+			//header << literalDefLines.str();
+			//literalDefLines.clear();
+			//header << "#ifdef _" << u.symbol << "\n#pragma push_macro(_" << u.symbol << ")\n"
+		} //if (strlen(u.symbol) > 0)
 	}
 
 	header << "#else //#if defined(YES_CONSTEXPR)\n";

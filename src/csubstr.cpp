@@ -577,4 +577,3 @@ int CSubString::find_first_not_of(const char* find, int startOfs) const { return
 #endif //#ifdef NO_INLINE
 
 #endif // !NO_TEXT
-

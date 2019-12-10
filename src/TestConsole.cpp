@@ -32,6 +32,8 @@ void showHelp()
 
 void runEval(const csubstr& line)
 {
+	PQ x = 1_C;
+	PQ y = 1_N;
 }
 
 void runConvert(const char* s)

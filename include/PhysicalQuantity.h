@@ -806,18 +806,19 @@ INLINE_KEYWORD PhysicalQuantity operator-(PhysicalQuantity::num left, const Phys
 #if defined(YES_CONSTEXPR)
 // Use these in a header
 #define CxLiteral(symbol_no_quotes, Ma, Di, Ti, Te, Cu, factor, offset) \
-	constexpr PhysicalQuantity operator "" _##symbol_no_quotes(long double v) \
+	constexpr PhysicalQuantity operator ""_##symbol_no_quotes(long double v) \
 	{ \
 		signed char d[(int)PhysicalQuantity::QuantityType::ENUM_MAX]  \
 		{Ma, Di, Ti, Te, Cu}; \
 		return PhysicalQuantity(((PhysicalQuantity::num)factor * (PhysicalQuantity::num)v) + offset, d); \
 	} \
-	constexpr PhysicalQuantity operator "" _##symbol_no_quotes(unsigned long long v) \
+	constexpr PhysicalQuantity operator ""_##symbol_no_quotes(unsigned long long v) \
 	{ \
 		signed char d[(int)PhysicalQuantity::QuantityType::ENUM_MAX]  \
 		{Ma, Di, Ti, Te, Cu}; \
 		return PhysicalQuantity(((PhysicalQuantity::num)factor * (PhysicalQuantity::num)v) + offset, d); \
 	}
+    /*#pragma message("Compiling literal symbol " #symbol_no_quotes) */ \
 
 //----------------------------------------------------------------------------
 #define CxLiteralWithPrefixes(symbol_no_quotes, Ma, Di, Ti, Te, Cu, factor, offset) \
