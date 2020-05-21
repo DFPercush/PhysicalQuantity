@@ -55,32 +55,68 @@ DEFINE_CONST_ARRAY(PhysicalQuantity::UnitDefinition, PhysicalQuantity::KnownUnit
 
 {UN("g", "gram","grams"),0.001, {1,0,0,0,0}}, // Note: Update gramIndex if this shifts!
 
+// Distance (Length)
 {UN("m", "meter","meters"),1, {0,1,0,0,0}},
 {UN("mi", "mile","miles"),1609.3439999931,     { 0, 1, 0, 0, 0}, NOPREFIX},
 {UN("yd", "yard","yards"),0.9144, {0,1,0,0,0}, NOPREFIX},
 {UN("ft", "foot","feet"),0.3048, {0,1,0,0,0}, NOPREFIX},
 {UN("in", "inch","inches"),0.0254, {0,1,0,0,0}, NOPREFIX},
-
-
 {UN("ang","angstrom","angstroms"),1e-10, {0,1,0,0,0}},  // unicode wchar_t is not supported at this time
-//{UN("kg", "kilogram","kilograms"),1, {1,0,0,0,0}},
+{UN("AU","astronomical_unit","astronomical_units"), 149597900000, {0,1,0,0,0}},
+{UN("chain","chain","chains"),20.11680394008, {0,1,0,0,0}, NOPREFIX},
+{UN("ly","light_year","light_years"),9460732325561360, {0,1,0,0,0}},
+{UN("li","link","links"),0.201168039400805, {0,1,0,0,0}, NOPREFIX},
+{UN("mil","mil","mils"),0.0000254, {0,1,0,0,0}, NOPREFIX}, // thousandth of an inch
+{UN("thou","thou","thous"),0.0000254, {0,1,0,0,0}, NOPREFIX}, // thousandth of an inch
+{UN("nmi","nautical_mile","nautical_miles"),1852, {0,1,0,0,0}, NOPREFIX},
+{UN("pc","parsec","parsecs"),30856778900000000, {0,1,0,0,0}},
+{UN("rod","rod","rods"), 5.0292105028246334, {0,1,0,0,0}, NOPREFIX},
+
+
+//Area
+{UN("b", "barn","barns"), 1e-14, {0,2,0,0,0}},
+{UN("a", "are","ares"), 10, {0,2,0,0,0}, NOPREFIX},
+{UN("ha", "hectare","hectares"), 100, {0,2,0,0,0}, NOPREFIX},
+{UN("ac", "acre","acres"), 63.614935353264330736204577034477, {0,2,0,0,0}, NOPREFIX},
+{UN("ro", "rood","roods"), 31.807451957049310302429101433573, {0,2,0,0,0}, NOPREFIX},
+
+
+// Volume
+{UN("L", "liter","liters"), 0.001, {0,3,0,0,0}},
+{UN("cc", "cubic_centimeter","cubic_centimeters"), 0.000001, {0,3,0,0,0}, NOPREFIX},
+{UN("gal", "gallon","gallons"), 0.003785411784, {0,3,0,0,0}, NOPREFIX},
+{UN("qt", "quart","quarts"), 0.000946352946, {0,3,0,0,0}, NOPREFIX},
+{UN("pt", "pint","pints"), 0.000473176473, {0,3,0,0,0}, NOPREFIX},
+{UN("cu", "cup","cups"), 0.0002365882365, {0,3,0,0,0}, NOPREFIX},
+{UN("floz", "fluid_ounce","fluid_ounces"), 0.0000295735295625, {0,3,0,0,0}, NOPREFIX},
+{UN("tbsp", "tablespoon","tablespoons"), 0.00001478676478125, {0,3,0,0,0}, NOPREFIX},
+{UN("tsp", "teaspoon","teaspoons"), 0.00000492892159375, {0,3,0,0,0}, NOPREFIX},
+
 //                  Ma Di Ti Te Cu
+
+// Time
 {UN("s", "second","seconds"),1, {0,0,1,0,0}}, //, NOPREFIX},
 {UN("Hz", "hertz",""),1, {0,0,-1,0,0}},
 {UN("min", "minute","minutes"),60, {0,0,1,0,0}, NOPREFIX},
 {UN("hr", "hour","hours"),3600, {0,0,1,0,0}, NOPREFIX},
 
-{UN("mph","MilePerHour","MilesPerHour"),1609.3439999931/3600, {0,1,-1,0,0}, NOPREFIX},
+// Speed
+{UN("mph","mile_per_hour","miles_per_hour"),1609.3439999931/3600.0, {0,1,-1,0,0}, NOPREFIX},
+{UN("kt","knot","knots"),0.51444444444444444444444444444444, {0,1,-1,0,0}, NOPREFIX},
 
+
+// Energy
 {UN("J","joule","joules"),1, {1,2,-2,0,0}},
 
 //                        Ma Di Ti Te Cu
+// Power
 {"W", "watt", "watts", 1, {1,2,-3,0,0}},
 {"hp", "horsepower","", 745.699872, {1,2,-3,0,0}},
 {"hp_electric", "electrichorsepower", "", 746, {1,2,-3,0,0}},
 {"hp_metric", "metrichorsepower", "", 735.49875, {1,2,-3,0,0}},
 
 
+// Force
 {UN("N","newton","newtons"),1, {1,1,-2,0,0}}, //, NOBASELITERAL},
 {UN("lb","pound","lbs"),4.448221615260501, {1,1,-2,0,0}, NOPREFIX},
 {UN("lbs","pound","pounds"),4.448221615260501, {1,1,-2,0,0}, NOPREFIX},
@@ -95,7 +131,6 @@ DEFINE_CONST_ARRAY(PhysicalQuantity::UnitDefinition, PhysicalQuantity::KnownUnit
 //},
 //                  Ma Di Ti Te Cu
 
-{UN("C","coulomb","coulombs"),1, {0,0,1,0,1}}, //, NOBASELITERAL},
 // Conditions subject to change...
 //#if defined(__GNUC__) && defined(__arm__)
 //#pragma message("no base literal for C")
@@ -103,12 +138,15 @@ DEFINE_CONST_ARRAY(PhysicalQuantity::UnitDefinition, PhysicalQuantity::KnownUnit
 //#endif
 //},
 
+// Current and charge
 {UN("A","amp","amps"),1, {0,0,0,0,1}},
 {UN("","ampere","amperes"),1, {0,0,0,0,1}},
+{UN("C","coulomb","coulombs"),1, {0,0,1,0,1}}, //, NOBASELITERAL},
 {UN("e","FundamentalCharge","FundamentalCharges"),1.6021765314e-19, {0,0,1,0,1}, NOPREFIX},
 //{"e-","ElectronChargeNegative", {0,0,1,0,1},0, -1.6021765314e-19, NO_PREFIX},
 
 //                           Ma Di Ti Te Cu
+// Composite electromagnetic units
 {UN("V", "volt", "volts"), 1, {1,2,-3,0,-1}},
 {UN("ohm", "ohm", "ohms"), 1, {1,2,-3,0,-2}}, // TODO: Test unicode support? I think UTF-8 would still work with strcmp() for equality testing
 {UN("S", "siemens", ""), 1, {-1,-2,3,0,2}}, // conductance
@@ -125,7 +163,7 @@ DEFINE_CONST_ARRAY(PhysicalQuantity::UnitDefinition, PhysicalQuantity::KnownUnit
 //TODO: kat, katal, s^-1*mol, catalytic activity
 
 
-// TODO: candela, lumens etc
+// TODO: Light: candela, lumens etc
 // dyne, kip, sthene
 
 //                      Ma Di Ti Te Cu

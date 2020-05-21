@@ -31,6 +31,7 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\src\hashParams.acpp" />
+    <ClCompile Include="..\src\romtable.acpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\PhysicalQuantity.h">
@@ -51,10 +52,5 @@
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="CSubString.natvis" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="..\src\romtable.acpp">
-      <Filter>Source Files</Filter>
-    </None>
   </ItemGroup>
 </Project>

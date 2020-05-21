@@ -842,21 +842,21 @@ int main(int argc, char** argv)
 		int unitSymbolsSize =   (int)PQ::default_hashTableSize_UnitSymbols;
 		int unitSymbolsSeed =   (int)PQ::defaultHashSeed;
 		int unitSymbolsBucketSize = 0;
-		float unitSymbolsCoverage = 0;
+		float unitSymbolsRowCoverage = 0;
 //#ifndef NO_LONG_NAMES
 		int unitLongNamesSize = (int)PQ::default_hashTableSize_UnitLongNames;
 		int unitLongNamesSeed = (int)PQ::defaultHashSeed;
 		int unitLongNamesBucketSize = 0;
-		float unitLongNamesCoverage = 0;
+		float unitLongNamesRowCoverage = 0;
 		int unitPluralsSize   = (int)PQ::default_hashTableSize_UnitPlurals;
 		int unitPluralsSeed   = (int)PQ::defaultHashSeed;
 		int unitPluralsBucketSize = 0;
-		float unitPluralsCoverage = 0;
+		float unitPluralsRowCoverage = 0;
 //#endif //#ifndef NO_LONG_NAMES
 		int prefixSymbolsSize = (int)PQ::default_hashTableSize_PrefixSymbols;
 		int prefixSymbolsSeed = (int)PQ::defaultHashSeed;
 		int prefixSymbolsBucketSize = 0;
-		float prefixSymbolsCoverage = 0;
+		float prefixSymbolsRowCoverage = 0;
 
 		ofstream hashParamsFile;
 		if (writeFiles)
@@ -870,20 +870,30 @@ int main(int argc, char** argv)
 		if (runOptimize)
 		{
 			if (!optimizeHashes(optMaxTableSize, optMaxSeed, optMinBucketSize,
-				unitSymbolsSize, unitSymbolsSeed, unitSymbolsBucketSize, unitSymbolsCoverage,
-				unitLongNamesSize, unitLongNamesSeed, unitLongNamesBucketSize, unitLongNamesCoverage,
-				prefixSymbolsSize, prefixSymbolsSeed, prefixSymbolsBucketSize, prefixSymbolsCoverage,
-				unitPluralsSize, unitPluralsSeed, unitPluralsBucketSize, unitPluralsCoverage))
+				unitSymbolsSize, unitSymbolsSeed, unitSymbolsBucketSize, unitSymbolsRowCoverage,
+				unitLongNamesSize, unitLongNamesSeed, unitLongNamesBucketSize, unitLongNamesRowCoverage,
+				prefixSymbolsSize, prefixSymbolsSeed, prefixSymbolsBucketSize, prefixSymbolsRowCoverage,
+				unitPluralsSize, unitPluralsSeed, unitPluralsBucketSize, unitPluralsRowCoverage))
 			{
-				throw runtime_error("optimize returned false");
+				throw runtime_error("optimizeHashes() returned false");
 			}
+
 			cout.flush();
-			printf("      UnitSymbols_HashTable[%d][%d] %.2g%% used, seed=%d\n", unitSymbolsSize, unitSymbolsBucketSize, unitSymbolsCoverage * 100, unitSymbolsSeed);
+			printf("  Hash table stats:\n");
+			printf("      UnitSymbols_HashTable[%d][%d] %.2g%% rows and %.2g%% elements used, seed=%d\n",
+				unitSymbolsSize, unitSymbolsBucketSize, unitSymbolsRowCoverage * 100, 
+				100.0 * PhysicalQuantity::KnownUnitsLength / unitSymbolsSize / unitSymbolsBucketSize, unitSymbolsSeed);
 #ifndef NO_LONG_NAMES
-			printf("    UnitLongNames_HashTable[%d][%d] %.2g%% used, seed=%d\n", unitLongNamesSize, unitLongNamesBucketSize, unitLongNamesCoverage * 100, unitLongNamesSeed);
-			printf("      UnitPlurals_HashTable[%d][%d] %.2g%% used, seed=%d\n", unitPluralsSize, unitPluralsBucketSize, unitPluralsCoverage * 100, unitPluralsSeed);
+			printf("    UnitLongNames_HashTable[%d][%d] %.2g%% rows and %.2g%% elements used, seed=%d\n",
+				unitLongNamesSize, unitLongNamesBucketSize, unitLongNamesRowCoverage * 100,
+				100.0 * PhysicalQuantity::KnownUnitsLength / unitLongNamesSize / unitLongNamesBucketSize, unitLongNamesSeed);
+			printf("      UnitPlurals_HashTable[%d][%d] %.2g%% rows and %.2g%% elements used, seed=%d\n",
+				unitPluralsSize, unitPluralsBucketSize, unitPluralsRowCoverage * 100,
+				100.0 * PhysicalQuantity::KnownUnitsLength / unitPluralsSize / unitPluralsBucketSize, unitPluralsSeed);
 #endif
-			printf("    PrefixSymbols_HashTable[%d][%d] %.2g%% used, seed=%d\n", prefixSymbolsSize, prefixSymbolsBucketSize, prefixSymbolsCoverage * 100, prefixSymbolsSeed);
+			printf("    PrefixSymbols_HashTable[%d][%d] %.2g%% rows and %.2g%% elements used, seed=%d\n",
+				prefixSymbolsSize, prefixSymbolsBucketSize, prefixSymbolsRowCoverage * 100,
+				100.0 * PhysicalQuantity::KnownPrefixesLength / prefixSymbolsSize / prefixSymbolsBucketSize, prefixSymbolsSeed);
 			fflush(stdout);
 		}
 
