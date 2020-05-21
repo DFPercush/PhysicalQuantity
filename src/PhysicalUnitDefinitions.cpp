@@ -53,7 +53,34 @@ DEFINE_CONST_ARRAY(PhysicalQuantity::UnitDefinition, PhysicalQuantity::KnownUnit
 // Conflicts with fundamental charge
 //{"e", "e",         { 0, 0, 0, 0, 0}, 0, 2.7182818284590452353602874713527, NO_PREFIX},
 
+// Mass
 {UN("g", "gram","grams"),0.001, {1,0,0,0,0}}, // Note: Update gramIndex if this shifts!
+{UN("amu", "atomic_mass_unit","atomic_mass_units"),0.000000000000000000000000001660539, {1,0,0,0,0}, NOPREFIX},
+{UN("carat", "carat","carats"),0.0002, {1,0,0,0,0}, NOPREFIX},
+{UN("dram", "dram","drams"),0.001771845, {1,0,0,0,0}, NOPREFIX},
+{UN("hundredweight", "hundredweight","hundredweights"),45.35924, {1,0,0,0,0}, NOPREFIX},
+{UN("longton", "longton","longtons"),1016.05, {1,0,0,0,0}, NOPREFIX},
+{UN("long_ton", "long_ton","long_tons"),1016.05, {1,0,0,0,0}, NOPREFIX},
+{UN("t", "metric_ton","metric_tons"),1000, {1,0,0,0,0}, NOPREFIX},
+{UN("oz", "ounce","ounces"),0.02834952, {1,0,0,0,0}, NOPREFIX},
+{UN("lb", "pound","pounds"),0.4535924, {1,0,0,0,0}, NOPREFIX},
+{UN("lbs", "pound","lbs"),0.4535924, {1,0,0,0,0}, NOPREFIX},
+{UN("lb_mass", "pound_mass","pounds_mass"),0.4535924, {1,0,0,0,0}, NOPREFIX},
+{UN("lbs_mass", "pound_mass","lbs_mass"),0.4535924, {1,0,0,0,0}, NOPREFIX},
+{UN("shortton", "shortton","shorttons"),907.185, {1,0,0,0,0}, NOPREFIX},
+{UN("short_ton", "short_ton","short_tons"),907.185, {1,0,0,0,0}, NOPREFIX},
+{UN("slug", "slug","slugs"),14.5939, {1,0,0,0,0}, NOPREFIX},
+{UN("stick", "stick","sticks"),0.115, {1,0,0,0,0}, NOPREFIX},
+{UN("stone", "stone","stones"),6.350293, {1,0,0,0,0}, NOPREFIX},
+{UN("tola", "tola","tolas"),0.0116638, {1,0,0,0,0}, NOPREFIX},
+{UN("ton", "ton","tons"),907.1847, {1,0,0,0,0}, NOPREFIX},
+{UN("ozt", "troy_ounce","troy_ounces"),0.03110348, {1,0,0,0,0}, NOPREFIX},
+{UN("dwt", "pennyweight","pennyweights"),0.03110348/20, {1,0,0,0,0}, NOPREFIX},
+//{UN("grain", "grain","grains"),0.03110348/20/24, {1,0,0,0,0}},
+{UN("grain", "grain","grains"),0.00006479891, {1,0,0,0,0}, NOPREFIX}, // Same as prev line
+{UN("lbt", "troy_pound","troy_pounds"),0.03110348*12, {1,0,0,0,0}, NOPREFIX},
+{UN("lbst", "troy_pound","troy_pounds"),0.03110348*12, {1,0,0,0,0}, NOPREFIX},
+
 
 // Distance (Length)
 {UN("m", "meter","meters"),1, {0,1,0,0,0}},
@@ -74,23 +101,32 @@ DEFINE_CONST_ARRAY(PhysicalQuantity::UnitDefinition, PhysicalQuantity::KnownUnit
 
 
 //Area
-{UN("b", "barn","barns"), 1e-14, {0,2,0,0,0}},
-{UN("a", "are","ares"), 10, {0,2,0,0,0}, NOPREFIX},
-{UN("ha", "hectare","hectares"), 100, {0,2,0,0,0}, NOPREFIX},
-{UN("ac", "acre","acres"), 63.614935353264330736204577034477, {0,2,0,0,0}, NOPREFIX},
-{UN("ro", "rood","roods"), 31.807451957049310302429101433573, {0,2,0,0,0}, NOPREFIX},
+{UN("b", "barn","barns"), 1e-28, {0,2,0,0,0}},
+{UN("a", "are","ares"), 100, {0,2,0,0,0}, NOPREFIX},
+{UN("ha", "hectare","hectares"), 10000, {0,2,0,0,0}, NOPREFIX},
+{UN("ac", "acre","acres"), 4046.86, {0,2,0,0,0}, NOPREFIX},
+{UN("ro", "rood","roods"), 1011.714, {0,2,0,0,0}, NOPREFIX},
 
 
 // Volume
 {UN("L", "liter","liters"), 0.001, {0,3,0,0,0}},
 {UN("cc", "cubic_centimeter","cubic_centimeters"), 0.000001, {0,3,0,0,0}, NOPREFIX},
-{UN("gal", "gallon","gallons"), 0.003785411784, {0,3,0,0,0}, NOPREFIX},
+{UN("gal", "gallon","gallons"), .003785411784, {0,3,0,0,0}, NOPREFIX},
 {UN("qt", "quart","quarts"), 0.000946352946, {0,3,0,0,0}, NOPREFIX},
 {UN("pt", "pint","pints"), 0.000473176473, {0,3,0,0,0}, NOPREFIX},
-{UN("cu", "cup","cups"), 0.0002365882365, {0,3,0,0,0}, NOPREFIX},
+{UN("cup", "cup","cups"), 0.0002365882365, {0,3,0,0,0}, NOPREFIX},
 {UN("floz", "fluid_ounce","fluid_ounces"), 0.0000295735295625, {0,3,0,0,0}, NOPREFIX},
 {UN("tbsp", "tablespoon","tablespoons"), 0.00001478676478125, {0,3,0,0,0}, NOPREFIX},
 {UN("tsp", "teaspoon","teaspoons"), 0.00000492892159375, {0,3,0,0,0}, NOPREFIX},
+{UN("beerbarrel", "beerbarrel","beerbarrels"), .1173478, {0,3,0,0,0}, NOPREFIX},
+{UN("drop", "drop","drops"), 0.00000005, {0,3,0,0,0}, NOPREFIX},
+{UN("fldram", "fluid_dram","fluid_drams"), .000003696691, {0,3,0,0,0}, NOPREFIX},
+{UN("gill", "gill","gills"), .0001182941, {0,3,0,0,0}, NOPREFIX},
+{UN("hogshead", "hogshead","hogsheads"), .238481, {0,3,0,0,0}, NOPREFIX},
+{UN("minim", "minim","minims"), 0.00000006161152, {0,3,0,0,0}, NOPREFIX},
+{UN("oilbarrell", "oilbarrel","oilbarrels"), .1589873, {0,3,0,0,0}, NOPREFIX},
+
+
 
 //                  Ma Di Ti Te Cu
 
@@ -118,8 +154,8 @@ DEFINE_CONST_ARRAY(PhysicalQuantity::UnitDefinition, PhysicalQuantity::KnownUnit
 
 // Force
 {UN("N","newton","newtons"),1, {1,1,-2,0,0}}, //, NOBASELITERAL},
-{UN("lb","pound","lbs"),4.448221615260501, {1,1,-2,0,0}, NOPREFIX},
-{UN("lbs","pound","pounds"),4.448221615260501, {1,1,-2,0,0}, NOPREFIX},
+{UN("lb_force","pound_force","lbs_force"),4.448221615260501, {1,1,-2,0,0}, NOPREFIX},
+{UN("lbs_force","pound_force","pounds_force"),4.448221615260501, {1,1,-2,0,0}, NOPREFIX},
 
 
 

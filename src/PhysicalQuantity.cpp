@@ -1,6 +1,7 @@
 /*
 TODO: 
 	. initializer_list ? {1.23, {0,1,0,0,0}}
+	. Pay attention to NO_PREFIX in eval()
 */
 
 #include <PhysicalQuantity.h>
