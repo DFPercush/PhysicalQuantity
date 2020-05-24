@@ -201,6 +201,17 @@ int memcmp_romright(const char* left, const char* right, size_t len);
 int memcmp_romboth(const char* left, const char* right, size_t len);
 #endif
 
+template <typename T> T rom(const T& v)
+{
+#ifdef ROM_READ_BYTE
+	char buf[sizeof(T)];
+	romcpy(buf, &v, sizeof(T));
+	return *(T*)buf;
+#else
+	return v;
+#endif
+}
+
 
 //###########################################################################################
 // Main class
@@ -258,6 +269,7 @@ public:
 		bool isnumber() const;
 		bool isint() const;
 		CSubString trim() const;
+		const char* getPtr() const { return &str[start]; }
 #ifndef NO_STD_STRING
 		std::string toStdString();
 #endif
@@ -682,7 +694,7 @@ private:
 #ifndef NO_TEXT
 	static void parseUnits(const CSubString& unitStr, signed char (&dimOut)[(int)QuantityType::ENUM_MAX], num& factorOut, num& offsetOut); // throws if unknown/invalid unit
 	static void mulUnit(signed char (&dimOut)[(int)QuantityType::ENUM_MAX], const UnitDefinition& unit, signed int power, bool invert = false); // deals only with quantity dimension, conversion factors are handled elsewhere
-	int magdimReduce(const UnitDefinition& unit) const;  // Divide by what power of (unit) to minimize magdim? Used in text output logic.
+	int bestReductionPower(const UnitDefinition& unit) const;  // Divide by what power of (unit) to minimize magdim? Used in text output logic.
 	// in conjunction with sprint()
 	void sprintHalf(PhysicalQuantity& r, const UnitListBase & pu, bool& hasDenom, bool inDenomNow, int &md, int origmd, bool useSlash, size_t &outofs, size_t size, char * buf) const;
 	//void sprintHalf(const UnitListBase & pu, int &md, PhysicalQuantity &r, int origmd, bool useSlash, int &outofs, int size, char * buf) const;

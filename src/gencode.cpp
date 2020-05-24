@@ -198,9 +198,12 @@ unsigned int dumpHashTable(string rootpath, int& out_bucketSize, float& out_cove
 	int* counts = new int[hashTableSize];
 	for (int i = 0; i < arrayLen; i++)
 	{
-		hashes[i] = PhysicalQuantity::cstrHasherTiny(l_seed)(
-			(*(const char**)((const char*)(pArray) + (elementSize * i) + memberOfs))
-			) % (hashTableSize);
+		const char* str = (*(const char**)((const char*)(pArray)+(elementSize * i) + memberOfs));
+		if (str[0] == 0) { continue; }
+		hashes[i] = PhysicalQuantity::cstrHasherTiny(l_seed)(str) % hashTableSize;
+		//hashes[i] = PhysicalQuantity::cstrHasherTiny(l_seed)(
+		//	(*(const char**)((const char*)(pArray) + (elementSize * i) + memberOfs))
+		//	) % (hashTableSize);
 	}
 	int maxCount = 0;
 	int thiscount;

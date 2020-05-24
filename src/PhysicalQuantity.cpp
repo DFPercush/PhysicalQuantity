@@ -244,20 +244,18 @@ unsigned int PhysicalQuantity::magdim() const
 }
 
 #ifndef NO_TEXT
-int PhysicalQuantity::magdimReduce(const UnitDefinition& unit) const
+int PhysicalQuantity::bestReductionPower(const UnitDefinition& unit) const
 {
 	unsigned int mdorig = magdim();
 	int after = 0;
 	for (int iq = 0; iq < (int)QuantityType::ENUM_MAX; iq++)
 	{
-		after += dim[iq] - unit.dim[iq];
+		after += abs(dim[iq] - unit.dim[iq]);
 	}
 	int mdUnitDiff = ((after >= 0) ? after : -after) - (int)mdorig;
 
-	if (mdUnitDiff == 0) 
-	{
-		return 0;
-	}
+	if (mdUnitDiff == 0) { return 0; }
+
 	int direction = (mdUnitDiff < 0) ? 1 : -1;
 	int testpow = 0;
 	int lastpow;
@@ -279,6 +277,7 @@ int PhysicalQuantity::magdimReduce(const UnitDefinition& unit) const
 		if (after < 0) { after = -after; }
 	} while (after < (int)mdlast);
 	return lastpow;
+	// */
 }
 
 
@@ -607,28 +606,66 @@ void PhysicalQuantity::sprintHalf(PhysicalQuantity& r, const PhysicalQuantity::U
 		sprintHalfTryUnit(pu[ipu].iUnit, r, origmd, hasDenom, useSlash, inDenomNow, plen, outofs, size, buf, ipre, md, true);
 	}
 
-	// That's all the preferred units. Is there anything left over?
-	if (dim[(int)QuantityType::MASS] > 0)
+	//// That's all the preferred units. Is there anything left over?
+	//if (dim[(int)QuantityType::MASS] > 0)
+	//{
+	//	// Try kilogram first as a special case, because its standard unit combines a prefix.
+	//	sprintHalfTryUnit(gramIndex, r, origmd, hasDenom, useSlash, inDenomNow, 1, outofs, size, buf, kiloIndex, md, false);
+	//}
+
+	// Use the unit which reduces magdim the most, repeat.
+	while (r.magdim() != 0)
 	{
-		// Try kilogram first as a special case, because its standard unit combines a prefix.
-		sprintHalfTryUnit(gramIndex, r, origmd, hasDenom, useSlash, inDenomNow, 1, outofs, size, buf, kiloIndex, md, false);
-	}
- 	for (unitIndex_t iu = 0; iu < KnownUnitsLength && md != 0; iu++)
-	{
-		sprintHalfTryUnit(iu, r, origmd, hasDenom, useSlash, inDenomNow, 0, outofs, size, buf, -1, md, false);
+		int maxReduction = r.magdim();
+		int iMaxReduction = -1;
+ 		for (unitIndex_t iu = 0; iu < KnownUnitsLength && md != 0; iu++)
+		{
+			auto unit = rom(KnownUnits[iu]);
+			//sprintHalfTryUnit(iu, r, origmd, hasDenom, useSlash, inDenomNow, 0, outofs, size, buf, -1, md, false);
+			//if (string("s") == KnownUnits[iu].symbol) _CrtDbgBreak();
+			int testPower = r.bestReductionPower(unit);
+			if (testPower == 0) { continue; }
+			int testReduction = 0;
+
+			for (int idim = 0; idim < 5; idim++)
+			{
+				testReduction += abs(r.dim[idim] - (unit.dim[idim] * testPower));
+			}
+
+			//if (testReduction != 0 && abs(testReduction) < abs(maxReduction))
+			if (testReduction < maxReduction)
+			{
+				maxReduction = testReduction;
+				iMaxReduction = iu;
+			}
+		}
+		int prefixIndex = (iMaxReduction == gramIndex) ? kiloIndex : -1;
+		sprintHalfTryUnit(iMaxReduction, r, origmd, hasDenom, useSlash, inDenomNow, 0, outofs, size, buf, prefixIndex, md, false);
 	}
 }
+
 void PhysicalQuantity::sprintHalfTryUnit(PQ::unitIndex_t iTestUnit, PhysicalQuantity & r, int origmd, bool & hasDenom, bool useSlash, bool inDenomNow, int plen, size_t & outofs, size_t size, char * buf, PhysicalQuantity::prefixIndex_t ipre, int & md, bool preferred) const
 {
-#ifdef ROM_READ_BYTE	
-	char testUnitBuf[sizeof(UnitDefinition)];
-	romcpy(testUnitBuf, &(KnownUnits[iTestUnit]), sizeof(UnitDefinition));
-	const UnitDefinition& testunit = *(UnitDefinition*)testUnitBuf;
+//#ifdef ROM_READ_BYTE
+//	char testUnitBuf[sizeof(UnitDefinition)];
+//	romcpy(testUnitBuf, &(KnownUnits[iTestUnit]), sizeof(UnitDefinition));
+//	const UnitDefinition& testunit = *(UnitDefinition*)testUnitBuf;
+//	Prefix preval;
+//	if (ipre >= 0) { romcpy(&preval, &KnownPrefixes[ipre], sizeof(Prefix)); }
+//	plen = strlen(preval.symbol);
+//#else
+//	const PhysicalQuantity::UnitDefinition & testunit = PQ::KnownUnits[iTestUnit];
+//	plen = strlen(PhysicalQuantity::KnownPrefixes[ipre].symbol);
+//#endif
+
+	const PhysicalQuantity::UnitDefinition & testunit = rom(PQ::KnownUnits[iTestUnit]);
 	Prefix preval;
-	if (ipre >= 0) { romcpy(&preval, &KnownPrefixes[ipre], sizeof(Prefix)); }
-#else
-	const PhysicalQuantity::UnitDefinition & testunit = PQ::KnownUnits[iTestUnit];
-#endif
+	if (ipre != -1) 
+	{
+		preval = rom(KnownPrefixes[ipre]); 
+		plen = (int)strlen(preval.symbol);
+	}
+
 	int ulen = (int)strlen(testunit.symbol);
 	int reduceExp;
 	unsigned int mdorig = magdim();
@@ -656,7 +693,7 @@ void PhysicalQuantity::sprintHalfTryUnit(PQ::unitIndex_t iTestUnit, PhysicalQuan
 
 	if (!noDiff)
 	{
-		reduceExp = r.magdimReduce(testunit);
+		reduceExp = r.bestReductionPower(testunit);
 	}
 	if (reduceExp != 0)
 	{

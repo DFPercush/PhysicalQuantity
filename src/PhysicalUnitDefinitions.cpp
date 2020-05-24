@@ -143,6 +143,7 @@ DEFINE_CONST_ARRAY(PhysicalQuantity::UnitDefinition, PhysicalQuantity::KnownUnit
 
 // Energy
 {UN("J","joule","joules"),1, {1,2,-2,0,0}},
+{UN("eV","electron_volt","electron_volts"),1.602176634e-19, {1,2,-2,0,0}},
 
 //                        Ma Di Ti Te Cu
 // Power

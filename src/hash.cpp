@@ -30,16 +30,21 @@ const int PhysicalQuantity::default_hashTableSize_UnitPlurals = 50;
 // without needing a complex general case algorithm.
 size_t PhysicalQuantity::cstrHasherTiny::operator()(const CSubString& s) const
 {
-	//return murmur3_32((unsigned char*)s, strlen(s), 0x5f4d9a1b);
+	//return murmur3_32((const unsigned char*)(s.getPtr()), s.length(), 0x5f4d9a1b);
+	
 	size_t ret = 0;
 	size_t c = (size_t)s[0];
-	//for (int pos = 0; s[pos] != 0; pos++)
 	int pos = 0;
 	while (c != 0)
 	{
 		//ret += ((s[pos] - 64) * 0xB9CD) + s[pos];
 		//ret += ((c) * seed) + c - 64;
-		ret += ((c) * 8) + c - 64;
+		//ret += ((c) * 8) + c - 64;
+		//ret = (ret << 1) ^ seed ^ c;
+		//ret = ((ret << 1) | ((ret & 0x80) >> 7)) ^ seed ^ c;
+		ret ^= seed;
+		ret += c;
+		
 		pos++;
 		c = (size_t)s[pos];
 	}
