@@ -63,10 +63,10 @@ DEFINE_CONST_ARRAY(PhysicalQuantity::UnitDefinition, PhysicalQuantity::KnownUnit
 {UN("long_ton", "long_ton","long_tons"),1016.05, {1,0,0,0,0}, NOPREFIX},
 {UN("t", "metric_ton","metric_tons"),1000, {1,0,0,0,0}, NOPREFIX},
 {UN("oz", "ounce","ounces"),0.02834952, {1,0,0,0,0}, NOPREFIX},
-{UN("lb", "pound","pounds"),0.4535924, {1,0,0,0,0}, NOPREFIX},
-{UN("lbs", "pound","lbs"),0.4535924, {1,0,0,0,0}, NOPREFIX},
-{UN("lb_mass", "pound_mass","pounds_mass"),0.4535924, {1,0,0,0,0}, NOPREFIX},
 {UN("lbs_mass", "pound_mass","lbs_mass"),0.4535924, {1,0,0,0,0}, NOPREFIX},
+{UN("lb_mass", "pound_mass","pounds_mass"),0.4535924, {1,0,0,0,0}, NOPREFIX},
+{UN("lb", "pound","pounds"),0.4535924, {1,0,0,0,0}, NOPREFIX},
+{UN("lbs", "pound","pounds"),0.4535924, {1,0,0,0,0}, NOPREFIX},
 {UN("shortton", "shortton","shorttons"),907.185, {1,0,0,0,0}, NOPREFIX},
 {UN("short_ton", "short_ton","short_tons"),907.185, {1,0,0,0,0}, NOPREFIX},
 {UN("slug", "slug","slugs"),14.5939, {1,0,0,0,0}, NOPREFIX},
@@ -155,8 +155,8 @@ DEFINE_CONST_ARRAY(PhysicalQuantity::UnitDefinition, PhysicalQuantity::KnownUnit
 
 // Force
 {UN("N","newton","newtons"),1, {1,1,-2,0,0}}, //, NOBASELITERAL},
-{UN("lb_force","pound_force","lbs_force"),4.448221615260501, {1,1,-2,0,0}, NOPREFIX},
 {UN("lbs_force","pound_force","pounds_force"),4.448221615260501, {1,1,-2,0,0}, NOPREFIX},
+{UN("lb_force","pound_force","lbs_force"),4.448221615260501, {1,1,-2,0,0}, NOPREFIX},
 
 
 
