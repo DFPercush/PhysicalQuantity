@@ -188,6 +188,7 @@
 
 // get size_t
 #include <stddef.h>
+#include <math.h>
 
 // end standard library dependencies
 //========================================
@@ -476,7 +477,8 @@ public:
 		{
 			unitIndex_t iUnit;
 			prefixIndex_t iPrefix;
-			unitPower_t power; // TODO, for convert()
+			unitPower_t power; // TODO: <-- for convert()
+			bool anyPrefix;
 		};
 		virtual ~UnitListBase();
 	protected:
@@ -543,6 +545,7 @@ public:
 	num convert(const CSubString& units) const;
 	//size_t sprint(char* buf, size_t bufsize, unsigned int precision, bool useSlash = true) const;
 	size_t sprint(char* buf, size_t bufsize, unsigned int precision, const UnitListBase& pu, bool useSlash = true) const;
+	size_t sprint2(char* buf, size_t bufsize, unsigned int precision, const UnitListBase& pu, bool useSlash = true) const;
 	size_t sprint(char* buf, size_t bufsize, unsigned int precision, const CSubString& sspu, bool useSlash = true) const; // TODO: inline
 	size_t sprint(char* buf, size_t bufsize, unsigned int precision, const CSubString& sspu, void* puBuf, size_t puBufSize, bool useSlash = true) const;
 	static size_t printNum(char* buf, size_t size, num value, unsigned int precision);
@@ -554,13 +557,17 @@ public:
 	static PhysicalQuantity get1s();
 	static PhysicalQuantity get1K();
 	static PhysicalQuantity get1A();
+	static PhysicalQuantity fromUnit(const UnitDefinition& u);
 #else // NO_INLINE
 	static PhysicalQuantity get1kg() { const signed char d[5]={1,0,0,0,0}; return PhysicalQuantity(1.0, d); }
 	static PhysicalQuantity get1m() { const signed char d[5]={0,1,0,0,0}; return PhysicalQuantity(1.0, d); }
 	static PhysicalQuantity get1s() { const signed char d[5]={0,0,1,0,0}; return PhysicalQuantity(1.0, d); }
 	static PhysicalQuantity get1K() { const signed char d[5]={0,0,0,1,0}; return PhysicalQuantity(1.0, d); }
 	static PhysicalQuantity get1A() { const signed char d[5]={0,0,0,0,1}; return PhysicalQuantity(1.0, d); }
+	PhysicalQuantity fromUnit(const UnitDefinition& u) { PhysicalQuantity ret(u.factor, u.dim); return ret; }
 #endif // #else of #ifdef NO_INLINE
+
+	static PhysicalQuantity fromUnit(const UnitDefinition& u, int power = 1);
 
 	bool isScalar();
 	num getScalar(); // Error if the value has units
@@ -641,6 +648,16 @@ public:
 	PhysicalQuantity operator+ (num rhs) const;
 	PhysicalQuantity operator- (num rhs) const;
 
+	PhysicalQuantity& operator *= (const PhysicalQuantity& rhs) { *this = (*this) * rhs; return *this; }
+	PhysicalQuantity& operator /= (const PhysicalQuantity& rhs) { *this = (*this) / rhs; return *this; }
+	PhysicalQuantity& operator += (const PhysicalQuantity& rhs) { *this = (*this) + rhs; return *this; }
+	PhysicalQuantity& operator -= (const PhysicalQuantity& rhs) { *this = (*this) - rhs; return *this; }
+	PhysicalQuantity& operator *= (const num& rhs) { *this = (*this) * rhs; return *this; }
+	PhysicalQuantity& operator /= (const num& rhs) { *this = (*this) / rhs; return *this; }
+	PhysicalQuantity& operator += (const num& rhs) { *this = (*this) + rhs; return *this; }
+	PhysicalQuantity& operator -= (const num& rhs) { *this = (*this) - rhs; return *this; }
+
+
 	bool operator==(const PhysicalQuantity& rhs) const;
 	bool operator>=(const PhysicalQuantity& rhs) const;
 	bool operator<=(const PhysicalQuantity& rhs) const;
@@ -694,12 +711,13 @@ private:
 #ifndef NO_TEXT
 	static void parseUnits(const CSubString& unitStr, signed char (&dimOut)[(int)QuantityType::ENUM_MAX], num& factorOut, num& offsetOut); // throws if unknown/invalid unit
 	static void mulUnit(signed char (&dimOut)[(int)QuantityType::ENUM_MAX], const UnitDefinition& unit, signed int power, bool invert = false); // deals only with quantity dimension, conversion factors are handled elsewhere
-	int bestReductionPower(const UnitDefinition& unit) const;  // Divide by what power of (unit) to minimize magdim? Used in text output logic.
+	int bestReductionPower(const UnitDefinition& unit, bool preferred = false) const;  // Divide by what power of (unit) to minimize magdim? Used in text output logic.
 	// in conjunction with sprint()
 	void sprintHalf(PhysicalQuantity& r, const UnitListBase & pu, bool& hasDenom, bool inDenomNow, int &md, int origmd, bool useSlash, size_t &outofs, size_t size, char * buf) const;
 	//void sprintHalf(const UnitListBase & pu, int &md, PhysicalQuantity &r, int origmd, bool useSlash, int &outofs, int size, char * buf) const;
 	void sprintHalfTryUnit(unitIndex_t iTestUnit, PhysicalQuantity & r, int origmd, bool & hasDenom, bool useSlash, bool inDenomNow, int plen, size_t & outofs, size_t size, char * buf, prefixIndex_t ipre, int & md, bool preferred) const;
 	void WriteOutputUnit(int plen, int ulen, int reduceExp, size_t &outofs, size_t size, char * buf, prefixIndex_t ipre, const PhysicalQuantity::UnitDefinition & testunit) const;
+	void WriteOutputUnit(const PhysicalQuantity::UnitDefinition& unit, int power, prefixIndex_t iPrefix, char* buf, size_t size, size_t cursorPos, size_t &out_cursorPosAfter) const;
 #endif
 
 

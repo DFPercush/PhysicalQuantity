@@ -13,11 +13,6 @@ DEFINE_CONST_ARRAY(PhysicalQuantity::num, PhysicalQuantity::KnownUnitOffsets) =
 	255.37222222222222222222222222222  // degF
 };
 const PhysicalQuantity::unitIndex_t PhysicalQuantity::KnownUnitOffsetsLength = sizeof(KnownUnitOffsets) / sizeof(PhysicalQuantity::num);
-// dekaIndex: If any more prefixes are added, this should be the index of {"da", "deka", 10}
-// Used to optimize lookups because this is the only prefix longer than 1 char
-// If that changes, might need to change findUnit()
-const PhysicalQuantity::prefixIndex_t PhysicalQuantity::dekaIndex = 10; // Index, not value, although it's fitting.
-const PhysicalQuantity::prefixIndex_t PhysicalQuantity::kiloIndex = 1; // Index, not value.
 
 #ifndef NO_LONG_NAMES
 #define UN(sy, lo, pl) (sy), (lo), (pl)
@@ -135,14 +130,19 @@ DEFINE_CONST_ARRAY(PhysicalQuantity::UnitDefinition, PhysicalQuantity::KnownUnit
 {UN("Hz", "hertz",""),1, {0,0,-1,0,0}},
 {UN("min", "minute","minutes"),60, {0,0,1,0,0}, NOPREFIX},
 {UN("hr", "hour","hours"),3600, {0,0,1,0,0}, NOPREFIX},
+{UN("h", "hour","hours"),3600, {0,0,1,0,0}, NOPREFIX},
 
 // Speed
 {UN("mph","mile_per_hour","miles_per_hour"),1609.3439999931/3600.0, {0,1,-1,0,0}, NOPREFIX},
 {UN("kt","knot","knots"),0.51444444444444444444444444444444, {0,1,-1,0,0}, NOPREFIX},
 
+// Acceleration
+{UN("g0","gee","gees"),9.80665, {0,1,-2,0,0}, NOPREFIX},
+
 
 // Energy
 {UN("J","joule","joules"),1, {1,2,-2,0,0}},
+{UN("Wh","watt-hour","watt-hours"),3600, {1,2,-2,0,0}},
 {UN("eV","electron_volt","electron_volts"),1.602176634e-19, {1,2,-2,0,0}},
 
 //                        Ma Di Ti Te Cu
@@ -226,11 +226,12 @@ const PhysicalQuantity::unitIndex_t PhysicalQuantity::KnownUnitsLength = sizeof(
 DEFINE_CONST_ARRAY(PhysicalQuantity::Prefix, PhysicalQuantity::KnownPrefixes) =
 {
 // Putting more common ones first
+{PN("", ""), 1 },
 {PN("c", "centi"), 1e-2  },
 {PN("k", "kilo"),  1e3   },
 {PN("m", "milli"), 1e-3  },
 {PN("M", "mega"),  1e6   },
-{PN("u", "micro"), 1e-6  },  // Should I make the source files utf-8 for greek letters? Ehhhhh...
+{PN("u", "micro"), 1e-6  },  // Should I make the source files utf-8 for greek letters? Would require re-coding a lot to handle wchar_t... meh
 {PN("G", "giga"),  1e9   },
 {PN("n", "nano"),  1e-9  },
 {PN("T", "tera"),  1e12  },
@@ -248,6 +249,11 @@ DEFINE_CONST_ARRAY(PhysicalQuantity::Prefix, PhysicalQuantity::KnownPrefixes) =
 {PN("Y", "yotta"), 1e24  }
 };
 const PhysicalQuantity::prefixIndex_t PhysicalQuantity::KnownPrefixesLength = sizeof(PhysicalQuantity::KnownPrefixes) / sizeof(PhysicalQuantity::Prefix);
+// dekaIndex: If any more prefixes are added, this should be the index of {"da", "deka", 10}
+// Used to optimize lookups because this is the only prefix longer than 1 char
+// If that changes, might need to change findUnit()
+const PhysicalQuantity::prefixIndex_t PhysicalQuantity::dekaIndex = 11; // Index, not value
+const PhysicalQuantity::prefixIndex_t PhysicalQuantity::kiloIndex = 2; // Index, not value.
 
 #endif //#if defined(PQ_GENCODE) || !defined(ROM_READ_BYTE)
 

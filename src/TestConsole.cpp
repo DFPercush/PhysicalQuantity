@@ -23,11 +23,17 @@ void showHelp()
 {
 	printf("Options:\n" \
 	"-c use convert() and print the numeric result\n" \
+	"   (Units must match exactly)\n" \
 	"-s use sprint() and print the text result\n" \
+	"   (Output units are a suggestion)\n" \
 	"-i interactive mode \n" \
 	"--help\n" \
 	"-?\n" \
-	"/?       this help\n");
+	"/?       this help\n" \
+	"Recommended for most cases: pq -i -s\n" \
+	"Example: 12 mi / 10 min, *m hr \n" \
+	"    ---> 115.87276799950321 km / hr\n\n"
+	);
 }
 
 void runEval(const csubstr& line)
@@ -152,16 +158,18 @@ int main(int argc, char** argv)
 		return 1;
 	}
 
-	if (argc <= 1)
-	{
-		showHelp();
-		return 0;
-	}
-
 	bool interactive = false;
 	bool useConvert = false;
 	bool useSprint = false;
 	int lastOptionArg = 0;
+
+	if (argc <= 1)
+	{
+		showHelp();
+		interactive = true;
+		useSprint = true;
+	}
+
 	for (int iArg = 1; iArg < argc; iArg++)
 	{
 		if (!strcmp(argv[iArg], "test"))
@@ -226,7 +234,7 @@ int main(int argc, char** argv)
 	{
 		printf("Warning: You are in interactive mode without setting any output method.\n");
 	}
-	printf("expression [ , unitsOut ] | 'sprint' | 'convert' | 'quit' | 'exit'\n");
+	printf("expression [ , preferred output units ] | 'sprint' | 'convert' | 'quit' | 'exit'\n");
 	string line_std_string;
 	while (true)
 	{

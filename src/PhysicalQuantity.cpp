@@ -244,7 +244,7 @@ unsigned int PhysicalQuantity::magdim() const
 }
 
 #ifndef NO_TEXT
-int PhysicalQuantity::bestReductionPower(const UnitDefinition& unit) const
+int PhysicalQuantity::bestReductionPower(const UnitDefinition& unit, bool preferred) const
 {
 	unsigned int mdorig = magdim();
 	int after = 0;
@@ -254,7 +254,7 @@ int PhysicalQuantity::bestReductionPower(const UnitDefinition& unit) const
 	}
 	int mdUnitDiff = ((after >= 0) ? after : -after) - (int)mdorig;
 
-	if (mdUnitDiff == 0) { return 0; }
+	if (mdUnitDiff == 0) { return (preferred ? 1 : 0); }
 
 	int direction = (mdUnitDiff < 0) ? 1 : -1;
 	int testpow = 0;
@@ -550,6 +550,19 @@ void PhysicalQuantity::parse(const CSubString& text_arg)
 	value += unitOfs;
 }
 
+void PhysicalQuantity::WriteOutputUnit(const PhysicalQuantity::UnitDefinition& unit, int power, prefixIndex_t iPrefix, char* buf, size_t totalBufferSize, size_t cursorPos, size_t& out_cursorPosAfter) const
+{
+	int ulen = (int)strlen(unit.symbol); // TODO: switch long names
+	int plen = 0;
+	Prefix pre;
+	if (iPrefix != -1)
+	{
+		pre = rom(KnownPrefixes[iPrefix]);
+		plen = (int)strlen(pre.symbol);
+	}
+	WriteOutputUnit(plen, ulen, power, out_cursorPosAfter, totalBufferSize, buf, iPrefix, unit);
+}
+
 void PhysicalQuantity::WriteOutputUnit(int plen, int ulen, int reduceExp, size_t &outofs, size_t size, char * buf, PhysicalQuantity::prefixIndex_t ipre, const PhysicalQuantity::UnitDefinition & testunit) const
 {
 	size_t reduceExpLen = 0;
@@ -729,7 +742,9 @@ void PhysicalQuantity::sprintHalfTryUnit(PQ::unitIndex_t iTestUnit, PhysicalQuan
 	}
 	md = r.magdim();
 }
-size_t PhysicalQuantity::sprint(char* buf, size_t size, unsigned int precision, const UnitListBase& pu, bool useSlash) const
+
+// older one
+size_t PhysicalQuantity::sprint2(char* buf, size_t size, unsigned int precision, const UnitListBase& pu, bool useSlash) const
 {
 	PhysicalQuantity r = *this;
 	int md, origmd;
@@ -790,6 +805,217 @@ size_t PhysicalQuantity::sprint(char* buf, size_t size, unsigned int precision, 
 	if (outofs < size) { buf[outofs] = 0; }
 	else if (size > 0) { buf[size - 1] = 0; }
 	return outofs + 1;
+}
+
+
+// newer one
+size_t PhysicalQuantity::sprint(char* buf, size_t bufsize, unsigned int precision, const UnitListBase& pu, bool useSlash) const
+{
+	PhysicalQuantity r = *this;
+	int md, origmd;
+	origmd = magdim();
+	md = origmd;
+	struct outputElement
+	{
+		unitIndex_t unit;
+		prefixIndex_t prefix;
+		signed char power;
+		//bool preferred; // Do not automatically assign a prefix
+		char flags;
+	};
+	const int PREFERRED = 1;
+	const int ANYPREFIX = 2;
+
+	constexpr int outslen = 10;
+	outputElement outs[outslen];
+	int nouts = 0;
+	int p;
+	for (int ipu = 0; ipu < pu.count(); ipu++)
+	{
+		if (nouts >= outslen)
+		{
+#ifdef NO_THROW
+			errorHandler(errorUserContext, E_MEMORY);
+#else
+			throw bad_alloc();
+#endif
+		}
+		UnitDefinition unit = rom(KnownUnits[pu[ipu].iUnit]);
+		p = r.bestReductionPower(unit, true);
+		if (p != 0)
+		{
+			outs[nouts].unit = pu[ipu].iUnit;
+			outs[nouts].power = p;
+			outs[nouts].prefix = pu[ipu].iPrefix;
+			outs[nouts].flags = PREFERRED | (pu[ipu].anyPrefix ? ANYPREFIX : 0);
+			PhysicalQuantity d = PhysicalQuantity::fromUnit(unit, p);
+			if (pu[ipu].iPrefix != -1)
+			{
+				Prefix pre = rom(KnownPrefixes[pu[ipu].iPrefix]);
+				d *= pre.factor;
+			}
+			r /= d;
+			nouts++;
+			if (r.magdim() == 0) { break; }
+		}
+	}
+
+	while (r.magdim() != 0)
+	{
+		int iBestReductionUnit = -1;
+		int bestReductionUnitPower = 0;
+		int bestReductionMagdim = 0;
+		PhysicalQuantity bestReductionValue;
+		for (int iUnit = 0; iUnit < KnownUnitsLength; iUnit++)
+		{
+			if (nouts >= outslen)
+			{
+#ifdef NO_THROW
+				errorHandler(errorUserContext, E_MEMORY);
+#else
+				throw bad_alloc();
+#endif
+			}
+			UnitDefinition unit = rom(KnownUnits[iUnit]);
+			p = r.bestReductionPower(unit);
+			if (p != 0)
+			{
+				PhysicalQuantity d = PhysicalQuantity::fromUnit(unit, p);
+				PhysicalQuantity testValue = r / d;
+				int testMagdimDiff = r.magdim() - testValue.magdim();
+				if (testMagdimDiff > bestReductionMagdim)
+				{
+					iBestReductionUnit = iUnit;
+					bestReductionMagdim = testMagdimDiff;
+					bestReductionValue = testValue;
+					bestReductionUnitPower = p;
+					if (bestReductionValue.magdim() == 0) { break; }
+				}
+			}
+		}
+		//outs[nouts].unit = iUnit;
+		//outs[nouts].power = p;
+		//outs[nouts].prefix = -1;
+		////outs[nouts].preferred = false;
+		//outs[nouts].flags = 0;
+		//r /= d;
+		//nouts++;
+
+		outs[nouts].unit = iBestReductionUnit;
+		outs[nouts].power = bestReductionUnitPower;
+		outs[nouts].prefix = -1;
+		outs[nouts].flags = 0;
+		r = bestReductionValue;
+		nouts++;
+
+	}
+
+	// Sort negative powers to the end but preserve order otherwise
+	//int pos, neg;
+	//for (pos = 0; pos)
+	for (int i = 0; i < nouts; i++)
+	{
+		if (outs[i].power < 0)
+		{
+			for (int j = i + 1; j < nouts; j++)
+			{
+				if (outs[j].power > 0)
+				{
+					auto tmp = outs[j];
+					for (int k = i; k < j; k++)
+					{
+						outs[k + 1] = outs[k];
+					}
+					outs[i] = tmp;
+				}
+			}
+		}
+	}
+
+	// Determine a good prefix
+	if (r.value < 1 || r.value >= 1000)
+	{
+		for (int iPrefix = 0; iPrefix < KnownPrefixesLength; iPrefix++)
+		{
+			num test = r.value / rom(KnownPrefixes[iPrefix]).factor;
+			if (test >= 1 && test < 1000)
+			{
+				for (int iOut = 0; iOut < nouts; iOut++)
+				{
+					if ((((outs[iOut].flags & PREFERRED) == 0) || ((outs[iOut].flags & ANYPREFIX) != 0))
+					 && ((rom(KnownUnits[outs[iOut].unit]).flags & NOPREFIX) == 0))
+					{
+						outs[iOut].prefix = iPrefix;
+						r.value = test;
+						goto prefixSearchDone;
+					}
+				}
+			}
+		}
+	}
+	prefixSearchDone:
+
+	// Write the text out
+	size_t outpos = 0;
+	printNum(buf, bufsize, r.value,
+#ifdef LOW_PRECISION
+		8);
+#else
+		18);
+#endif
+	while (buf[outpos] != 0) { outpos++; }
+	bool foundNeg = false;
+	for (int iOut = 0; iOut < nouts; iOut++)
+	{
+		if (outs[iOut].power < 0) { foundNeg = true; }
+		if ((outs[iOut].power > 0) || (!useSlash))
+		{
+			WriteOutputUnit(rom(KnownUnits[outs[iOut].unit]), (int)outs[iOut].power, (int)outs[iOut].prefix, buf, bufsize, outpos, outpos);
+			//if (outs[iOut].prefix != -1)
+			//{
+			//	if (outpos + 2 >= bufsize) { goto errbuf; }
+			//	Prefix pre = rom(KnownPrefixes[outs[iOut].prefix]);
+			//	strcpy(&buf[outpos], pre.symbol);
+			//	outpos += strlen(pre.symbol);
+			//}
+			//UnitDefinition unit = rom(KnownUnits[outs[iOut].unit]);
+			//int ulen = strlen(unit.symbol); // TODO: switch long names
+			//if (outpos + ulen + 1 >= bufsize) { goto errbuf; }
+			//strcpy(&buf[outpos], unit.symbol);
+			//outpos += ulen;
+			//if (outs[iOut].power != 1)
+			//{
+			//	if (outpos + 1 >= bufsize) { goto errbuf; }
+			//	buf[outpos++] = '^';
+			//	printNum
+			//}
+		}
+	}
+	if (useSlash && foundNeg)
+	{
+		if (outpos + 4 >= bufsize) { goto errbuf; }
+		strcpy(&buf[outpos], " /");
+		outpos += 2;
+
+		for (int iOut = 0; iOut < nouts; iOut++)
+		{
+			if (outs[iOut].power < 0)
+			{
+				WriteOutputUnit(rom(KnownUnits[outs[iOut].unit]), -1 * outs[iOut].power, outs[iOut].prefix, buf, bufsize, outpos, outpos);
+			}
+		}
+	}
+
+	buf[outpos++] = 0;
+	return outpos;
+
+	errbuf:
+#ifdef NO_THROW
+	errorHandler(errorUserContext, E_MEMORY);
+#else
+	throw std::overflow_error("Buffer not large enough to print number.");
+#endif
+	return 0;
 }
 
 #if !defined(NO_STD_STRING) && !defined(NO_PRINTF)
@@ -1386,6 +1612,7 @@ bool PhysicalQuantity::operator<=(const PhysicalQuantity& rhs) const
 #ifndef NO_TEXT
 void PhysicalQuantity::UnitListBase::build(const CSubString& unitList, PhysicalQuantity::UnitListBase::UnitPref* buffer, int bufferSizeBytes, bool dynamic)   //(const CSubString& unitList, int* buffer, int bufferLen, bool dynamic)
 {
+	// TODO: "any prefix" wildcard designator in preferred units, e.g. "1 A, *s"
 	int len = (int)unitList.length();
 	int pos = 0;
 	unitIndeces = buffer;
@@ -1409,6 +1636,8 @@ void PhysicalQuantity::UnitListBase::build(const CSubString& unitList, PhysicalQ
 			word = csubstr(unitList, wordStart, wordEnd - wordStart);
 			iCaret = word.find_first_of('^');
 			if (iCaret != -1) { word = word.substr(0, iCaret); }
+			bool prefixWildcard = (word[0] == '*');
+			if (prefixWildcard) { word = word.substr(1); }
 
 			if (PhysicalQuantity::findUnit(word, unitIndex, prefixIndex))
 			{
@@ -1437,6 +1666,7 @@ void PhysicalQuantity::UnitListBase::build(const CSubString& unitList, PhysicalQ
 				}
 				unitIndeces[count_].iUnit = unitIndex;
 				unitIndeces[count_].iPrefix = prefixIndex;
+				unitIndeces[count_].anyPrefix = prefixWildcard;
 				count_++;
 			}
 
@@ -1956,12 +2186,23 @@ PhysicalQuantity PhysicalQuantity::get1m() {  signed char d[5]={0,1,0,0,0}; retu
 PhysicalQuantity PhysicalQuantity::get1s() {  signed char d[5]={0,0,1,0,0}; return PhysicalQuantity(1.0, d); }
 PhysicalQuantity PhysicalQuantity::get1K() {  signed char d[5]={0,0,0,1,0}; return PhysicalQuantity(1.0, d); }
 PhysicalQuantity PhysicalQuantity::get1A() {  signed char d[5]={0,0,0,0,1}; return PhysicalQuantity(1.0, d); }
+PhysicalQuantity PhysicalQuantity::fromUnit(const UnitDefinition& u) { PhysicalQuantity ret(u.factor, u.dim); return ret; }
 PhysicalQuantity operator*(PhysicalQuantity::num left, const PhysicalQuantity& right) { return PhysicalQuantity(left) * right; }
 PhysicalQuantity operator/(PhysicalQuantity::num left, const PhysicalQuantity& right) { return PhysicalQuantity(left) / right; }
 PhysicalQuantity operator+(PhysicalQuantity::num left, const PhysicalQuantity& right) { return PhysicalQuantity(left) + right; }
 PhysicalQuantity operator-(PhysicalQuantity::num left, const PhysicalQuantity& right) { return PhysicalQuantity(left) - right; }
 #endif //#ifdef NO_INLINE
 
+PhysicalQuantity PhysicalQuantity::fromUnit(const PhysicalQuantity::UnitDefinition& u, int power)
+{
+	signed char dim[5];
+	for (int i = 0; i < 5; i++) { dim[i] = u.dim[i] * power; }
+	num fac;
+	if (power == 1) { fac = u.factor; }
+	else { fac = ::pow(u.factor, power); }
+	PhysicalQuantity ret(fac, dim);
+	return ret;
+}
 
 
 #ifndef NO_TEXT
