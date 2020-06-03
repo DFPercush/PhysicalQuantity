@@ -1,5 +1,5 @@
 /*
-TODO: 
+TODO:
 	. initializer_list ? {1.23, {0,1,0,0,0}}
 	. Pay attention to NO_PREFIX in eval()
 */
@@ -290,12 +290,12 @@ void PhysicalQuantity::parseUnits(const CSubString& unitStr, signed char (&units
 	char c = 0;
 	num tempOfs = 0.0;
 	int ulen = unitStr.length();
-	if (ulen == 0) 
+	if (ulen == 0)
 	{
 		factorOut_arg = factorOut;
 		ofsOut_arg = ofsOut;
 		memcpy(unitsOut_arg, unitsOut, sizeof(unitsOut));
-		return; 
+		return;
 	}
 	int wordStart = 0;
 	int wordEnd = 0;
@@ -320,7 +320,7 @@ void PhysicalQuantity::parseUnits(const CSubString& unitStr, signed char (&units
 		if (denomNext) { denom = true; }
 		if (i < ulen) { c = unitStr[i]; }
 		else { c = 0; }
-		if (c == ' ' || c == '*' || c == '/' || i == ulen) 
+		if (c == ' ' || c == '*' || c == '/' || i == ulen)
 		{
 			wordEnd = i;
 			word = csubstr(unitStr, wordStart, wordEnd - wordStart);
@@ -332,7 +332,7 @@ void PhysicalQuantity::parseUnits(const CSubString& unitStr, signed char (&units
 					errorHandler(errorUserContext, E_INVALID_EXPRESSION);
 					return;
 #else
-					throw InvalidExpressionException("Only one '/' to indicate units denominator is allowed."); 
+					throw InvalidExpressionException("Only one '/' to indicate units denominator is allowed.");
 #endif //#ifdef NO_THROW
 				}
 				denomNext = true;
@@ -344,13 +344,13 @@ void PhysicalQuantity::parseUnits(const CSubString& unitStr, signed char (&units
 
 			if (word == "/")
 			{
-				if (denom) 
+				if (denom)
 				{
 #ifdef NO_THROW
 					errorHandler(errorUserContext, E_INVALID_EXPRESSION);
 					return;
 #else
-					throw InvalidExpressionException("Only one '/' to indicate units denominator is allowed."); 
+					throw InvalidExpressionException("Only one '/' to indicate units denominator is allowed.");
 #endif //#ifdef NO_THROW
 				}
 				denom = true;
@@ -410,7 +410,7 @@ void PhysicalQuantity::parseUnits(const CSubString& unitStr, signed char (&units
 						throw InvalidExpressionException("Unit not found");
 #endif
 					}
-				
+
 #ifdef ROM_READ_BYTE
 					romcpy(&foundUnitVal, &(KnownUnits[foundUnit]), sizeof(UnitDefinition));
 					if (foundPrefix >= 0)
@@ -443,7 +443,7 @@ void PhysicalQuantity::parseUnits(const CSubString& unitStr, signed char (&units
 							throw InvalidExpressionException("Can not handle an offset unit with a power greater than 1. (e.g. degrees F squared)");
 #endif
 						}
-						
+
 #ifdef ROM_READ_BYTE
 						romcpy(&tempOfs, &(KnownUnitOffsets[foundUnit]), sizeof(KnownUnitOffsets[0]));
 #else
@@ -520,10 +520,10 @@ void PhysicalQuantity::parse(const CSubString& text_arg)
 		errorHandler(errorUserContext, E_INVALID_EXPRESSION);
 		return;
 #else
-		throw InvalidExpressionException("Quantity can not be null."); 
+		throw InvalidExpressionException("Quantity can not be null.");
 #endif
 	}
-	
+
 	int firstSpace = (int)text.find_first_of(' ');
 	csubstr unitStr;
 	if (text.substr(0, firstSpace).isnumber())
@@ -567,27 +567,27 @@ void PhysicalQuantity::WriteOutputUnit(int plen, int ulen, int reduceExp, size_t
 {
 	size_t reduceExpLen = 0;
 	size_t nextLengthNeeded = plen + ulen + 1;
-	if (reduceExp > 1) 
+	if (reduceExp > 1)
 	{
 		reduceExpLen = (int)log10(reduceExp) + 1;
-		nextLengthNeeded += reduceExpLen; 
+		nextLengthNeeded += reduceExpLen;
 	}
-	else if (reduceExp < 0) // -1) 
+	else if (reduceExp < 0) // -1)
 	{
 		reduceExpLen = (int)log10(-reduceExp) + 2;
-		nextLengthNeeded += reduceExpLen; 
+		nextLengthNeeded += reduceExpLen;
 	}
 	if (outofs + nextLengthNeeded < size)
 	{
 		// write space
 		buf[outofs++] = ' ';
 		// write prefix
-		if (plen > 0 && ipre != -1) 
+		if (plen > 0 && ipre != -1)
 		{
 #ifdef ROM_READ_BYTE
 			romcpy(buf + outofs, KnownPrefixes[ipre].symbol, plen);
 #else
-			memcpy(buf + outofs, KnownPrefixes[ipre].symbol, plen); 
+			memcpy(buf + outofs, KnownPrefixes[ipre].symbol, plen);
 #endif
 			outofs += plen;
 		}
@@ -611,9 +611,6 @@ void PhysicalQuantity::WriteOutputUnit(int plen, int ulen, int reduceExp, size_t
 size_t PhysicalQuantity::sprint(char* buf, size_t bufsize, unsigned int precision, const UnitListBase& pu, bool useSlash) const
 {
 	PhysicalQuantity r = *this;
-	int md, origmd;
-	origmd = magdim();
-	md = origmd;
 	struct outputElement
 	{
 		unitIndex_t unit;
@@ -826,30 +823,30 @@ std::string PhysicalQuantity::toString() const
 
 	char numbuf[100];
 	//sprintf(numbuf, "%g", value);
-	printNum(numbuf, 100, value, 
+	printNum(numbuf, 100, value,
 #ifdef LOW_PRECISION
 	8);
 #else
 	18);
 #endif
-	ret = numbuf; 
+	ret = numbuf;
 
 	if (dim[(int)QuantityType::MASS] > 0) { ret += " kg"; }
-	if (dim[(int)QuantityType::MASS] > 1) 
+	if (dim[(int)QuantityType::MASS] > 1)
 	{
 		sprintf(numbuf, "%d", (static_cast<signed int>(dim[(int)QuantityType::MASS])));
 		ret += "^";
 		ret += numbuf;
 	}
 	if (dim[(int)QuantityType::DISTANCE] > 0) { ret += " m"; }
-	if (dim[(int)QuantityType::DISTANCE] > 1) 
+	if (dim[(int)QuantityType::DISTANCE] > 1)
 	{
 		sprintf(numbuf, "%d", (static_cast<signed int>(dim[(int)QuantityType::DISTANCE])));
 		ret += "^";
 		ret += numbuf;
 	}
 	if (dim[(int)QuantityType::TIME] > 0) { ret += " s"; }
-	if (dim[(int)QuantityType::TIME] > 1) 
+	if (dim[(int)QuantityType::TIME] > 1)
 	{
 		sprintf(numbuf, "%d", (static_cast<signed int>(dim[(int)QuantityType::TIME])));
 		ret += "^";
@@ -863,7 +860,7 @@ std::string PhysicalQuantity::toString() const
 		ret += numbuf;
 	}
 	if (dim[(int)QuantityType::CURRENT] > 0) { ret += " C"; }
-	if (dim[(int)QuantityType::CURRENT] > 1) 
+	if (dim[(int)QuantityType::CURRENT] > 1)
 	{
 		sprintf(numbuf, "%d", (static_cast<signed int>(dim[(int)QuantityType::CURRENT])));
 		ret += "^";
@@ -887,21 +884,21 @@ std::string PhysicalQuantity::toString() const
 
 
 	if (dim[(int)QuantityType::MASS] < 0) { ret += " kg"; }
-	if (dim[(int)QuantityType::MASS] < -1) 
+	if (dim[(int)QuantityType::MASS] < -1)
 	{
 		sprintf(numbuf, "%d", (-1 * static_cast<signed int>(dim[(int)QuantityType::MASS])));
 		ret += "^";
 		ret += numbuf;
 	}
 	if (dim[(int)QuantityType::DISTANCE] < 0) { ret += " m"; }
-	if (dim[(int)QuantityType::DISTANCE] < -1) 
+	if (dim[(int)QuantityType::DISTANCE] < -1)
 	{
 		sprintf(numbuf, "%d", (-1 * static_cast<signed int>(dim[(int)QuantityType::DISTANCE])));
 		ret += "^";
 		ret += numbuf;
 	}
 	if (dim[(int)QuantityType::TIME] < 0) { ret += " s"; }
-	if (dim[(int)QuantityType::TIME] < -1) 
+	if (dim[(int)QuantityType::TIME] < -1)
 	{
 		sprintf(numbuf, "%d", (-1 * static_cast<signed int>(dim[(int)QuantityType::TIME])));
 		ret += "^";
@@ -915,7 +912,7 @@ std::string PhysicalQuantity::toString() const
 		ret += numbuf;
 	}
 	if (dim[(int)QuantityType::CURRENT] < 0) { ret += " C"; }
-	if (dim[(int)QuantityType::CURRENT] < -1) 
+	if (dim[(int)QuantityType::CURRENT] < -1)
 	{
 		sprintf(numbuf, "%d", (-1 * static_cast<signed int>(dim[(int)QuantityType::CURRENT])));
 		ret += "^";
@@ -1489,9 +1486,9 @@ PhysicalQuantity::UnitList_dynamic::UnitList_dynamic(const CSubString& unitList)
 }
 PhysicalQuantity::UnitList_dynamic::~UnitList_dynamic()
 {
-	if (unitIndeces) 
+	if (unitIndeces)
 	{
-		delete [] unitIndeces; 
+		delete [] unitIndeces;
 	}
 }
 
@@ -1800,7 +1797,7 @@ PhysicalQuantity PhysicalQuantity::eval(CSubString str)
 		DEBUG_LR_RESULT(left, right, "(implicit)*", ret);
 		return ret;
 	}
-	else 
+	else
 	{
 		return left;
 	}
@@ -1938,7 +1935,7 @@ size_t PhysicalQuantity::printNum(char* buf, size_t size, PhysicalQuantity::num 
 		if (iOut == size - 1) { buf[size - 1] = 0; return size; }
 		val = (val - ((int)val)) * 10.0;
 		precision--;
-	} 
+	}
 	if (val > 5.0)
 	{
 		// round
