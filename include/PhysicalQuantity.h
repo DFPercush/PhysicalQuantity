@@ -664,6 +664,8 @@ public:
 	bool operator==(const PhysicalQuantity& rhs) const;
 	bool operator>=(const PhysicalQuantity& rhs) const;
 	bool operator<=(const PhysicalQuantity& rhs) const;
+	bool operator>(const PhysicalQuantity& rhs) const;
+	bool operator<(const PhysicalQuantity& rhs) const;
 	bool operator!=(const PhysicalQuantity& rhs) const;
 
 	bool like(const PhysicalQuantity& rhs) const; // Same kind of quantity.

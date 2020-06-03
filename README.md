@@ -191,7 +191,7 @@ This can be done with:
 
 If you need to change Visual Studio project configuration, it's a good idea to create a new
 property sheet and put the settings there, so you're not committing your personal settings in the shared git repo.  
-The menu is View > Property Manager. In that window, Right click your project and Add New Item > Property Sheet. Any changes you make there will override the default settings, and you can change the order in which they apply. Search the Microsoft docs for more on Visual Studio property sheets if this is new to you.
+The menu is `View` > `Property Manager`. In that window, Right click your project and `Add New Item` > `Property Sheet`. Any changes you make there will override the default settings, and you can change the order in which they apply. Search the Microsoft docs for more on Visual Studio property sheets if this is new to you.
 
 
 
@@ -223,7 +223,7 @@ are necessary to convert between units. A lot of the preprocessor options deal
 with how this particular aspect is handled. You can have a hash table in ROM to
 make unit lookups faster, or use a slower linear search for minimum memory 
 overhead. There is also a cache mechanism for storing parsed unit strings.
-See UnitList.
+See `typedef ... UnitList`.
 
 Performing arithmetic with these objects, once parsed, basically
 involves one floating point operation and 5 integer additions/comparisons.
@@ -252,8 +252,8 @@ Q: Can a PhysicalQuantity be binary copied with memcpy() or DMA?
 A: Yes.
 
 Q: Can it be sent over a network in binary?  
-A: I wrote a long answer for this, then I wrote readNetworkBinary() and
-   writeNetworkBinary(). Byte order matters, basically.
+A: I wrote a long answer for this, then I wrote `readNetworkBinary()` and
+   `writeNetworkBinary()`. Byte order matters, basically.
    Do make sure the other end is using the same version of this library,
    with the same #define options, to load the value,
    and not just reading a double. That is the whole point after all.
@@ -261,7 +261,7 @@ A: I wrote a long answer for this, then I wrote readNetworkBinary() and
 
 Q: Does the structure store references or pointers to any external buffers?  
 A: Not the main data type, no.  
-   But the UnitList class which is used for formatting text output 
+   But the `UnitList` class which is used for formatting text output 
    requires some buffer storage. In static mode (`NO_NEW`), you will need
    to supply this buffer. You can choose to explicitly use `UnitList_static`
    any time, but `UnitList_dynamic` is only available `#ifndef NO_NEW`.
@@ -276,10 +276,10 @@ Q: If I `eval()` to load a string in, and then `toString()`, will I get the same
 A: Not necessarily. You can tell `toString()` and `sprint()` what units to use,
    but if you do not specify, it will do its best to construct a human readable
    output using the fewest composite units. This will probably be in SI/metric.
-   Your desired units can be cached in a UnitList object for speed's sake,
+   Your desired units can be cached in a `UnitList` object for speed's sake,
    but conversion factors are always applied when parsing and printing, though
    that factor may be 1. That conversion may introduce slight precision errors.
-   P.S. - A UnitList is not stored as a part of the value, that is only a conversion
+   P.S. - A `UnitList` is not stored as a part of the value, that is only a conversion
    mechanism. Also, whitespace may be different.
 
 
@@ -302,23 +302,25 @@ but the class itself can not represent a vector, nor imaginary numbers.
 It only represents a single numeric value and its associated units.
 You can, however, compare the dimensions of two values to see if they represent the
 same kind of quantity with `a.like(b)` or `a.isa(b)`
-	Any template code which performs vector math on a template type should work with
-PQ objects, as most of the basic arithmetic operators are implemented, with the 
-exception of modulo (%). Increment ++ and decrement -- will cause errors if the
-value is not a scalar, but they are there.
-Bitwise and logical operators are not supported, but boolean comparisons like > and <= are,
+	Any template code which performs vector math on a template type should work on a
+custom coded vector of PQ objects, as long as your structure ties them together as expected,
+either by name or index.  Most of the basic arithmetic operators are implemented, with the 
+exception of modulo (`%`). Increment `++` and decrement `--` will cause errors if the
+value is not a scalar, but they are there. 
+Bitwise and logical operators are not supported, but boolean comparisons like `>` and `<=` are,
 with the caveat that the values must have like dimensions (same kind of units) or
-an error will be thrown/called.
+an error will be thrown/called. For `NO_THROW` errors, after the callback has returned, all comparisons
+will be false except `!=`, and any additions or subtractions will return the unmodified left hand side.
 
 
 ##### A note about angles:
 >Caution: Subject to change in a planned 'scalar units' update.
 
 Since angles are dimensionless ratios (length/length), they are stored internally as a
-simple scalar value. However, one can convert() this internal value to and from degrees 
+simple scalar value. However, one can `convert()` this internal value to and from degrees 
 or radian units. You may use the literal operators `1_deg` and `1_rad` to specify
 hard coded values, as well as the nominal units of "deg" and "rad" when parsing / 
-printing / convert()ing, to apply the proper conversion factor.
+printing / `convert()`ing, to apply the proper conversion factor.
 Currently there is no method of internally differentiating an angle from any other 
 scalar value. Most quantities which are ratios of like units will exhibit this property.
 (TODO: angle flag?)
@@ -345,14 +347,14 @@ contact me or comment on github.
 If an error occurs during an operation such as adding two dissimilar values,
 the original value (left hand side) will remain unmodified. If a parsing error
 occurs during the construction of an object, its value will be a scalar 0.
-Errors during toString/sprint/convert will not modify the value, but you may not 
+Errors during `toString()`/`sprint()`/`convert()` will not modify the value, but you may not 
 get the correct / any output.
 	
 
 ### Error handling:
 If your system/config allows it, the class can throw a few exceptions, all based on `std::runtime_error`. Here's what they mean:
 
-* `UnitMismatchException` - Units do not match during add, subtract, or convert()
+* `UnitMismatchException` - Units do not match during an add, subtract, compare, or `convert()`
 * `InvalidExpressionException` - There was a parsing error, like unit not found.
 * `HeaderConfigException` - The #define options are different between your code and
  what the library / object was compiled with.
@@ -394,8 +396,8 @@ an `enum ErrorCode`, which includes `E_SUCCESS = 0` for convenience.
 How exactly you implement error handling from this point is up to you.
 You may want to pass some process info as your context, and perform specific
 cleanup actions related to it in case of an error. You can also use local
-variables to push the state of errorHandler and errorUserContext onto the 
-call stack and restore them before return;. The main point is to be careful
+variables to push the state of `errorHandler` and `errorUserContext` onto the 
+call stack and restore them before `return`. The main point is to be careful
 not to use junk values after an error and let it propagate through the system.
 
 
@@ -404,17 +406,21 @@ not to use junk values after an error and let it propagate through the system.
 You may want to implement a unit that is not part of the library yet. Here is
 	a step by step guide on how to implement new units:
 
-1. In PhysicalUnitDefinitions.cpp, find the `KnownUnits[]` array, and add a line.
-		The format should be commented in there, but you will need the symbol, the long name, plural of the long name, the conversion factor, and the dimensions/powers of the unit. You may see some lines periodically that look like this:
+1. In `src/PhysicalUnitDefinitions.cpp`, find the `KnownUnits[]` array, and add a line.
+The format should be commented in there, but you will need the symbol, the long name, plural of the long name, the conversion factor,
+and the dimensions/powers of the unit. You may see some lines periodically that look like this:
 
-        // Ma Di Ti Te Cu
-
+    // Ma Di Ti Te Cu
 
 That tells you what order the dimensions are in, and it stands for  
-`{` mass, distance, time, temperature, current `}`. There is an offset amount which will be zero basically always. Then finally there are some optional flags after the dimensions, which include `NOPREFIX` - telling the I/O code not to use any prefixes with that unit, as well as `NOLITERAL` which tells `gencode` not to create any user-defined literals for it.
-		
-The conversion factor is expressed
-		in terms of kilograms, meters, seconds, Kelvin, and Amps. How many kg * m / s etc... are in your unit? If you learned the "ice cube tray" method in school, use that to convert everything to SI.
+`{` mass, distance, time, temperature, current `}`. Some units close brace here. But there are some optional
+flags after the dimensions, which include `NOPREFIX` - telling the I/O code not to use any prefixes with that unit,
+as well as `NOLITERAL` which tells `gencode` not to create any user-defined literals for it.
+Finally, there is an offset amount which will be zero basically always.
+
+The conversion factor is expressed in terms of kilograms, meters, seconds, Kelvin, and Amps. 
+How many kg * m / s etc... are in your unit? If you learned the "ice cube tray" method in school,
+use that to convert everything to SI.
 
 2. Rebuild All or `make` to invoke gencode.
 		Or manually, it's a bit tricky, but you must first compile `gencode` and then run `./bin/gencode generate optimize`
@@ -423,10 +429,13 @@ The conversion factor is expressed
 		the 'a' standing for automatic.
 	
 3. (_Optional_) Run `gencode info` or examine `hashTables.ah` to see 
-		if the bucket size is obnoxious, i.e. lots of hashing collisions.
-		If so, run gencode again and pass --max-table-size (a bigger number) and --max-seed (more)
-		It may also be beneficial to modify the hashing function in hash.cpp, but this may
-		have to run on embedded hardware, so don't make it too complicated.
-		
-	Note: You should never `#include hashTables.ah` in your own code, on pain of linker errors.
-	      You should only ever need to `#include <PhysicalQuantity.h>` in external projects.
+If the bucket size is obnoxious, i.e. lots of hashing collisions.
+If so, run gencode again:
+
+	./bin/gencode generate optimize --max-table-size (a bigger number) and --max-seed (more)
+
+It may also be beneficial to modify the hashing function in `hash.cpp`, but this may
+have to run on embedded hardware, so don't make it too complicated.
+
+Note: You should never `#include hashTables.ah` in your own code, on pain of linker errors.
+You should only ever need to `#include <PhysicalQuantity.h>` in external projects.

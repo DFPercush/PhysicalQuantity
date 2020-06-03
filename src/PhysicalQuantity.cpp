@@ -35,6 +35,17 @@ typedef PhysicalQuantity::CSubString csubstr;
 #define DEBUG_LR_RESULT(left, right, op, result)
 #endif
 
+#ifdef NO_THROW
+#define PQERR(ex, code) \
+	errorHandler(errorUserContext, code);
+#define PQERRMSG(ex, msg, code) \
+	errorHandler(errorUserContext, code);
+#else
+#define PQERR(ex, code) throw ex();
+#define PQERRMSG(ex, msg, code) throw ex(msg);
+#endif
+
+
 
 PhysicalQuantity::num PhysicalQuantity::equalityToleranceFactor = 1e-6;
 const int PhysicalQuantity::compiledHeaderOptions = PQ_HEADER_OPTIONS;
@@ -512,6 +523,7 @@ void PhysicalQuantity::mulUnit(signed char(&unitsOut)[(int)QuantityType::ENUM_MA
 
 void PhysicalQuantity::parse(const CSubString& text_arg)
 {
+	init();
 	CSubString text = text_arg.trim();
 	int firstNotSpace = (int)text.find_first_not_of(' ');
 	if (firstNotSpace > 0) { text = text.substr(firstNotSpace); }
@@ -953,12 +965,20 @@ PhysicalQuantity PhysicalQuantity::operator- (const PhysicalQuantity& rhs) const
 
 PhysicalQuantity& PhysicalQuantity::operator++()
 {
+	if (magdim() != 0)
+	{
+		PQERRMSG(UnitMismatchException, "++ tried to increment a non scalar value", E_UNIT_MISMATCH);
+	}
 	(*this) = (*this) + 1.0;
 	return *this;
 }
 
 PhysicalQuantity& PhysicalQuantity::operator--()
 {
+	if (magdim() != 0)
+	{
+		PQERRMSG(UnitMismatchException, "- tried to decrement a non scalar value", E_UNIT_MISMATCH);
+	}
 	(*this) = (*this) - 1.0;
 	return *this;
 }
@@ -1326,24 +1346,60 @@ bool PhysicalQuantity::findUnit(CSubString name, PhysicalQuantity::unitIndex_t& 
 #endif //#else of #ifndef PQ_GENCODE
 #endif //#ifndef NO_TEXT
 
+
 bool PhysicalQuantity::operator==(const PhysicalQuantity& rhs) const
 {
-	if (memcmp(dim, rhs.dim, sizeof(dim)) != 0) { return false; }
+	if (memcmp(dim, rhs.dim, sizeof(dim)) != 0)
+	{
+		PQERRMSG(UnitMismatchException, "operator unit mismatch", E_UNIT_MISMATCH);
+		return false;
+	}
 	return PhysicalQuantity::feq(value, rhs.value, equalityToleranceFactor);
 }
 bool PhysicalQuantity::operator!=(const PhysicalQuantity& rhs) const
 {
+	if (memcmp(dim, rhs.dim, sizeof(dim)) != 0)
+	{
+		PQERRMSG(UnitMismatchException, "operator unit mismatch", E_UNIT_MISMATCH);
+		return true;
+	}
 	return PhysicalQuantity::feq(value, rhs.value, equalityToleranceFactor);
 }
 bool PhysicalQuantity::operator>=(const PhysicalQuantity& rhs) const
 {
-	if (memcmp(dim, rhs.dim, sizeof(dim)) != 0) { return false; }
+	if (memcmp(dim, rhs.dim, sizeof(dim)) != 0)
+	{
+		PQERRMSG(UnitMismatchException, "operator unit mismatch", E_UNIT_MISMATCH);
+		return false;
+	}
 	return value >= rhs.value;
 }
 bool PhysicalQuantity::operator<=(const PhysicalQuantity& rhs) const
 {
-	if (memcmp(dim, rhs.dim, sizeof(dim)) != 0) { return false; }
+	if (memcmp(dim, rhs.dim, sizeof(dim)) != 0)
+	{
+		PQERRMSG(UnitMismatchException, "operator unit mismatch", E_UNIT_MISMATCH);
+		return false;
+	}
 	return value <= rhs.value;
+}
+bool PhysicalQuantity::operator>(const PhysicalQuantity& rhs) const
+{
+	if (memcmp(dim, rhs.dim, sizeof(dim)) != 0)
+	{
+		PQERRMSG(UnitMismatchException, "operator unit mismatch", E_UNIT_MISMATCH);
+		return false;
+	}
+	return value > rhs.value;
+}
+bool PhysicalQuantity::operator<(const PhysicalQuantity& rhs) const
+{
+	if (memcmp(dim, rhs.dim, sizeof(dim)) != 0)
+	{
+		PQERRMSG(UnitMismatchException, "operator unit mismatch", E_UNIT_MISMATCH);
+		return false;
+	}
+	return value < rhs.value;
 }
 
 
