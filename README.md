@@ -432,7 +432,7 @@ use that to convert everything to SI.
 If the bucket size is obnoxious, i.e. lots of hashing collisions.
 If so, run gencode again:
 
-	./bin/gencode generate optimize --max-table-size (a bigger number) and --max-seed (more)
+	`./bin/gencode generate optimize --max-table-size (a bigger number) and --max-seed (more)`
 
 It may also be beneficial to modify the hashing function in `hash.cpp`, but this may
 have to run on embedded hardware, so don't make it too complicated.
