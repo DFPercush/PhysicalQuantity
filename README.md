@@ -77,7 +77,7 @@ Whitespace is important!
 
 ===================================================================================================
 
-###System requirements:
+### System requirements:
 
 * C++14 recommended, but there are some #defines to make it compatible with older/simpler compilers.  
   Tested on the following systems:  
@@ -109,7 +109,7 @@ Whitespace is important!
 There is a header file, `ppOptions.h`, which contains some conditional compilation options for limited systems.
 
 
-###Installation/setup:
+### Installation/setup:
 
 #### Using the test console as a personal calculator and unit converter:
 
