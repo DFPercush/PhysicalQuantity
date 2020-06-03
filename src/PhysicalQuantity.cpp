@@ -622,10 +622,13 @@ size_t PhysicalQuantity::sprint(char* buf, size_t bufsize, unsigned int precisio
 	const int PREFERRED = 1;
 	const int ANYPREFIX = 2;
 
-	constexpr int outslen = 10;
+	constexpr int outslen = MAX_SPRINT_UNITS;
 	outputElement outs[outslen];
 	int nouts = 0;
 	int p;
+
+	// Divide out any preferred units, as long as they don't
+	// increase the dimensionality of the quantity.
 	for (int ipu = 0; ipu < pu.count(); ipu++)
 	{
 		if (nouts >= outslen)
@@ -637,6 +640,12 @@ size_t PhysicalQuantity::sprint(char* buf, size_t bufsize, unsigned int precisio
 #endif
 		}
 		UnitDefinition unit = rom(KnownUnits[pu[ipu].iUnit]);
+
+		// Passing true as a second argument means that, if the unit results in
+		// the same dimension count before and after, go ahead and use it.
+		// Example: expressing current in terms of charge, amps --> coulombs.
+		// It divides the fundamental current dimension but gains a time dimension.
+		// Net result zero. We just don't want to make it any higher.
 		p = r.bestReductionPower(unit, true);
 		if (p != 0)
 		{
@@ -656,8 +665,14 @@ size_t PhysicalQuantity::sprint(char* buf, size_t bufsize, unsigned int precisio
 		}
 	}
 
+
 	while (r.magdim() != 0)
 	{
+		// There are leftover dimensions.
+		// Scan for the unit which decreases the dimension count the most
+		// and divide it out, repeat until no dimensions left.
+		// Whichever equivalent unit has the lowest index in KnownUnits takes priority.
+
 		int iBestReductionUnit = -1;
 		int bestReductionUnitPower = 0;
 		int bestReductionMagdim = 0;
@@ -673,6 +688,9 @@ size_t PhysicalQuantity::sprint(char* buf, size_t bufsize, unsigned int precisio
 #endif
 			}
 			UnitDefinition unit = rom(KnownUnits[iUnit]);
+			// Omitting the second parameter will make bestReductionPower return 0 if
+			// the unit would result in the same dimension count. Only preferred units
+			// are applied when net result is zero.
 			p = r.bestReductionPower(unit);
 			if (p != 0)
 			{
@@ -699,7 +717,7 @@ size_t PhysicalQuantity::sprint(char* buf, size_t bufsize, unsigned int precisio
 
 		outs[nouts].unit = iBestReductionUnit;
 		outs[nouts].power = bestReductionUnitPower;
-		outs[nouts].prefix = -1;
+		outs[nouts].prefix = -1; // Subject to auto change later
 		outs[nouts].flags = 0;
 		r = bestReductionValue;
 		nouts++;
@@ -707,8 +725,7 @@ size_t PhysicalQuantity::sprint(char* buf, size_t bufsize, unsigned int precisio
 	}
 
 	// Sort negative powers to the end but preserve order otherwise
-	//int pos, neg;
-	//for (pos = 0; pos)
+	// Not the most efficient sorting algorithm but the data size is so low.
 	for (int i = 0; i < nouts; i++)
 	{
 		if (outs[i].power < 0)
@@ -733,20 +750,52 @@ size_t PhysicalQuantity::sprint(char* buf, size_t bufsize, unsigned int precisio
 	{
 		for (int iPrefix = 0; iPrefix < KnownPrefixesLength; iPrefix++)
 		{
-			num test = r.value / rom(KnownPrefixes[iPrefix]).factor;
-			if (test >= 1 && test < 1000)
+			// What will the value be if we use this prefix?
+			// We need to test two different values depending on the sign of the exponent we eventually apply it to.
+			num testFactor = rom(KnownPrefixes[iPrefix]).factor;
+			num testDiv = r.value / testFactor;
+			if (testDiv >= 1 && testDiv < 1000)
 			{
+				// Looks good...
 				for (int iOut = 0; iOut < nouts; iOut++)
 				{
-					if ((((outs[iOut].flags & PREFERRED) == 0) || ((outs[iOut].flags & ANYPREFIX) != 0))
+					// This loop determines which unit we can actually apply our desired prefix to.
+					// Some units have the NOPREFIX flag, others can be explicitly preferred,
+					// and some can be preferred but have the prefix wildcard.
+					// It will modify the first unit allowed by all the flags.
+					// It is possible that none are allowed and this was a waste of time, oh well.
+					if ((outs[iOut].power > 0)
+					 && (((outs[iOut].flags & PREFERRED) == 0) || ((outs[iOut].flags & ANYPREFIX) != 0))
 					 && ((rom(KnownUnits[outs[iOut].unit]).flags & NOPREFIX) == 0))
 					{
 						outs[iOut].prefix = iPrefix;
-						r.value = test;
+						r.value = testDiv;
 						goto prefixSearchDone;
 					}
 				}
 			}
+		}
+
+		// Not able to apply the prefix yet? Try to apply it to units in denominator.
+		for (int iPrefix = 0; iPrefix < KnownPrefixesLength; iPrefix++)
+		{
+			num testFactor = rom(KnownPrefixes[iPrefix]).factor;
+			num testMul = r.value * testFactor;
+			if (testMul >= 1 && testMul < 1000)
+			{
+				for (int iOut = 0; iOut < nouts; iOut++)
+				{
+					if ((outs[iOut].power < 0) // <-- Here's the difference
+						&& (((outs[iOut].flags & PREFERRED) == 0) || ((outs[iOut].flags & ANYPREFIX) != 0))
+						&& ((rom(KnownUnits[outs[iOut].unit]).flags & NOPREFIX) == 0))
+					{
+						outs[iOut].prefix = iPrefix;
+						r.value = testMul;
+						goto prefixSearchDone;
+					}
+				}
+			}
+			//
 		}
 	}
 	prefixSearchDone:
@@ -761,32 +810,16 @@ size_t PhysicalQuantity::sprint(char* buf, size_t bufsize, unsigned int precisio
 #endif
 	while (buf[outpos] != 0) { outpos++; }
 	bool foundNeg = false;
+	// Write the numerator first, units with positive exponent.
 	for (int iOut = 0; iOut < nouts; iOut++)
 	{
 		if (outs[iOut].power < 0) { foundNeg = true; }
 		if ((outs[iOut].power > 0) || (!useSlash))
 		{
 			WriteOutputUnit(rom(KnownUnits[outs[iOut].unit]), (int)outs[iOut].power, (int)outs[iOut].prefix, buf, bufsize, outpos, outpos);
-			//if (outs[iOut].prefix != -1)
-			//{
-			//	if (outpos + 2 >= bufsize) { goto errbuf; }
-			//	Prefix pre = rom(KnownPrefixes[outs[iOut].prefix]);
-			//	strcpy(&buf[outpos], pre.symbol);
-			//	outpos += strlen(pre.symbol);
-			//}
-			//UnitDefinition unit = rom(KnownUnits[outs[iOut].unit]);
-			//int ulen = strlen(unit.symbol); // TODO: switch long names
-			//if (outpos + ulen + 1 >= bufsize) { goto errbuf; }
-			//strcpy(&buf[outpos], unit.symbol);
-			//outpos += ulen;
-			//if (outs[iOut].power != 1)
-			//{
-			//	if (outpos + 1 >= bufsize) { goto errbuf; }
-			//	buf[outpos++] = '^';
-			//	printNum
-			//}
 		}
 	}
+	// If there were any units with negative exponent and we're using slash notation, write them now
 	if (useSlash && foundNeg)
 	{
 		if (outpos + 4 >= bufsize) { goto errbuf; }
@@ -802,7 +835,10 @@ size_t PhysicalQuantity::sprint(char* buf, size_t bufsize, unsigned int precisio
 		}
 	}
 
+	// Append null terminator to c-style string.
+	if (outpos + 1 >= bufsize) { goto errbuf; }
 	buf[outpos++] = 0;
+	// Return length of output string
 	return outpos;
 
 	errbuf:
@@ -818,132 +854,40 @@ size_t PhysicalQuantity::sprint(char* buf, size_t bufsize, unsigned int precisio
 
 std::string PhysicalQuantity::toString() const
 {
-	string ret;
-	// TODO: human friendly readability
-
-	char numbuf[100];
-	//sprintf(numbuf, "%g", value);
-	printNum(numbuf, 100, value,
+	char buf[TOSTRING_BUFFER_SIZE];
+	sprint(buf, TOSTRING_BUFFER_SIZE,
 #ifdef LOW_PRECISION
-	8);
+		8);
 #else
-	18);
+		18);
 #endif
-	ret = numbuf;
-
-	if (dim[(int)QuantityType::MASS] > 0) { ret += " kg"; }
-	if (dim[(int)QuantityType::MASS] > 1)
-	{
-		sprintf(numbuf, "%d", (static_cast<signed int>(dim[(int)QuantityType::MASS])));
-		ret += "^";
-		ret += numbuf;
-	}
-	if (dim[(int)QuantityType::DISTANCE] > 0) { ret += " m"; }
-	if (dim[(int)QuantityType::DISTANCE] > 1)
-	{
-		sprintf(numbuf, "%d", (static_cast<signed int>(dim[(int)QuantityType::DISTANCE])));
-		ret += "^";
-		ret += numbuf;
-	}
-	if (dim[(int)QuantityType::TIME] > 0) { ret += " s"; }
-	if (dim[(int)QuantityType::TIME] > 1)
-	{
-		sprintf(numbuf, "%d", (static_cast<signed int>(dim[(int)QuantityType::TIME])));
-		ret += "^";
-		ret += numbuf;
-	}
-	if (dim[(int)QuantityType::TEMPERATURE] > 0) { ret += " K"; }
-	if (dim[(int)QuantityType::TEMPERATURE] > 1)
-	{
-		sprintf(numbuf, "%d", (static_cast<signed int>(dim[(int)(int)QuantityType::TEMPERATURE])));
-		ret += "^";
-		ret += numbuf;
-	}
-	if (dim[(int)QuantityType::CURRENT] > 0) { ret += " C"; }
-	if (dim[(int)QuantityType::CURRENT] > 1)
-	{
-		sprintf(numbuf, "%d", (static_cast<signed int>(dim[(int)QuantityType::CURRENT])));
-		ret += "^";
-		ret += numbuf;
-	}
-
-
-	bool hasDenominator = false;
-	for (int iDim = 0; iDim < (int)QuantityType::ENUM_MAX; iDim++)
-	{
-		if (dim[iDim] < 0)
-		{
-			hasDenominator = true;
-			break;
-		}
-	}
-
-
-	if (!hasDenominator) return ret;
-	ret += " /";
-
-
-	if (dim[(int)QuantityType::MASS] < 0) { ret += " kg"; }
-	if (dim[(int)QuantityType::MASS] < -1)
-	{
-		sprintf(numbuf, "%d", (-1 * static_cast<signed int>(dim[(int)QuantityType::MASS])));
-		ret += "^";
-		ret += numbuf;
-	}
-	if (dim[(int)QuantityType::DISTANCE] < 0) { ret += " m"; }
-	if (dim[(int)QuantityType::DISTANCE] < -1)
-	{
-		sprintf(numbuf, "%d", (-1 * static_cast<signed int>(dim[(int)QuantityType::DISTANCE])));
-		ret += "^";
-		ret += numbuf;
-	}
-	if (dim[(int)QuantityType::TIME] < 0) { ret += " s"; }
-	if (dim[(int)QuantityType::TIME] < -1)
-	{
-		sprintf(numbuf, "%d", (-1 * static_cast<signed int>(dim[(int)QuantityType::TIME])));
-		ret += "^";
-		ret += numbuf;
-	}
-	if (dim[(int)QuantityType::TEMPERATURE] < 0) { ret += " K"; }
-	if (dim[(int)QuantityType::TEMPERATURE] < -1)
-	{
-		sprintf(numbuf, "%d", (-1 * static_cast<signed int>(dim[(int)(int)QuantityType::TEMPERATURE])));
-		ret += "^";
-		ret += numbuf;
-	}
-	if (dim[(int)QuantityType::CURRENT] < 0) { ret += " C"; }
-	if (dim[(int)QuantityType::CURRENT] < -1)
-	{
-		sprintf(numbuf, "%d", (-1 * static_cast<signed int>(dim[(int)QuantityType::CURRENT])));
-		ret += "^";
-		ret += numbuf;
-	}
-
-	return ret;
+	return string(buf);
 }
 
 string PhysicalQuantity::toString(const UnitListBase& pu) const
 {
-	string ret;
-	size_t buflen = 0;
-	size_t needbuflen = pu.count() * 12 + 32;
-	char* buf = nullptr;
-	while (needbuflen >= buflen)
-	{
-		if (buf) delete [] buf;
-		buf = new char[needbuflen];
-		buflen = needbuflen;
-		needbuflen = sprint(buf, buflen,
+	char buf[TOSTRING_BUFFER_SIZE];
+	sprint(buf, TOSTRING_BUFFER_SIZE,
 #ifdef LOW_PRECISION
-			8
+		8
 #else
-			18
+		18
 #endif
-			,pu);
-	}
-	ret = buf;
-	delete [] buf;
-	return ret;
+		, pu);
+	return string(buf);
+}
+
+std::string PhysicalQuantity::toString(const CSubString& sspu) const
+{
+	char buf[TOSTRING_BUFFER_SIZE];
+	sprint(buf, TOSTRING_BUFFER_SIZE,
+#ifdef LOW_PRECISION
+		8
+#else
+		18
+#endif
+		, sspu);
+	return string(buf);
 }
 
 #endif //#if !defined(NO_STD_STRING) && !defined(NO_PRINTF)

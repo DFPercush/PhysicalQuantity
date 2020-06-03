@@ -574,7 +574,8 @@ public:
 #ifndef NO_TEXT
 #ifndef NO_STD_STRING
 	std::string toString() const;
-	std::string toString(const UnitListBase&) const;
+	std::string toString(const UnitListBase& preferredUnits) const;
+	std::string toString(const CSubString& preferredUnits) const;
 #endif // #ifndef NO_STD_STRING
 #endif //#ifndef NO_TEXT
 

@@ -69,6 +69,22 @@
 #define MAX_NUM_TEXT_LENGTH 26
 #endif
 
+#ifndef MAX_SPRINT_UNITS
+// sprint() statically allocates stack memory to stage the output
+// before it is converted to text. This allows better formatting and sorting.
+// Since there are only 5 types of quantities, it shouldn't take very many.
+// If for some reason you need to print out a quantity that contains many units,
+// you can do so here. However, the algorithm will not extract any units which
+// increase the dimensionality of the quantity, so putting things in wierd terms
+// might just be ignored anyway.
+#define MAX_SPRINT_UNITS 10
+#endif
+
+#ifndef TOSTRING_BUFFER_SIZE
+// Size of the statically allocated buffer on the stack for toString()
+#define TOSTRING_BUFFER_SIZE 100
+#endif
+
 /*
 TODO: 
 . NO_SPRINTF_INT  // Who doesn't have this?
