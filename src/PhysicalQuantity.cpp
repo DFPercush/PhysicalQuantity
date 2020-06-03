@@ -5,7 +5,8 @@ TODO:
 */
 
 #include <PhysicalQuantity.h>
-#include <math.h>
+//#include <math.h>
+template <typename T> T abs(T x) { return ((x >= 0) ? x : -x); }
 //#include <memory.h>
 #include <string.h>
 #include <stdio.h>
@@ -804,9 +805,9 @@ size_t PhysicalQuantity::sprint(char* buf, size_t bufsize, unsigned int precisio
 	size_t outpos = 0;
 	printNum(buf, bufsize, r.value,
 #ifdef LOW_PRECISION
-		8);
+		7);
 #else
-		18);
+		16);
 #endif
 	while (buf[outpos] != 0) { outpos++; }
 	bool foundNeg = false;
@@ -857,9 +858,9 @@ std::string PhysicalQuantity::toString() const
 	char buf[TOSTRING_BUFFER_SIZE];
 	sprint(buf, TOSTRING_BUFFER_SIZE,
 #ifdef LOW_PRECISION
-		8);
+		7);
 #else
-		18);
+		16);
 #endif
 	return string(buf);
 }
@@ -869,9 +870,9 @@ string PhysicalQuantity::toString(const UnitListBase& pu) const
 	char buf[TOSTRING_BUFFER_SIZE];
 	sprint(buf, TOSTRING_BUFFER_SIZE,
 #ifdef LOW_PRECISION
-		8
+		7
 #else
-		18
+		16
 #endif
 		, pu);
 	return string(buf);
@@ -882,9 +883,9 @@ std::string PhysicalQuantity::toString(const CSubString& sspu) const
 	char buf[TOSTRING_BUFFER_SIZE];
 	sprint(buf, TOSTRING_BUFFER_SIZE,
 #ifdef LOW_PRECISION
-		8
+		7
 #else
-		18
+		16
 #endif
 		, sspu);
 	return string(buf);

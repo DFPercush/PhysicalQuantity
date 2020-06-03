@@ -480,7 +480,9 @@ public:
 			unitPower_t power; // TODO: <-- for convert()
 			bool anyPrefix;
 		};
-		virtual ~UnitListBase();
+		~UnitListBase(); // Note: This was virtual, but these are not allocated from within the library. 
+			// Any user instantiating a UnitList should know (by typedef) whether it's static or dynamic.
+			// Having it virtual caused problems on Arduino with undefined linker referenced to deleting dtor.
 	protected:
 		UnitPref* unitIndeces;
 		int count_;
@@ -500,7 +502,7 @@ public:
 	{
 	public:
 		UnitList_dynamic(const CSubString& unitList_SpaceDelimited);
-		virtual ~UnitList_dynamic();
+		~UnitList_dynamic();
 	};
 #endif //#ifndef NO_NEW
 	class UnitList_static : public UnitListBase
@@ -508,6 +510,7 @@ public:
 	public:
 		UnitList_static(const CSubString& unitList_SpaceDelimited, void* storage, size_t storageSizeBytes);
 		UnitList_static(const CSubString& unitList_SpaceDelimited);
+		~UnitList_static() {}
 	};
 #ifdef NO_NEW
 	typedef UnitList_static UnitList;

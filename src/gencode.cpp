@@ -27,6 +27,7 @@ typedef PhysicalQuantity::CSubString csubstr;
 #include <Windows.h>
 #endif
 
+const int pqNumDigits = std::numeric_limits<PQ::num>().digits10;
 
 void dumpLiterals(string rootpath)
 {
@@ -67,7 +68,7 @@ void dumpLiterals(string rootpath)
 			{
 				macroInnards << (signed int)u.dim[di] << ",";
 			}
-			macroInnards << setprecision(std::numeric_limits<long double>::digits10 + 1)
+			macroInnards << setprecision(std::numeric_limits<long double>::digits10)
 				<< u.factor << ","
 				<< ((ui < PQ::KnownUnitOffsetsLength) ? PQ::KnownUnitOffsets[ui] : 0);
 				//<< ")" << endl;
@@ -991,31 +992,37 @@ int main(int argc, char** argv)
 			romtable << "#endif\n";
 			for (int ui = 0; ui < PQ::KnownUnitsLength; ui++)
 			{
-				romtable << "DEFINE_CONST_ARRAY(char, unitSymbol_" << PQ::KnownUnits[ui].symbol << ") = \"" 
+				romtable << "DEFINE_CONST_ARRAY(char, unitSymbol" << ui << ") = \""
 					<< PQ::KnownUnits[ui].symbol << "\";\n";
 #ifndef NO_LONG_NAMES
-				romtable << "DEFINE_CONST_ARRAY(char, unitLongName_" << PQ::KnownUnits[ui].symbol << ") = \"" 
+				romtable << "DEFINE_CONST_ARRAY(char, unitLongName" << ui << ") = \""
 					<< PQ::KnownUnits[ui].longName << "\";\n";
-				romtable << "DEFINE_CONST_ARRAY(char, unitPlural_" << PQ::KnownUnits[ui].symbol << ") = \"" 
+				romtable << "DEFINE_CONST_ARRAY(char, unitPlural" << ui << ") = \""
 					<< PQ::KnownUnits[ui].plural << "\";\n";
 #endif
 			}
 			for (int pi = 0; pi < PQ::KnownPrefixesLength; pi++)
 			{
-				romtable << "DEFINE_CONST_ARRAY(char, prefixSymbol_" << PQ::KnownPrefixes[pi].symbol << ") = \"" 
+				romtable << "DEFINE_CONST_ARRAY(char, prefixSymbol" << pi << ") = \"" 
 					<< PQ::KnownPrefixes[pi].symbol << "\";\n";
 #ifndef NO_LONG_NAMES
-				romtable << "DEFINE_CONST_ARRAY(char, prefixLongName_" << PQ::KnownPrefixes[pi].symbol << ") = \"" 
+				romtable << "DEFINE_CONST_ARRAY(char, prefixLongName" << pi << ") = \"" 
 					<< PQ::KnownPrefixes[pi].longName << "\";\n";
 #endif
 			}
 			romtable << "DEFINE_CONST_ARRAY(PhysicalQuantity::UnitDefinition, PhysicalQuantity::KnownUnits) =\n{\n";
 			for (int ui = 0; ui < PQ::KnownUnitsLength; ui++)
 			{
-				romtable << "{UN(unitSymbol_" << PQ::KnownUnits[ui].symbol
-					<< ",unitLongName_" << PQ::KnownUnits[ui].symbol
-					<< ",unitPlural_" << PQ::KnownUnits[ui].symbol
-					<< "), (PQ::num)" << setprecision(20) << PQ::KnownUnits[ui].factor << ", {";
+				romtable << "{UN(unitSymbol" << ui << ",";
+#ifndef NO_LONG_NAMES
+
+				romtable << "unitLongName" << ui << ",";
+				romtable << "unitPlural" << ui << "),";
+#else
+				romtable << "\"\",\"\"),";
+#endif
+					//<< "), (PQ::num)" << setprecision(20) << PQ::KnownUnits[ui].factor << ", {";
+				romtable << "(PQ::num)" << setprecision(pqNumDigits) << PQ::KnownUnits[ui].factor << ", {";
 				for (int ud = 0; ud < (int)PQ::QuantityType::ENUM_MAX; ud++)
 				{
 					if (ud != 0) { romtable << ","; }
@@ -1029,9 +1036,14 @@ int main(int argc, char** argv)
 			romtable << "DEFINE_CONST_ARRAY(PhysicalQuantity::Prefix, PhysicalQuantity::KnownPrefixes) =\n{\n";
 			for (int pi = 0; pi < PQ::KnownPrefixesLength; pi++)
 			{
-				romtable << "{PN(prefixSymbol_" << PQ::KnownPrefixes[pi].symbol
-					<< ",prefixLongName_" << PQ::KnownPrefixes[pi].symbol
-					<< "), (PQ::num)" << setprecision(20) << PQ::KnownPrefixes[pi].factor << "},\n";
+				romtable << "{PN(prefixSymbol" << pi << ",";
+#ifndef NO_LONG_NAMES
+				romtable << "prefixLongName" << pi;
+#else
+				romtable << "\"\""
+#endif
+					//<< "), (PQ::num)" << setprecision(20) << PQ::KnownPrefixes[pi].factor << "},\n";
+				romtable << "), (PQ::num)" << setprecision(pqNumDigits) << PQ::KnownPrefixes[pi].factor << "},\n";
 				//{PN("c", "centi"), 1e-2  },
 			}
 			romtable << "};\n";

@@ -221,7 +221,6 @@ DEFINE_CONST_ARRAY(PhysicalQuantity::UnitDefinition, PhysicalQuantity::KnownUnit
 };
 const PhysicalQuantity::unitIndex_t PhysicalQuantity::KnownUnitsLength = sizeof(PhysicalQuantity::KnownUnits) / sizeof(PhysicalQuantity::UnitDefinition);
 
-
 //const PhysicalQuantity::Prefix PhysicalQuantity::KnownPrefixes[] =
 DEFINE_CONST_ARRAY(PhysicalQuantity::Prefix, PhysicalQuantity::KnownPrefixes) =
 {
@@ -249,14 +248,15 @@ DEFINE_CONST_ARRAY(PhysicalQuantity::Prefix, PhysicalQuantity::KnownPrefixes) =
 {PN("Y", "yotta"), 1e24  }
 };
 const PhysicalQuantity::prefixIndex_t PhysicalQuantity::KnownPrefixesLength = sizeof(PhysicalQuantity::KnownPrefixes) / sizeof(PhysicalQuantity::Prefix);
+
+#endif //#if defined(PQ_GENCODE) || !defined(ROM_READ_BYTE)
+
+
 // dekaIndex: If any more prefixes are added, this should be the index of {"da", "deka", 10}
 // Used to optimize lookups because this is the only prefix longer than 1 char
 // If that changes, might need to change findUnit()
 const PhysicalQuantity::prefixIndex_t PhysicalQuantity::dekaIndex = 11; // Index, not value
 const PhysicalQuantity::prefixIndex_t PhysicalQuantity::kiloIndex = 2; // Index, not value.
-
-#endif //#if defined(PQ_GENCODE) || !defined(ROM_READ_BYTE)
-
 
 #endif //#if !defined(NO_TEXT) || defined(PQ_GENCODE)
 
