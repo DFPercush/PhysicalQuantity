@@ -404,13 +404,13 @@ not to use junk values after an error and let it propagate through the system.
 ## How to add more units:
 
 You may want to implement a unit that is not part of the library yet. Here is
-	a step by step guide on how to implement new units:
+a step by step guide on how to implement new units:
 
 1. In `src/PhysicalUnitDefinitions.cpp`, find the `KnownUnits[]` array, and add a line.
 The format should be commented in there, but you will need the symbol, the long name, plural of the long name, the conversion factor,
 and the dimensions/powers of the unit. You may see some lines periodically that look like this:
 
-    // Ma Di Ti Te Cu
+    `// Ma Di Ti Te Cu`
 
 That tells you what order the dimensions are in, and it stands for  
 `{` mass, distance, time, temperature, current `}`. Some units close brace here. But there are some optional
