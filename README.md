@@ -58,7 +58,15 @@ Sample test console output:
 	7.24929729726621463 m / s^2
 	sprint> (120 ft^3/min) * 10 seconds, beerbarrels
 	4.82614017339907608 beerbarrel
+	sprint> whatis 20 ft^3 / min * 1 hr
+	33.98021591040001 m^3
+	[0,3,0,0,0]
+	L, liter, liters
+	cc, cubic_centimeter, cubic_centimeters
+	gal, gallon, gallons
+	...
 
+> You can use 'whatis' to see what other units are available for the result.
 
 Whitespace is important!
 

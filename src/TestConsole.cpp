@@ -98,15 +98,23 @@ void runLine(csubstr &line, bool useConvert, bool useSprint)
 			printf("%s\n", buf);
 			if (whatis)
 			{
+				signed char d[PQ::ND];
+				val.getDim(d, sizeof(d));
+				printf("[");
+				for (int di = 0; di < PQ::ND; di++)
+				{
+					if (di != 0) printf(",");
+					printf("%d", (int)d[di]);
+				}
+				printf("] // Mass, Distance, Time, Temperature, Current\n");
 				for (int i = 0; i < PQ::KnownUnitsLength; i++)
 				{
-					signed char d[PQ::ND];
-					val.getDim(d, sizeof(d));
 					if (!memcmp(d, PQ::KnownUnits[i].dim, sizeof(d)))
 					{
 						printf("%s, %s, %s\n", PQ::KnownUnits[i].symbol, PQ::KnownUnits[i].longName, PQ::KnownUnits[i].plural);
 					}
 				}
+				fflush(stdout);
 			}
 		}
 		else

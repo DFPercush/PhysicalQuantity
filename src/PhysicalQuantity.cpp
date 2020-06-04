@@ -672,8 +672,9 @@ size_t PhysicalQuantity::sprint(char* buf, size_t bufsize, unsigned int precisio
 			PhysicalQuantity d = PhysicalQuantity::fromUnit(unit, p);
 			if (pu[ipu].iPrefix != -1)
 			{
-				Prefix pre = rom(KnownPrefixes[pu[ipu].iPrefix]);
-				d *= pre.factor;
+				d.value *= ::pow(rom(KnownPrefixes[pu[ipu].iPrefix].factor), p);
+				//Prefix pre = rom(KnownPrefixes[pu[ipu].iPrefix]);
+				//d *= pre.factor;
 			}
 			r /= d;
 			nouts++;
@@ -764,26 +765,26 @@ size_t PhysicalQuantity::sprint(char* buf, size_t bufsize, unsigned int precisio
 	// Determine a good prefix
 	if (r.value < 1 || r.value >= 1000)
 	{
-		for (int iPrefix = 0; iPrefix < KnownPrefixesLength; iPrefix++)
+		for (int iOut = 0; iOut < nouts; iOut++)
 		{
-			// What will the value be if we use this prefix?
-			// We need to test two different values depending on the sign of the exponent we eventually apply it to.
-			num testFactor = rom(KnownPrefixes[iPrefix]).factor;
-			num testDiv = r.value / testFactor;
-			if (testDiv >= 1 && testDiv < 1000)
+			// This loop determines which unit we can actually apply our desired prefix to.
+			// Some units have the NOPREFIX flag, others can be explicitly preferred,
+			// and some can be preferred but have the prefix wildcard.
+			// It will modify the first unit allowed by all the flags.
+			// It is possible that none are allowed and this was a waste of time, oh well.
+			if ((outs[iOut].power > 0)
+				&& (((outs[iOut].flags & PREFERRED) == 0) || ((outs[iOut].flags & ANYPREFIX) != 0))
+				&& ((rom(KnownUnits[outs[iOut].unit]).flags & NOPREFIX) == 0))
 			{
-				// Looks good...
-				for (int iOut = 0; iOut < nouts; iOut++)
+				for (int iPrefix = 0; iPrefix < KnownPrefixesLength; iPrefix++)
 				{
-					// This loop determines which unit we can actually apply our desired prefix to.
-					// Some units have the NOPREFIX flag, others can be explicitly preferred,
-					// and some can be preferred but have the prefix wildcard.
-					// It will modify the first unit allowed by all the flags.
-					// It is possible that none are allowed and this was a waste of time, oh well.
-					if ((outs[iOut].power > 0)
-					 && (((outs[iOut].flags & PREFERRED) == 0) || ((outs[iOut].flags & ANYPREFIX) != 0))
-					 && ((rom(KnownUnits[outs[iOut].unit]).flags & NOPREFIX) == 0))
+					// What will the value be if we use this prefix?
+					// We need to test two different values depending on the sign of the exponent we eventually apply it to.
+					//num testFactor = rom(KnownPrefixes[iPrefix]).factor;
+					num testDiv = r.value / ::pow(rom(KnownPrefixes[iPrefix]).factor, outs[iOut].power);
+					if (testDiv >= 1 && testDiv < 1000)
 					{
+						// Looks good...
 						outs[iOut].prefix = iPrefix;
 						r.value = testDiv;
 						goto prefixSearchDone;
