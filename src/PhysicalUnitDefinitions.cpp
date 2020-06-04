@@ -26,30 +26,47 @@ const PhysicalQuantity::unitIndex_t PhysicalQuantity::KnownUnitOffsetsLength = s
 //#define PN(sy, lo) ROMLITERAL(sy)
 #endif
 
-const PhysicalQuantity::unitIndex_t PhysicalQuantity::gramIndex = 7;
 
 
 #if defined(PQ_GENCODE) || !defined(ROM_READ_BYTE)
 //const PhysicalQuantity::UnitDefinition PhysicalQuantity::KnownUnits[] = 
 
+const PhysicalQuantity::unitIndex_t PhysicalQuantity::gramIndex = 3;
 
 DEFINE_CONST_ARRAY(PhysicalQuantity::UnitDefinition, PhysicalQuantity::KnownUnits) =
 {
+//=============================================================================================================
+// Try not to change the order of things between these lines
 // { symbol, longName, plural, factor, { MASS, DISTANCE, TIME, TEMPERATURE, CURRENT }, flags }
 //                        Ma Di Ti Te Cu
+// Temperature always needs to come first.
 {UN("K","kelvin","kelvin"),1.0, {0,0,0,1,0}, CANPREFIX},
 {UN("degC","degreeC","degreesC"),1.0, {0,0,0,1,0}, NOPREFIX},
 {UN("degF","degreeF","degreesF"),0.55555555555555555555555555555556, {0,0,0,1,0}, NOPREFIX},
 
-{UN("rad","radian","radians"),1, { 0, 0, 0, 0, 0}, NOPREFIX},
+// Gram has a special const for its index, it needs to stay where it is.
+{UN("g", "gram","grams"),0.001, {1,0,0,0,0}}, // Note: Update gramIndex if this shifts!
+
+// Ok you can add stuff now
+//===================================================================================
+
+// Angles - dimensionless scalars, but certain conversion factors and constants can be used
+// Storage occurs in radians, if a value is parsed from degrees, 
+{UN("rd","radian","radians"),1, { 0, 0, 0, 0, 0}, NOPREFIX},
 {UN("deg","degree","degrees"),0.01745329251994329576923690768489, {0,0,0,0,0}, NOPREFIX},
+{UN("grad","gradians","gradians"), 0.0157079632679489661923132169164, { 0, 0, 0, 0, 0}, NOPREFIX},
+{UN("rev","revolution","revolutions"),6.283185307179586476925286766559, { 0, 0, 0, 0, 0}, NOPREFIX},
+
+// Angle composites
+{UN("rpm","revolution_per_minute","revolutions_per_minute"),0.10471975511965977461542144610932, { 0, 0, -1, 0, 0}, NOPREFIX},
+
+
 {UN("pi","",""),3.1415926535897932384626433832795, {0,0,0,0,0}, NOPREFIX | NOLITERAL},
 {UN("tau","",""),6.283185307179586476925286766559, {0,0,0,0,0}, NOPREFIX | NOLITERAL},
 // Conflicts with fundamental charge
 //{"e", "e",         { 0, 0, 0, 0, 0}, 0, 2.7182818284590452353602874713527, NO_PREFIX},
 
 // Mass
-{UN("g", "gram","grams"),0.001, {1,0,0,0,0}}, // Note: Update gramIndex if this shifts!
 {UN("amu", "atomic_mass_unit","atomic_mass_units"),0.000000000000000000000000001660539, {1,0,0,0,0}, NOPREFIX},
 {UN("carat", "carat","carats"),0.0002, {1,0,0,0,0}, NOPREFIX},
 {UN("dram", "dram","drams"),0.001771845, {1,0,0,0,0}, NOPREFIX},
@@ -80,26 +97,29 @@ DEFINE_CONST_ARRAY(PhysicalQuantity::UnitDefinition, PhysicalQuantity::KnownUnit
 // Distance (Length)
 {UN("m", "meter","meters"),1, {0,1,0,0,0}},
 {UN("mi", "mile","miles"),1609.3439999931,     { 0, 1, 0, 0, 0}, NOPREFIX},
+{UN("nmi","nautical_mile","nautical_miles"),1852, {0,1,0,0,0}, NOPREFIX},
 {UN("yd", "yard","yards"),0.9144, {0,1,0,0,0}, NOPREFIX},
 {UN("ft", "foot","feet"),0.3048, {0,1,0,0,0}, NOPREFIX},
 {UN("in", "inch","inches"),0.0254, {0,1,0,0,0}, NOPREFIX},
 {UN("ang","angstrom","angstroms"),1e-10, {0,1,0,0,0}},  // unicode wchar_t is not supported at this time
 {UN("AU","astronomical_unit","astronomical_units"), 149597900000, {0,1,0,0,0}},
-{UN("chain","chain","chains"),20.11680394008, {0,1,0,0,0}, NOPREFIX},
-{UN("ly","light_year","light_years"),9460732325561360, {0,1,0,0,0}},
-{UN("li","link","links"),0.201168039400805, {0,1,0,0,0}, NOPREFIX},
+{UN("ly","lightyear","lightyears"),9460732325561360, {0,1,0,0,0}},
+{UN("","light_year","light_years"),9460732325561360, {0,1,0,0,0}},
+{UN("pc","parsec","parsecs"),30856778900000000, {0,1,0,0,0}},
+{UN("ls","lightsecond","lightseconds"),299792458, {0,1,0,0,0}},
+{UN("","light_second","light_seconds"),299792458, {0,1,0,0,0}},
 {UN("mil","mil","mils"),0.0000254, {0,1,0,0,0}, NOPREFIX}, // thousandth of an inch
 {UN("thou","thou","thous"),0.0000254, {0,1,0,0,0}, NOPREFIX}, // thousandth of an inch
-{UN("nmi","nautical_mile","nautical_miles"),1852, {0,1,0,0,0}, NOPREFIX},
-{UN("pc","parsec","parsecs"),30856778900000000, {0,1,0,0,0}},
+{UN("chain","chain","chains"),20.11680394008, {0,1,0,0,0}, NOPREFIX},
+{UN("li","link","links"),0.201168039400805, {0,1,0,0,0}, NOPREFIX},
 {UN("rod","rod","rods"), 5.0292105028246334, {0,1,0,0,0}, NOPREFIX},
 
 
 //Area
+{UN("ac", "acre","acres"), 4046.86, {0,2,0,0,0}, NOPREFIX},
 {UN("b", "barn","barns"), 1e-28, {0,2,0,0,0}},
 {UN("a", "are","ares"), 100, {0,2,0,0,0}, NOPREFIX},
 {UN("ha", "hectare","hectares"), 10000, {0,2,0,0,0}, NOPREFIX},
-{UN("ac", "acre","acres"), 4046.86, {0,2,0,0,0}, NOPREFIX},
 {UN("ro", "rood","roods"), 1011.714, {0,2,0,0,0}, NOPREFIX},
 
 
@@ -109,7 +129,7 @@ DEFINE_CONST_ARRAY(PhysicalQuantity::UnitDefinition, PhysicalQuantity::KnownUnit
 {UN("gal", "gallon","gallons"), .003785411784, {0,3,0,0,0}, NOPREFIX},
 {UN("qt", "quart","quarts"), 0.000946352946, {0,3,0,0,0}, NOPREFIX},
 {UN("pt", "pint","pints"), 0.000473176473, {0,3,0,0,0}, NOPREFIX},
-{UN("cup", "cup","cups"), 0.0002365882365, {0,3,0,0,0}, NOPREFIX},
+{UN("cu", "cup","cups"), 0.0002365882365, {0,3,0,0,0}, NOPREFIX},
 {UN("floz", "fluid_ounce","fluid_ounces"), 0.0000295735295625, {0,3,0,0,0}, NOPREFIX},
 {UN("tbsp", "tablespoon","tablespoons"), 0.00001478676478125, {0,3,0,0,0}, NOPREFIX},
 {UN("tsp", "teaspoon","teaspoons"), 0.00000492892159375, {0,3,0,0,0}, NOPREFIX},
@@ -194,9 +214,16 @@ DEFINE_CONST_ARRAY(PhysicalQuantity::UnitDefinition, PhysicalQuantity::KnownUnit
 
 //                      Ma Di Ti Te Cu
 // Radiation
-{UN("Bq", "becquerel", "becquerels"), 1, {0,0,-1,0,0}}, // radionuclide activity, counts per second
-{UN("Gy", "gray", "grays"), 1, {0,2,-2,0,0}},  // dose
-{UN("Sv", "sievert", "sieverts"), 1, {0,2,-2,0,0}},  // dose
+{ UN("cpm", "count_per_minute", "counts_per_minute"), 1.0 / 60.0, {0,0,-1,0,0} },
+{ UN("Bq", "becquerel", "becquerels"), 1, {0,0,-1,0,0} }, // radionuclide activity, counts per second
+{ UN("Rd", "rutherford", "rutherford"), 1e6, {0,0,-1,0,0} }, // radionuclide activity, counts per second
+{ UN("Gy", "gray", "grays"), 1, {0,2,-2,0,0} },  // dose, J/kg
+{ UN("rad", "rad", "rads"), 0.01, {0,2,-2,0,0} },  // dose
+{ UN("R", "roentgen", "roentgens"),2.58e-4, {-1,0,1,0,1} },  // dose
+
+// Because sieverts involve multiplying by a factor depending on biology, there's not a good way to represent that
+//{UN("Sv", "sievert", "sieverts"), 1, {0,2,-2,0,0}}, // equivalent dose, involves a scalar factor
+
 //TODO: kat, katal, s^-1*mol, catalytic activity
 
 

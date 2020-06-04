@@ -67,6 +67,9 @@ PhysicalQuantity::HeaderConfigException::HeaderConfigException(const char* messa
 
 typedef PhysicalQuantity PQ;
 
+#ifdef NO_CONSTEXPR
+const PhysicalQuantity::ND = (int)PhysicalQuantity::QuantityTypes::ENUM_MAX;
+#endif
 
 #ifdef ROM_READ_BYTE
 #define IFROM(normal_expr, rom_expr) rom_expr
@@ -2036,6 +2039,14 @@ size_t PhysicalQuantity::sprint(char* buf, size_t size, unsigned int precision, 
 #ifndef NO_HASHING
 size_t PhysicalQuantity::cstrHasherTiny::operator()(const char* s) const { return operator()(CSubString(s)); }
 #endif //#ifndef NO_HASHING
+
+bool PhysicalQuantity::getDim(signed char* d, int bufSize)
+{
+	if (bufSize < (int)QuantityType::ENUM_MAX) { return false; }
+	memcpy(d, dim, (int)QuantityType::ENUM_MAX);
+	return true;
+}
+
 
 #endif //#ifdef NO_INLINE
 

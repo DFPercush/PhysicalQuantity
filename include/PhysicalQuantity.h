@@ -335,6 +335,11 @@ public:
 		CURRENT,
 		ENUM_MAX
 	};
+#ifdef YES_CONSTEXPR
+	static constexpr int ND = (int)QuantityType::ENUM_MAX;
+#else
+	static const int ND;
+#endif
 
 #if !defined(NO_TEXT) || defined(PQ_GENCODE)
 	struct UnitDefinition
@@ -722,10 +727,11 @@ private:
 #endif
 
 
-
 public:
 #ifdef NO_INLINE
 	PhysicalQuantity(const char* str);
+
+	bool getDim(signed char *d, int bufSize);
 
 #ifndef NO_TEXT
 	static void parseUnits(const char* unitStr, signed char(&unitsOut)[(int)QuantityType::ENUM_MAX], num& factorOut, num& offsetOut);
@@ -738,6 +744,13 @@ public:
 	size_t sprint(char* buf, size_t size, unsigned int precision, bool useSlash = true) const;
 #endif //#ifndef NO_TEXT
 #else //#ifdef NO_INLINE
+
+	bool getDim(signed char* d, int bufSize)
+	{
+		if (bufSize < (int)QuantityType::ENUM_MAX) { return false; }
+		memcpy(d, dim, (int)QuantityType::ENUM_MAX);
+		return true;
+	}
 
 #ifndef NO_TEXT
 	INLINE_KEYWORD 	PhysicalQuantity(const char* str) { PhysicalQuantity(CSubString(str)); }

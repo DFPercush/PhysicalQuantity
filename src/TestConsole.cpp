@@ -56,6 +56,14 @@ void runLine(csubstr &line, bool useConvert, bool useSprint)
 {
 	PQ val;
 	csubstr units;
+
+	bool whatis = false;
+	if (line.substr(0, 6) == "whatis")
+	{
+		whatis = true;
+		line = line.substr(6);
+	}
+
 	int commapos = line.find_first_of(',');
 
 	if (commapos == -1)
@@ -88,6 +96,18 @@ void runLine(csubstr &line, bool useConvert, bool useSprint)
 		{
 			val.sprint(buf, 1000, 15, units);
 			printf("%s\n", buf);
+			if (whatis)
+			{
+				for (int i = 0; i < PQ::KnownUnitsLength; i++)
+				{
+					signed char d[PQ::ND];
+					val.getDim(d, sizeof(d));
+					if (!memcmp(d, PQ::KnownUnits[i].dim, sizeof(d)))
+					{
+						printf("%s, %s, %s\n", PQ::KnownUnits[i].symbol, PQ::KnownUnits[i].longName, PQ::KnownUnits[i].plural);
+					}
+				}
+			}
 		}
 		else
 		{
