@@ -30,8 +30,10 @@
     <ClCompile Include="..\src\literals.acpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\hashParams.acpp" />
     <ClCompile Include="..\src\romtable.acpp" />
+    <ClCompile Include="..\src\hashParams.acpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\PhysicalQuantity.h">

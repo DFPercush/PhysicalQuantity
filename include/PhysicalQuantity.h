@@ -1,5 +1,10 @@
 #pragma once
 
+/*
+TODO:
+	. operator time_interval()
+*/
+
 #include <PhysicalQuantity/ppOptions.h>
 
 //==================================================================================
@@ -326,15 +331,24 @@ public:
 
 	//==================================================================================
 	// Unit and dimension stuff
+
+	// If more are added, search source for "!dimresize" for all the places that need to be updated
 	enum class QuantityType // : int
 	{
-		MASS,
+		MASS = 0,
 		DISTANCE,
 		TIME,
 		TEMPERATURE,
 		CURRENT,
+		ANGLE,
+		COUNTS,
 		ENUM_MAX
 	};
+#ifdef YES_CONSTEXPR
+	static constexpr int ND = (int)PhysicalQuantity::QuantityType::ENUM_MAX;
+#else
+	static const int ND;
+#endif
 
 #if !defined(NO_TEXT) || defined(PQ_GENCODE)
 	struct UnitDefinition
@@ -534,8 +548,9 @@ public:
 #endif // #ifndef NO_TEXT
 	PhysicalQuantity(num value);
 #if defined(YES_CONSTEXPR)
-	constexpr PhysicalQuantity(num value_p, const signed char dim_p[(int)QuantityType::ENUM_MAX])
-		: value(value_p), dim {dim_p[0], dim_p[1], dim_p[2], dim_p[3], dim_p[4]} {}
+	// !dimresize
+	constexpr PhysicalQuantity(num value_p, const signed char d[(int)QuantityType::ENUM_MAX])
+		: value(value_p), dim{ d[0], d[1], d[2], d[3], d[4], d[5], d[6]  } {}
 #else
 	PhysicalQuantity(num value_p, const signed char dim_p[(int)QuantityType::ENUM_MAX]);
 #endif
@@ -561,11 +576,14 @@ public:
 	static PhysicalQuantity get1A();
 	static PhysicalQuantity fromUnit(const UnitDefinition& u);
 #else // NO_INLINE
-	static PhysicalQuantity get1kg() { const signed char d[5]={1,0,0,0,0}; return PhysicalQuantity(1.0, d); }
-	static PhysicalQuantity get1m() { const signed char d[5]={0,1,0,0,0}; return PhysicalQuantity(1.0, d); }
-	static PhysicalQuantity get1s() { const signed char d[5]={0,0,1,0,0}; return PhysicalQuantity(1.0, d); }
-	static PhysicalQuantity get1K() { const signed char d[5]={0,0,0,1,0}; return PhysicalQuantity(1.0, d); }
-	static PhysicalQuantity get1A() { const signed char d[5]={0,0,0,0,1}; return PhysicalQuantity(1.0, d); }
+	static PhysicalQuantity get1kg()     { const signed char d[(int)PhysicalQuantity::QuantityType::ENUM_MAX] = {1,0,0,0,0,0,0}; return PhysicalQuantity(1.0, d); }
+	static PhysicalQuantity get1m()      { const signed char d[(int)PhysicalQuantity::QuantityType::ENUM_MAX] = {0,1,0,0,0,0,0}; return PhysicalQuantity(1.0, d); }
+	static PhysicalQuantity get1s()      { const signed char d[(int)PhysicalQuantity::QuantityType::ENUM_MAX] = {0,0,1,0,0,0,0}; return PhysicalQuantity(1.0, d); }
+	static PhysicalQuantity get1K()      { const signed char d[(int)PhysicalQuantity::QuantityType::ENUM_MAX] = {0,0,0,1,0,0,0}; return PhysicalQuantity(1.0, d); }
+	static PhysicalQuantity get1A()      { const signed char d[(int)PhysicalQuantity::QuantityType::ENUM_MAX] = {0,0,0,0,1,0,0}; return PhysicalQuantity(1.0, d); }
+	static PhysicalQuantity get1radian() { const signed char d[(int)PhysicalQuantity::QuantityType::ENUM_MAX] = {0,0,0,0,0,1,0}; return PhysicalQuantity(1.0, d); }
+	static PhysicalQuantity get1degree() { const signed char d[(int)PhysicalQuantity::QuantityType::ENUM_MAX] = {0,0,0,0,0,1,0}; return PhysicalQuantity(3.1415926535897932384626433832795 / 180.0, d); }
+	static PhysicalQuantity get1count()  { const signed char d[(int)PhysicalQuantity::QuantityType::ENUM_MAX] = {0,0,0,0,0,0,1}; return PhysicalQuantity(1.0, d); }
 	PhysicalQuantity fromUnit(const UnitDefinition& u) { PhysicalQuantity ret(u.factor, u.dim); return ret; }
 #endif // #else of #ifdef NO_INLINE
 
@@ -585,26 +603,34 @@ public:
 #if defined(YES_CONSTEXPR)
 	constexpr PhysicalQuantity operator* (const PhysicalQuantity& rhs) const 
 	{
-		signed char d[(int)QuantityType::ENUM_MAX]
+		signed char d[(int)QuantityType::ENUM_MAX]{};
+		for (int x = 0; x < (int)QuantityType::ENUM_MAX; x++)
 		{
-			(signed char)(dim[0] + rhs.dim[0]),  
-			(signed char)(dim[1] + rhs.dim[1]),  
-			(signed char)(dim[2] + rhs.dim[2]),  
-			(signed char)(dim[3] + rhs.dim[3]),  
-			(signed char)(dim[4] + rhs.dim[4])
-		};
+			d[x] = dim[x] + rhs.dim[x];
+		}
+		//{
+		//	(signed char)(dim[0] + rhs.dim[0]),  
+		//	(signed char)(dim[1] + rhs.dim[1]),  
+		//	(signed char)(dim[2] + rhs.dim[2]),  
+		//	(signed char)(dim[3] + rhs.dim[3]),  
+		//	(signed char)(dim[4] + rhs.dim[4])
+		//};
 		return PhysicalQuantity(value * rhs.value, d);
 	}
 	constexpr PhysicalQuantity operator/ (const PhysicalQuantity& rhs) const 
 	{
-		signed char d[(int)QuantityType::ENUM_MAX]
+		signed char d[(int)QuantityType::ENUM_MAX]{};
+		for (int x = 0; x < (int)QuantityType::ENUM_MAX; x++)
 		{
-			(signed char)(dim[0] - rhs.dim[0]),  
-			(signed char)(dim[1] - rhs.dim[1]),  
-			(signed char)(dim[2] - rhs.dim[2]),  
-			(signed char)(dim[3] - rhs.dim[3]),  
-			(signed char)(dim[4] - rhs.dim[4])
-		};
+			d[x] = dim[x] - rhs.dim[x];
+		}
+		//{
+		//	(signed char)(dim[0] - rhs.dim[0]),  
+		//	(signed char)(dim[1] - rhs.dim[1]),  
+		//	(signed char)(dim[2] - rhs.dim[2]),  
+		//	(signed char)(dim[3] - rhs.dim[3]),  
+		//	(signed char)(dim[4] - rhs.dim[4])
+		//};
 		return PhysicalQuantity(value / rhs.value, d);
 	}
 #else
@@ -622,27 +648,11 @@ public:
 #if defined(YES_CONSTEXPR)
 	constexpr PhysicalQuantity operator* (num rhs)
 	{
-		signed char d[(int)QuantityType::ENUM_MAX]
-		{
-			dim[0],
-			dim[1],  
-			dim[2],  
-			dim[3],  
-			dim[4]
-		};
-		return PhysicalQuantity(value * rhs, d);
+		return PhysicalQuantity(value * rhs, dim);
 	}
 	constexpr PhysicalQuantity operator/ (num rhs)
 	{
-		signed char d[(int)QuantityType::ENUM_MAX]
-		{
-			dim[0],
-			dim[1],  
-			dim[2],  
-			dim[3],  
-			dim[4]
-		};
-		return PhysicalQuantity(value * rhs, d);
+		return PhysicalQuantity(value * rhs, dim);
 	}
 #else //#if defined(YES_CONSTEXPR)
 	PhysicalQuantity operator* (num rhs) const;
@@ -770,6 +780,7 @@ INLINE_KEYWORD PhysicalQuantity operator-(PhysicalQuantity::num left, const Phys
 #define PQHeaderOptionsMatch (PQ_HEADER_OPTIONS == PhysicalQuantity::compiledHeaderOptions)
 
 
+// !dimresize
 //==================================================================================
 // Literals
 #ifndef NO_LITERALS
@@ -836,66 +847,66 @@ INLINE_KEYWORD PhysicalQuantity operator-(PhysicalQuantity::num left, const Phys
 
 #if defined(YES_CONSTEXPR)
 // Use these in a header
-#define CxLiteral(symbol_no_quotes, Ma, Di, Ti, Te, Cu, factor, offset) \
+#define CxLiteral(symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, Ct, factor, offset) \
 	constexpr PhysicalQuantity operator ""_##symbol_no_quotes(long double v) \
 	{ \
 		signed char d[(int)PhysicalQuantity::QuantityType::ENUM_MAX]  \
-		{Ma, Di, Ti, Te, Cu}; \
+		{Ma, Di, Ti, Te, Cu, An, Ct}; \
 		return PhysicalQuantity(((PhysicalQuantity::num)factor * (PhysicalQuantity::num)v) + offset, d); \
 	} \
 	constexpr PhysicalQuantity operator ""_##symbol_no_quotes(unsigned long long v) \
 	{ \
 		signed char d[(int)PhysicalQuantity::QuantityType::ENUM_MAX]  \
-		{Ma, Di, Ti, Te, Cu}; \
+		{Ma, Di, Ti, Te, Cu, An, Ct}; \
 		return PhysicalQuantity(((PhysicalQuantity::num)factor * (PhysicalQuantity::num)v) + offset, d); \
 	}
     /*#pragma message("Compiling literal symbol " #symbol_no_quotes) */ \
 
 //----------------------------------------------------------------------------
-#define CxLiteralWithPrefixes(symbol_no_quotes, Ma, Di, Ti, Te, Cu, factor, offset) \
-	CxLiteral( symbol_no_quotes,  Ma, Di, Ti, Te, Cu, factor, offset) \
-	CxLiteral( c##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e-2  , offset) \
-	CxLiteral( k##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e3   , offset) \
-	CxLiteral( m##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e-3  , offset) \
-	CxLiteral( M##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e6   , offset) \
-	CxLiteral( u##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e-6  , offset) \
-	CxLiteral( G##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e9   , offset) \
-	CxLiteral( n##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e-9  , offset) \
-	CxLiteral( T##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e12  , offset) \
-	CxLiteral( p##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e-12 , offset) \
-	CxLiteral( P##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e15  , offset) \
-	CxLiteral(da##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 10.0  , offset) \
-	CxLiteral( f##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e-15 , offset) \
-	CxLiteral( d##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 0.1   , offset) \
-	CxLiteral( h##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 100.0 , offset) \
-	CxLiteral( E##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e18  , offset) \
-	CxLiteral( a##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e-18 , offset) \
-	CxLiteral( z##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e-21 , offset) \
-	CxLiteral( Z##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e21  , offset) \
-	CxLiteral( y##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e-24 , offset) \
-	CxLiteral( Y##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e24  , offset) \
+#define CxLiteralWithPrefixes(symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, Ct, factor, offset) \
+	CxLiteral( symbol_no_quotes,    Ma, Di, Ti, Te, Cu, An, Ct, factor, offset) \
+	CxLiteral( c##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, Ct,  factor * 1e-2  , offset) \
+	CxLiteral( k##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, Ct,  factor * 1e3   , offset) \
+	CxLiteral( m##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, Ct,  factor * 1e-3  , offset) \
+	CxLiteral( M##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, Ct,  factor * 1e6   , offset) \
+	CxLiteral( u##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, Ct,  factor * 1e-6  , offset) \
+	CxLiteral( G##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, Ct,  factor * 1e9   , offset) \
+	CxLiteral( n##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, Ct,  factor * 1e-9  , offset) \
+	CxLiteral( T##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, Ct,  factor * 1e12  , offset) \
+	CxLiteral( p##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, Ct,  factor * 1e-12 , offset) \
+	CxLiteral( P##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, Ct,  factor * 1e15  , offset) \
+	CxLiteral(da##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, Ct,  factor * 10.0  , offset) \
+	CxLiteral( f##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, Ct,  factor * 1e-15 , offset) \
+	CxLiteral( d##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, Ct,  factor * 0.1   , offset) \
+	CxLiteral( h##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, Ct,  factor * 100.0 , offset) \
+	CxLiteral( E##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, Ct,  factor * 1e18  , offset) \
+	CxLiteral( a##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, Ct,  factor * 1e-18 , offset) \
+	CxLiteral( z##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, Ct,  factor * 1e-21 , offset) \
+	CxLiteral( Z##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, Ct,  factor * 1e21  , offset) \
+	CxLiteral( y##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, Ct,  factor * 1e-24 , offset) \
+	CxLiteral( Y##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, Ct,  factor * 1e24  , offset) \
 
-#define CxLiteralWithPrefixesNoBase(symbol_no_quotes, Ma, Di, Ti, Te, Cu, factor, offset) \
-	CxLiteral( c##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e-2  , offset) \
-	CxLiteral( k##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e3   , offset) \
-	CxLiteral( m##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e-3  , offset) \
-	CxLiteral( M##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e6   , offset) \
-	CxLiteral( u##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e-6  , offset) \
-	CxLiteral( G##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e9   , offset) \
-	CxLiteral( n##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e-9  , offset) \
-	CxLiteral( T##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e12  , offset) \
-	CxLiteral( p##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e-12 , offset) \
-	CxLiteral( P##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e15  , offset) \
-	CxLiteral(da##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 10.0  , offset) \
-	CxLiteral( f##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e-15 , offset) \
-	CxLiteral( d##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 0.1   , offset) \
-	CxLiteral( h##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 100.0 , offset) \
-	CxLiteral( E##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e18  , offset) \
-	CxLiteral( a##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e-18 , offset) \
-	CxLiteral( z##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e-21 , offset) \
-	CxLiteral( Z##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e21  , offset) \
-	CxLiteral( y##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e-24 , offset) \
-	CxLiteral( Y##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e24  , offset) \
+#define CxLiteralWithPrefixesNoBase(symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, Ct, factor, offset) \
+	CxLiteral( c##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, Ct,  factor * 1e-2  , offset) \
+	CxLiteral( k##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, Ct,  factor * 1e3   , offset) \
+	CxLiteral( m##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, Ct,  factor * 1e-3  , offset) \
+	CxLiteral( M##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, Ct,  factor * 1e6   , offset) \
+	CxLiteral( u##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, Ct,  factor * 1e-6  , offset) \
+	CxLiteral( G##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, Ct,  factor * 1e9   , offset) \
+	CxLiteral( n##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, Ct,  factor * 1e-9  , offset) \
+	CxLiteral( T##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, Ct,  factor * 1e12  , offset) \
+	CxLiteral( p##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, Ct,  factor * 1e-12 , offset) \
+	CxLiteral( P##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, Ct,  factor * 1e15  , offset) \
+	CxLiteral(da##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, Ct,  factor * 10.0  , offset) \
+	CxLiteral( f##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, Ct,  factor * 1e-15 , offset) \
+	CxLiteral( d##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, Ct,  factor * 0.1   , offset) \
+	CxLiteral( h##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, Ct,  factor * 100.0 , offset) \
+	CxLiteral( E##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, Ct,  factor * 1e18  , offset) \
+	CxLiteral( a##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, Ct,  factor * 1e-18 , offset) \
+	CxLiteral( z##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, Ct,  factor * 1e-21 , offset) \
+	CxLiteral( Z##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, Ct,  factor * 1e21  , offset) \
+	CxLiteral( y##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, Ct,  factor * 1e-24 , offset) \
+	CxLiteral( Y##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, Ct,  factor * 1e24  , offset) \
 //----------------------------------------------------------------------------
 
 #else // defined(YES_CONSTEXPR) && !defined(NO_INLINE)

@@ -26,30 +26,31 @@ const PhysicalQuantity::unitIndex_t PhysicalQuantity::KnownUnitOffsetsLength = s
 //#define PN(sy, lo) ROMLITERAL(sy)
 #endif
 
-const PhysicalQuantity::unitIndex_t PhysicalQuantity::gramIndex = 7;
 
 
 #if defined(PQ_GENCODE) || !defined(ROM_READ_BYTE)
 //const PhysicalQuantity::UnitDefinition PhysicalQuantity::KnownUnits[] = 
 
+const PhysicalQuantity::unitIndex_t PhysicalQuantity::gramIndex = 3;
 
 DEFINE_CONST_ARRAY(PhysicalQuantity::UnitDefinition, PhysicalQuantity::KnownUnits) =
 {
+//===============================================================================================
+// Avoid inserting anything between here and the next comment like this.
+
 // { symbol, longName, plural, factor, { MASS, DISTANCE, TIME, TEMPERATURE, CURRENT }, flags }
-//                        Ma Di Ti Te Cu
+//                        Ma Di Ti Te Cu An Ct
 {UN("K","kelvin","kelvin"),1.0, {0,0,0,1,0}, CANPREFIX},
 {UN("degC","degreeC","degreesC"),1.0, {0,0,0,1,0}, NOPREFIX},
 {UN("degF","degreeF","degreesF"),0.55555555555555555555555555555556, {0,0,0,1,0}, NOPREFIX},
 
-{UN("rad","radian","radians"),1, { 0, 0, 0, 0, 0}, NOPREFIX},
-{UN("deg","degree","degrees"),0.01745329251994329576923690768489, {0,0,0,0,0}, NOPREFIX},
-{UN("pi","",""),3.1415926535897932384626433832795, {0,0,0,0,0}, NOPREFIX | NOLITERAL},
-{UN("tau","",""),6.283185307179586476925286766559, {0,0,0,0,0}, NOPREFIX | NOLITERAL},
-// Conflicts with fundamental charge
-//{"e", "e",         { 0, 0, 0, 0, 0}, 0, 2.7182818284590452353602874713527, NO_PREFIX},
-
 // Mass
 {UN("g", "gram","grams"),0.001, {1,0,0,0,0}}, // Note: Update gramIndex if this shifts!
+
+// Avoid inserting anything above here. There are other constants which index this array.
+// Temperature degrees always need to come first.
+//===============================================================================================
+
 {UN("amu", "atomic_mass_unit","atomic_mass_units"),0.000000000000000000000000001660539, {1,0,0,0,0}, NOPREFIX},
 {UN("carat", "carat","carats"),0.0002, {1,0,0,0,0}, NOPREFIX},
 {UN("dram", "dram","drams"),0.001771845, {1,0,0,0,0}, NOPREFIX},
@@ -76,6 +77,26 @@ DEFINE_CONST_ARRAY(PhysicalQuantity::UnitDefinition, PhysicalQuantity::KnownUnit
 {UN("lbt", "troy_pound","troy_pounds"),0.03110348*12, {1,0,0,0,0}, NOPREFIX},
 {UN("lbst", "troy_pound","troy_pounds"),0.03110348*12, {1,0,0,0,0}, NOPREFIX},
 
+// Angles
+// "rd" avoids conflict with rads of radiation
+{UN("deg","degree","degrees"),0.01745329251994329576923690768489, {0,0,0,0,0,1,0}, NOPREFIX},
+{UN("rd","radian","radians"),1, {0,0,0,0,0,1,0}, NOPREFIX},
+{UN("grad","gradian","gradians"),0.0157079632679489661923132169164, {0,0,0,0,0,1,0}, NOPREFIX},
+{UN("rev","revolution","revolutions"),6.283185307179586476925286766559, {0,0,0,0,0,1,0}, NOPREFIX},
+
+// Angle composites
+{UN("rpm","revolution_per_minute","revolutions_per_minute"),6.283185307179586476925286766559 / 60.0,{0,0,-1,0,0,1,0}, NOPREFIX},
+
+// Debatable whether these should be included.
+// Not really units, just numbers, named constants
+{UN("pi","",""),3.1415926535897932384626433832795, {0,0,0,0,0}, NOPREFIX | NOLITERAL},
+{UN("tau","",""),6.283185307179586476925286766559, {0,0,0,0,0}, NOPREFIX | NOLITERAL},
+
+// Other scalars
+
+
+// Conflicts with fundamental charge
+//{"e", "e",         { 0, 0, 0, 0, 0}, 0, 2.7182818284590452353602874713527, NO_PREFIX},
 
 // Distance (Length)
 {UN("m", "meter","meters"),1, {0,1,0,0,0}},
@@ -109,7 +130,7 @@ DEFINE_CONST_ARRAY(PhysicalQuantity::UnitDefinition, PhysicalQuantity::KnownUnit
 {UN("gal", "gallon","gallons"), .003785411784, {0,3,0,0,0}, NOPREFIX},
 {UN("qt", "quart","quarts"), 0.000946352946, {0,3,0,0,0}, NOPREFIX},
 {UN("pt", "pint","pints"), 0.000473176473, {0,3,0,0,0}, NOPREFIX},
-{UN("cup", "cup","cups"), 0.0002365882365, {0,3,0,0,0}, NOPREFIX},
+{UN("cu", "cup","cups"), 0.0002365882365, {0,3,0,0,0}, NOPREFIX},
 {UN("floz", "fluid_ounce","fluid_ounces"), 0.0000295735295625, {0,3,0,0,0}, NOPREFIX},
 {UN("tbsp", "tablespoon","tablespoons"), 0.00001478676478125, {0,3,0,0,0}, NOPREFIX},
 {UN("tsp", "teaspoon","teaspoons"), 0.00000492892159375, {0,3,0,0,0}, NOPREFIX},
@@ -123,7 +144,7 @@ DEFINE_CONST_ARRAY(PhysicalQuantity::UnitDefinition, PhysicalQuantity::KnownUnit
 
 
 
-//                  Ma Di Ti Te Cu
+//                  Ma Di Ti Te Cu An Ct
 
 // Time
 {UN("s", "second","seconds"),1, {0,0,1,0,0}}, //, NOPREFIX},
@@ -142,10 +163,11 @@ DEFINE_CONST_ARRAY(PhysicalQuantity::UnitDefinition, PhysicalQuantity::KnownUnit
 
 // Energy
 {UN("J","joule","joules"),1, {1,2,-2,0,0}},
+{UN("erg","erg","ergs"),1e-7, {1,2,-2,0,0}},
 {UN("Wh","watt-hour","watt-hours"),3600, {1,2,-2,0,0}},
 {UN("eV","electron_volt","electron_volts"),1.602176634e-19, {1,2,-2,0,0}},
 
-//                        Ma Di Ti Te Cu
+//                        Ma Di Ti Te Cu An Ct
 // Power
 {"W", "watt", "watts", 1, {1,2,-3,0,0}},
 {"hp", "horsepower","", 745.699872, {1,2,-3,0,0}},
@@ -166,7 +188,7 @@ DEFINE_CONST_ARRAY(PhysicalQuantity::UnitDefinition, PhysicalQuantity::KnownUnit
 //NOBASELITERAL // _n and _N is a reserved suffix in some compilers
 //#endif
 //},
-//                  Ma Di Ti Te Cu
+//                  Ma Di Ti Te Cu An Ct
 
 // Conditions subject to change...
 //#if defined(__GNUC__) && defined(__arm__)
@@ -182,7 +204,7 @@ DEFINE_CONST_ARRAY(PhysicalQuantity::UnitDefinition, PhysicalQuantity::KnownUnit
 {UN("e","FundamentalCharge","FundamentalCharges"),1.6021765314e-19, {0,0,1,0,1}, NOPREFIX},
 //{"e-","ElectronChargeNegative", {0,0,1,0,1},0, -1.6021765314e-19, NO_PREFIX},
 
-//                           Ma Di Ti Te Cu
+//                           Ma Di Ti Te Cu An Ct
 // Composite electromagnetic units
 {UN("V", "volt", "volts"), 1, {1,2,-3,0,-1}},
 {UN("ohm", "ohm", "ohms"), 1, {1,2,-3,0,-2}}, // TODO: Test unicode support? I think UTF-8 would still work with strcmp() for equality testing
@@ -192,18 +214,26 @@ DEFINE_CONST_ARRAY(PhysicalQuantity::UnitDefinition, PhysicalQuantity::KnownUnit
 {UN("T", "tesla", "teslas"), 1, {1,0,-2,0,-1}}, // some of these plurals might not be accurate, but will be permissive of user error when we know what they're talking about
 {UN("H", "henry", "henrys"), 1, {1,2,-2,0,-1}},
 
-//                      Ma Di Ti Te Cu
+//                      Ma Di Ti Te Cu An Ct
 // Radiation
+{UN("ct", "count", "counts"), 1, {0,0,0,0,0,0,1}},
+{UN("cpm", "count_per_minute", "counts_per_minute"), 1.0/60.0, {0,0,-1,0,0,0,1}},
 {UN("Bq", "becquerel", "becquerels"), 1, {0,0,-1,0,0}}, // radionuclide activity, counts per second
-{UN("Gy", "gray", "grays"), 1, {0,2,-2,0,0}},  // dose
-{UN("Sv", "sievert", "sieverts"), 1, {0,2,-2,0,0}},  // dose
+{UN("Rd", "rutherford", "rutherford"), 1e6, {0,0,-1,0,0}}, // radionuclide activity, counts per second
+{UN("Gy", "gray", "grays"), 1, {0,2,-2,0,0}},  // dose, J/kg
+{UN("rad", "rad", "rads"), 0.01, {0,2,-2,0,0}},  // dose
+{UN("R", "roentgen", "roentgens"),2.58e-4, {-1,0,1,0,1}},  // dose
+
+// Because sieverts involve multiplying by a factor depending on biology, there's not a good way to represent that
+//{UN("Sv", "sievert", "sieverts"), 1, {0,2,-2,0,0}}, // equivalent dose, involves a scalar factor
+
 //TODO: kat, katal, s^-1*mol, catalytic activity
 
 
 // TODO: Light: candela, lumens etc
 // dyne, kip, sthene
 
-//                      Ma Di Ti Te Cu
+//                      Ma Di Ti Te Cu An Ct
 // Pressure
 {UN("Pa", "pascal","pascals"), 1,{1,-1,-2,0,0}},
 {UN("bar", "bar","bars"), 100000,{1,-1,-2,0,0}},

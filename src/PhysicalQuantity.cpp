@@ -66,7 +66,9 @@ PhysicalQuantity::HeaderConfigException::HeaderConfigException(const char* messa
 
 
 typedef PhysicalQuantity PQ;
-
+#ifdef NO_CONSTEXPR
+const int PhysicalQuantity::ND = (int)PhysicalQuantity::QuantityType::ENUM_MAX;
+#endif
 
 #ifdef ROM_READ_BYTE
 #define IFROM(normal_expr, rom_expr) rom_expr
@@ -1978,11 +1980,11 @@ size_t PhysicalQuantity::printNum(char* buf, size_t size, PhysicalQuantity::num 
 
 
 #ifdef NO_INLINE
-PhysicalQuantity PhysicalQuantity::get1kg() { signed char d[5]={1,0,0,0,0}; return PhysicalQuantity(1.0, d); }
-PhysicalQuantity PhysicalQuantity::get1m() {  signed char d[5]={0,1,0,0,0}; return PhysicalQuantity(1.0, d); }
-PhysicalQuantity PhysicalQuantity::get1s() {  signed char d[5]={0,0,1,0,0}; return PhysicalQuantity(1.0, d); }
-PhysicalQuantity PhysicalQuantity::get1K() {  signed char d[5]={0,0,0,1,0}; return PhysicalQuantity(1.0, d); }
-PhysicalQuantity PhysicalQuantity::get1A() {  signed char d[5]={0,0,0,0,1}; return PhysicalQuantity(1.0, d); }
+PhysicalQuantity PhysicalQuantity::get1kg() { signed char d[ND]={1,0,0,0,0,0,0,0}; return PhysicalQuantity(1.0, d); }
+PhysicalQuantity PhysicalQuantity::get1m() {  signed char d[ND]={0,1,0,0,0,0,0,0}; return PhysicalQuantity(1.0, d); }
+PhysicalQuantity PhysicalQuantity::get1s() {  signed char d[ND]={0,0,1,0,0,0,0,0}; return PhysicalQuantity(1.0, d); }
+PhysicalQuantity PhysicalQuantity::get1K() {  signed char d[ND]={0,0,0,1,0,0,0,0}; return PhysicalQuantity(1.0, d); }
+PhysicalQuantity PhysicalQuantity::get1A() {  signed char d[ND]={0,0,0,0,1,0,0,0}; return PhysicalQuantity(1.0, d); }
 PhysicalQuantity PhysicalQuantity::fromUnit(const UnitDefinition& u) { PhysicalQuantity ret(u.factor, u.dim); return ret; }
 PhysicalQuantity operator*(PhysicalQuantity::num left, const PhysicalQuantity& right) { return PhysicalQuantity(left) * right; }
 PhysicalQuantity operator/(PhysicalQuantity::num left, const PhysicalQuantity& right) { return PhysicalQuantity(left) / right; }
@@ -1992,8 +1994,8 @@ PhysicalQuantity operator-(PhysicalQuantity::num left, const PhysicalQuantity& r
 
 PhysicalQuantity PhysicalQuantity::fromUnit(const PhysicalQuantity::UnitDefinition& u, int power)
 {
-	signed char dim[5];
-	for (int i = 0; i < 5; i++) { dim[i] = u.dim[i] * power; }
+	signed char dim[ND];
+	for (int i = 0; i < ND; i++) { dim[i] = u.dim[i] * power; }
 	num fac;
 	if (power == 1) { fac = u.factor; }
 	else { fac = ::pow(u.factor, power); }
