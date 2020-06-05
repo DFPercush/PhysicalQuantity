@@ -50,6 +50,7 @@ DEFINE_CONST_ARRAY(PhysicalQuantity::UnitDefinition, PhysicalQuantity::KnownUnit
 // Ok you can add stuff now
 //===================================================================================
 
+// TODO: Angle flag
 // Angles - dimensionless scalars, but certain conversion factors and constants can be used
 // Storage occurs in radians, if a value is parsed from degrees, 
 {UN("rd","radian","radians"),1, { 0, 0, 0, 0, 0}, NOPREFIX},
@@ -57,12 +58,9 @@ DEFINE_CONST_ARRAY(PhysicalQuantity::UnitDefinition, PhysicalQuantity::KnownUnit
 {UN("grad","gradians","gradians"), 0.0157079632679489661923132169164, { 0, 0, 0, 0, 0}, NOPREFIX},
 {UN("rev","revolution","revolutions"),6.283185307179586476925286766559, { 0, 0, 0, 0, 0}, NOPREFIX},
 
-// Angle composites
-{UN("rpm","revolution_per_minute","revolutions_per_minute"),0.10471975511965977461542144610932, { 0, 0, -1, 0, 0}, NOPREFIX},
-
-
 {UN("pi","",""),3.1415926535897932384626433832795, {0,0,0,0,0}, NOPREFIX | NOLITERAL},
 {UN("tau","",""),6.283185307179586476925286766559, {0,0,0,0,0}, NOPREFIX | NOLITERAL},
+
 // Conflicts with fundamental charge
 //{"e", "e",         { 0, 0, 0, 0, 0}, 0, 2.7182818284590452353602874713527, NO_PREFIX},
 
@@ -147,10 +145,14 @@ DEFINE_CONST_ARRAY(PhysicalQuantity::UnitDefinition, PhysicalQuantity::KnownUnit
 
 // Time
 {UN("s", "second","seconds"),1, {0,0,1,0,0}}, //, NOPREFIX},
-{UN("Hz", "hertz",""),1, {0,0,-1,0,0}},
 {UN("min", "minute","minutes"),60, {0,0,1,0,0}, NOPREFIX},
 {UN("hr", "hour","hours"),3600, {0,0,1,0,0}, NOPREFIX},
 {UN("h", "hour","hours"),3600, {0,0,1,0,0}, NOPREFIX},
+
+{UN("Hz", "hertz",""),1, {0,0,-1,0,0}},
+// TODO: Angle flag
+{ UN("rpm","revolution_per_minute","revolutions_per_minute"),0.10471975511965977461542144610932, { 0, 0, -1, 0, 0}, NOPREFIX },
+
 
 // Speed
 {UN("mph","mile_per_hour","miles_per_hour"),1609.3439999931/3600.0, {0,1,-1,0,0}, NOPREFIX},

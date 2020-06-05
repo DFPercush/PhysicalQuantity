@@ -29,10 +29,30 @@ void showHelp()
 	"-i interactive mode \n" \
 	"--help\n" \
 	"-?\n" \
-	"/?       this help\n" \
+	"/?       this help\n\n" \
 	"Recommended for most cases: pq -i -s\n" \
+	"\n"
 	"Example: 12 mi / 10 min, *m hr \n" \
-	"    ---> 115.87276799950321 km / hr\n\n"
+	"    ---> 115.87276799950321 km / hr\n" \
+	"\n"
+	"Interactive commands:\n"
+	"pref [space-separated unit list]\n"
+	"    sets your preferred output units so you don't have to\n"
+	"    type them every time\n"
+	"pref+ [space-separated unit list]\n"
+	"    adds units to preferred list\n"
+	"['slash' | 'noslash']\n"
+	"    to switch between the divide sign or negative exponents\n"
+	"['whatis'] expression\n"
+	"    Show all the units which match the result exactly\n"
+	"sprint\n"
+	"    Switches to (string) print mode, non strict output units\n"
+	"convert\n"
+	"    Switches to convert mode, output units must be an exact match\n"
+	"help\n"
+	"    This help\n"
+	"'exit' | 'quit'\n"
+	"    Exits the program\n"
 	);
 }
 
@@ -51,6 +71,9 @@ PQ::ErrorCode ecode;
 #endif
 
 char buf[1000];
+bool useSlash = true;
+std::string pustr; // preferred units
+
 
 void runLine(csubstr &line, bool useConvert, bool useSprint)
 {
@@ -62,6 +85,31 @@ void runLine(csubstr &line, bool useConvert, bool useSprint)
 	{
 		whatis = true;
 		line = line.substr(6);
+	}
+	else if (line.substr(0, 5) == "pref ")
+	{
+		pustr = line.substr(5).toStdString();
+		printf("%s\n", pustr.c_str());
+		return;
+	}
+	else if (line.substr(0, 6) == "pref+ ")
+	{
+		pustr += " ";
+		pustr += line.substr(6).toStdString();
+		printf("%s\n", pustr.c_str());
+		return;
+	}
+	else if (line.substr(0, 5) == "slash")
+	{
+		useSlash = true;
+		printf("Set slash = true\n");
+		return;
+	}
+	else if (line.substr(0, 7) == "noslash")
+	{
+		useSlash = false;
+		printf("Set slash = false\n");
+		return;
 	}
 
 	int commapos = line.find_first_of(',');
@@ -94,7 +142,7 @@ void runLine(csubstr &line, bool useConvert, bool useSprint)
 		}
 		else if (useSprint)
 		{
-			val.sprint(buf, 1000, 15, units);
+			val.sprint(buf, 1000, 15, (pustr + " " + units.toStdString()).c_str(), useSlash);
 			printf("%s\n", buf);
 			if (whatis)
 			{
@@ -262,7 +310,7 @@ int main(int argc, char** argv)
 	{
 		printf("Warning: You are in interactive mode without setting any output method.\n");
 	}
-	printf("expression [ , preferred output units ] | 'sprint' | 'convert' | 'quit' | 'exit'\n");
+	printf("expression [ , preferred output units ] | 'help'\n");
 	string line_std_string;
 	while (true)
 	{
