@@ -164,6 +164,10 @@ DEFINE_CONST_ARRAY(PhysicalQuantity::UnitDefinition, PhysicalQuantity::KnownUnit
 {UN("J","joule","joules"),1, {1,2,-2,0,0}},
 {UN("Wh","watt_hour","watt_hours"),3600, {1,2,-2,0,0}},
 {UN("eV","electron_volt","electron_volts"),1.602176634e-19, {1,2,-2,0,0}},
+{UN("BTU","british_thermal_unit","british_thermal_units"),1055.056, {1,2,-2,0,0}},
+{UN("","btu","btus"),1055.056, {1,2,-2,0,0}},
+{UN("erg","erg","ergs"),0.0000001, {1,2,-2,0,0}},
+{UN("cal","calorie","calories"),4.184, {1,2,-2,0,0}},
 
 //                        Ma Di Ti Te Cu
 // Power
@@ -175,8 +179,16 @@ DEFINE_CONST_ARRAY(PhysicalQuantity::UnitDefinition, PhysicalQuantity::KnownUnit
 
 // Force
 {UN("N","newton","newtons"),1, {1,1,-2,0,0}}, //, NOBASELITERAL},
+{UN("oz_force","ounce_force","ounces_force"),0.2780139, {1,1,-2,0,0}, NOPREFIX},
 {UN("lbs_force","pound_force","pounds_force"),4.448221615260501, {1,1,-2,0,0}, NOPREFIX},
 {UN("lb_force","pound_force","lbs_force"),4.448221615260501, {1,1,-2,0,0}, NOPREFIX},
+{UN("t_force","metric_ton_force","metric_tons_force"),9806.65, {1,1,-2,0,0}, NOPREFIX},
+{UN("ton_force","ton_force","tons_force"),1, {1,1,-2,0,0}, NOPREFIX},
+// TODO: symbols
+{UN("dyn","dyne","dynes"),0.00001, {1,1,-2,0,0}},
+{UN("gram_force","gram_force","grams_force"),0.00980665, {1,1,-2,0,0}},
+{UN("kip","kip","kips"),4448.222, {1,1,-2,0,0}, NOPREFIX},
+{UN("klb","kip","kips"),4448.222, {1,1,-2,0,0}, NOPREFIX},
 
 
 
@@ -241,6 +253,9 @@ DEFINE_CONST_ARRAY(PhysicalQuantity::UnitDefinition, PhysicalQuantity::KnownUnit
 {UN("atm", "atmosphere","atmospheres"), 101325,{1,-1,-2,0,0}},
 {UN("Ba", "bary","barye"), 0.1,{1,-1,-2,0,0}},
 {UN("", "pièze","pieze"), 1000,{1,-1,-2,0,0}},
+{UN("cmH2O", "",""), 98.0665,{1,-1,-2,0,0}},
+{UN("mmH2O", "",""), 9.80665,{1,-1,-2,0,0}},
+
 //{UN("", "",""), ,{1,-1,-2,0,0}},
 
 // 
