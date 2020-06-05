@@ -332,7 +332,6 @@ public:
 	//==================================================================================
 	// Unit and dimension stuff
 
-	// If more are added, search source for "!dimresize" for all the places that need to be updated
 	enum class QuantityType // : int
 	{
 		MASS = 0,
@@ -341,7 +340,14 @@ public:
 		TEMPERATURE,
 		CURRENT,
 		ANGLE,
-		COUNTS,
+
+		// You can add new types of quantities here.
+		// If you do, search this code for "!dimresize" for all the places that need to be updated.
+		// Things like constexpr initializers, in particular, need to have the right number of elements
+		// hard coded into it.
+		// Keep in mind to avoid things like
+		// "acceleration" which are composites of other unit types. Any new type here should be
+		// completely orthogonal to pre-existing QuantityTypes.
 		ENUM_MAX
 	};
 #ifdef YES_CONSTEXPR
@@ -550,7 +556,7 @@ public:
 #if defined(YES_CONSTEXPR)
 	// !dimresize
 	constexpr PhysicalQuantity(num value_p, const signed char d[(int)QuantityType::ENUM_MAX])
-		: value(value_p), dim{ d[0], d[1], d[2], d[3], d[4], d[5], d[6]  } {}
+		: value(value_p), dim{ d[0], d[1], d[2], d[3], d[4], d[5]  } {}
 #else
 	PhysicalQuantity(num value_p, const signed char dim_p[(int)QuantityType::ENUM_MAX]);
 #endif
@@ -780,7 +786,6 @@ INLINE_KEYWORD PhysicalQuantity operator-(PhysicalQuantity::num left, const Phys
 #define PQHeaderOptionsMatch (PQ_HEADER_OPTIONS == PhysicalQuantity::compiledHeaderOptions)
 
 
-// !dimresize
 //==================================================================================
 // Literals
 #ifndef NO_LITERALS
@@ -847,66 +852,69 @@ INLINE_KEYWORD PhysicalQuantity operator-(PhysicalQuantity::num left, const Phys
 
 #if defined(YES_CONSTEXPR)
 // Use these in a header
-#define CxLiteral(symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, Ct, factor, offset) \
+// !dimresize
+#define CxLiteral(symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, factor, offset) \
 	constexpr PhysicalQuantity operator ""_##symbol_no_quotes(long double v) \
 	{ \
 		signed char d[(int)PhysicalQuantity::QuantityType::ENUM_MAX]  \
-		{Ma, Di, Ti, Te, Cu, An, Ct}; \
+		{Ma, Di, Ti, Te, Cu, An}; \
 		return PhysicalQuantity(((PhysicalQuantity::num)factor * (PhysicalQuantity::num)v) + offset, d); \
 	} \
 	constexpr PhysicalQuantity operator ""_##symbol_no_quotes(unsigned long long v) \
 	{ \
 		signed char d[(int)PhysicalQuantity::QuantityType::ENUM_MAX]  \
-		{Ma, Di, Ti, Te, Cu, An, Ct}; \
+		{Ma, Di, Ti, Te, Cu, An}; \
 		return PhysicalQuantity(((PhysicalQuantity::num)factor * (PhysicalQuantity::num)v) + offset, d); \
 	}
     /*#pragma message("Compiling literal symbol " #symbol_no_quotes) */ \
 
 //----------------------------------------------------------------------------
-#define CxLiteralWithPrefixes(symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, Ct, factor, offset) \
-	CxLiteral( symbol_no_quotes,    Ma, Di, Ti, Te, Cu, An, Ct, factor, offset) \
-	CxLiteral( c##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, Ct,  factor * 1e-2  , offset) \
-	CxLiteral( k##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, Ct,  factor * 1e3   , offset) \
-	CxLiteral( m##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, Ct,  factor * 1e-3  , offset) \
-	CxLiteral( M##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, Ct,  factor * 1e6   , offset) \
-	CxLiteral( u##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, Ct,  factor * 1e-6  , offset) \
-	CxLiteral( G##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, Ct,  factor * 1e9   , offset) \
-	CxLiteral( n##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, Ct,  factor * 1e-9  , offset) \
-	CxLiteral( T##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, Ct,  factor * 1e12  , offset) \
-	CxLiteral( p##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, Ct,  factor * 1e-12 , offset) \
-	CxLiteral( P##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, Ct,  factor * 1e15  , offset) \
-	CxLiteral(da##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, Ct,  factor * 10.0  , offset) \
-	CxLiteral( f##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, Ct,  factor * 1e-15 , offset) \
-	CxLiteral( d##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, Ct,  factor * 0.1   , offset) \
-	CxLiteral( h##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, Ct,  factor * 100.0 , offset) \
-	CxLiteral( E##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, Ct,  factor * 1e18  , offset) \
-	CxLiteral( a##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, Ct,  factor * 1e-18 , offset) \
-	CxLiteral( z##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, Ct,  factor * 1e-21 , offset) \
-	CxLiteral( Z##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, Ct,  factor * 1e21  , offset) \
-	CxLiteral( y##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, Ct,  factor * 1e-24 , offset) \
-	CxLiteral( Y##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, Ct,  factor * 1e24  , offset) \
+// !dimresize
+#define CxLiteralWithPrefixes(symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, factor, offset) \
+	CxLiteral( symbol_no_quotes,    Ma, Di, Ti, Te, Cu, An,factor, offset) \
+	CxLiteral( c##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, factor * 1e-2  , offset) \
+	CxLiteral( k##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, factor * 1e3   , offset) \
+	CxLiteral( m##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, factor * 1e-3  , offset) \
+	CxLiteral( M##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, factor * 1e6   , offset) \
+	CxLiteral( u##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, factor * 1e-6  , offset) \
+	CxLiteral( G##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, factor * 1e9   , offset) \
+	CxLiteral( n##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, factor * 1e-9  , offset) \
+	CxLiteral( T##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, factor * 1e12  , offset) \
+	CxLiteral( p##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, factor * 1e-12 , offset) \
+	CxLiteral( P##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, factor * 1e15  , offset) \
+	CxLiteral(da##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, factor * 10.0  , offset) \
+	CxLiteral( f##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, factor * 1e-15 , offset) \
+	CxLiteral( d##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, factor * 0.1   , offset) \
+	CxLiteral( h##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, factor * 100.0 , offset) \
+	CxLiteral( E##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, factor * 1e18  , offset) \
+	CxLiteral( a##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, factor * 1e-18 , offset) \
+	CxLiteral( z##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, factor * 1e-21 , offset) \
+	CxLiteral( Z##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, factor * 1e21  , offset) \
+	CxLiteral( y##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, factor * 1e-24 , offset) \
+	CxLiteral( Y##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, factor * 1e24  , offset) \
 
-#define CxLiteralWithPrefixesNoBase(symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, Ct, factor, offset) \
-	CxLiteral( c##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, Ct,  factor * 1e-2  , offset) \
-	CxLiteral( k##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, Ct,  factor * 1e3   , offset) \
-	CxLiteral( m##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, Ct,  factor * 1e-3  , offset) \
-	CxLiteral( M##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, Ct,  factor * 1e6   , offset) \
-	CxLiteral( u##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, Ct,  factor * 1e-6  , offset) \
-	CxLiteral( G##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, Ct,  factor * 1e9   , offset) \
-	CxLiteral( n##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, Ct,  factor * 1e-9  , offset) \
-	CxLiteral( T##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, Ct,  factor * 1e12  , offset) \
-	CxLiteral( p##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, Ct,  factor * 1e-12 , offset) \
-	CxLiteral( P##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, Ct,  factor * 1e15  , offset) \
-	CxLiteral(da##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, Ct,  factor * 10.0  , offset) \
-	CxLiteral( f##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, Ct,  factor * 1e-15 , offset) \
-	CxLiteral( d##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, Ct,  factor * 0.1   , offset) \
-	CxLiteral( h##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, Ct,  factor * 100.0 , offset) \
-	CxLiteral( E##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, Ct,  factor * 1e18  , offset) \
-	CxLiteral( a##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, Ct,  factor * 1e-18 , offset) \
-	CxLiteral( z##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, Ct,  factor * 1e-21 , offset) \
-	CxLiteral( Z##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, Ct,  factor * 1e21  , offset) \
-	CxLiteral( y##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, Ct,  factor * 1e-24 , offset) \
-	CxLiteral( Y##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, Ct,  factor * 1e24  , offset) \
+// !dimresize
+#define CxLiteralWithPrefixesNoBase(symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, factor, offset) \
+	CxLiteral( c##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, factor * 1e-2  , offset) \
+	CxLiteral( k##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, factor * 1e3   , offset) \
+	CxLiteral( m##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, factor * 1e-3  , offset) \
+	CxLiteral( M##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, factor * 1e6   , offset) \
+	CxLiteral( u##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, factor * 1e-6  , offset) \
+	CxLiteral( G##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, factor * 1e9   , offset) \
+	CxLiteral( n##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, factor * 1e-9  , offset) \
+	CxLiteral( T##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, factor * 1e12  , offset) \
+	CxLiteral( p##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, factor * 1e-12 , offset) \
+	CxLiteral( P##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, factor * 1e15  , offset) \
+	CxLiteral(da##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, factor * 10.0  , offset) \
+	CxLiteral( f##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, factor * 1e-15 , offset) \
+	CxLiteral( d##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, factor * 0.1   , offset) \
+	CxLiteral( h##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, factor * 100.0 , offset) \
+	CxLiteral( E##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, factor * 1e18  , offset) \
+	CxLiteral( a##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, factor * 1e-18 , offset) \
+	CxLiteral( z##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, factor * 1e-21 , offset) \
+	CxLiteral( Z##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, factor * 1e21  , offset) \
+	CxLiteral( y##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, factor * 1e-24 , offset) \
+	CxLiteral( Y##symbol_no_quotes, Ma, Di, Ti, Te, Cu, An, factor * 1e24  , offset) \
 //----------------------------------------------------------------------------
 
 #else // defined(YES_CONSTEXPR) && !defined(NO_INLINE)

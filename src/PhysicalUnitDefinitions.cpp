@@ -39,7 +39,7 @@ DEFINE_CONST_ARRAY(PhysicalQuantity::UnitDefinition, PhysicalQuantity::KnownUnit
 // Avoid inserting anything between here and the next comment like this.
 
 // { symbol, longName, plural, factor, { MASS, DISTANCE, TIME, TEMPERATURE, CURRENT }, flags }
-//                        Ma Di Ti Te Cu An Ct
+//                        Ma Di Ti Te Cu An
 {UN("K","kelvin","kelvin"),1.0, {0,0,0,1,0}, CANPREFIX},
 {UN("degC","degreeC","degreesC"),1.0, {0,0,0,1,0}, NOPREFIX},
 {UN("degF","degreeF","degreesF"),0.55555555555555555555555555555556, {0,0,0,1,0}, NOPREFIX},
@@ -78,11 +78,19 @@ DEFINE_CONST_ARRAY(PhysicalQuantity::UnitDefinition, PhysicalQuantity::KnownUnit
 {UN("lbst", "troy_pound","troy_pounds"),0.03110348*12, {1,0,0,0,0}, NOPREFIX},
 
 // Angles
-// "rd" avoids conflict with rads of radiation
-{UN("deg","degree","degrees"),0.01745329251994329576923690768489, {0,0,0,0,0,1,0}, NOPREFIX},
-{UN("rd","radian","radians"),1, {0,0,0,0,0,1,0}, NOPREFIX},
-{UN("grad","gradian","gradians"),0.0157079632679489661923132169164, {0,0,0,0,0,1,0}, NOPREFIX},
-{UN("rev","revolution","revolutions"),6.283185307179586476925286766559, {0,0,0,0,0,1,0}, NOPREFIX},
+// "rad" would conflict with rads of radiation
+// Leaving the symbol blank on the first radian definition, because it should not be output for 
+// things like "1 ft lb_force * 1 rpm == 1 hp" not "1 hp radians"
+// but users can still manually specify it, and there are multiple entries here
+// to allow for literals like 1_radian. Otherwise 3.14 would just be a number, not an angle.
+// Which, honestly, is fine if you don't need the conversion, but having it flagged as
+// an actual angle might make things more clear.
+{UN("","radian","radians"),1, {0,0,0,0,0,1}, NOPREFIX},
+{UN("radians","",""),1, {0,0,0,0,0,1}, NOPREFIX}, // for the literal
+{UN("radian","",""),1, {0,0,0,0,0,1}, NOPREFIX}, // for the literal
+{UN("deg","degree","degrees"),0.01745329251994329576923690768489, {0,0,0,0,0,1}, NOPREFIX},
+{UN("grad","gradian","gradians"),0.0157079632679489661923132169164, {0,0,0,0,0,1}, NOPREFIX},
+{UN("rev","revolution","revolutions"),6.283185307179586476925286766559, {0,0,0,0,0,1}, NOPREFIX},
 
 // Angle composites
 {UN("rpm","revolution_per_minute","revolutions_per_minute"),6.283185307179586476925286766559 / 60.0,{0,0,-1,0,0,1,0}, NOPREFIX},
@@ -144,7 +152,7 @@ DEFINE_CONST_ARRAY(PhysicalQuantity::UnitDefinition, PhysicalQuantity::KnownUnit
 
 
 
-//                  Ma Di Ti Te Cu An Ct
+//                  Ma Di Ti Te Cu An
 
 // Time
 {UN("s", "second","seconds"),1, {0,0,1,0,0}}, //, NOPREFIX},
@@ -167,7 +175,7 @@ DEFINE_CONST_ARRAY(PhysicalQuantity::UnitDefinition, PhysicalQuantity::KnownUnit
 {UN("Wh","watt-hour","watt-hours"),3600, {1,2,-2,0,0}},
 {UN("eV","electron_volt","electron_volts"),1.602176634e-19, {1,2,-2,0,0}},
 
-//                        Ma Di Ti Te Cu An Ct
+//                        Ma Di Ti Te Cu An
 // Power
 {"W", "watt", "watts", 1, {1,2,-3,0,0}},
 {"hp", "horsepower","", 745.699872, {1,2,-3,0,0}},
@@ -188,7 +196,7 @@ DEFINE_CONST_ARRAY(PhysicalQuantity::UnitDefinition, PhysicalQuantity::KnownUnit
 //NOBASELITERAL // _n and _N is a reserved suffix in some compilers
 //#endif
 //},
-//                  Ma Di Ti Te Cu An Ct
+//                  Ma Di Ti Te Cu An
 
 // Conditions subject to change...
 //#if defined(__GNUC__) && defined(__arm__)
@@ -204,7 +212,7 @@ DEFINE_CONST_ARRAY(PhysicalQuantity::UnitDefinition, PhysicalQuantity::KnownUnit
 {UN("e","FundamentalCharge","FundamentalCharges"),1.6021765314e-19, {0,0,1,0,1}, NOPREFIX},
 //{"e-","ElectronChargeNegative", {0,0,1,0,1},0, -1.6021765314e-19, NO_PREFIX},
 
-//                           Ma Di Ti Te Cu An Ct
+//                           Ma Di Ti Te Cu An
 // Composite electromagnetic units
 {UN("V", "volt", "volts"), 1, {1,2,-3,0,-1}},
 {UN("ohm", "ohm", "ohms"), 1, {1,2,-3,0,-2}}, // TODO: Test unicode support? I think UTF-8 would still work with strcmp() for equality testing
@@ -214,10 +222,10 @@ DEFINE_CONST_ARRAY(PhysicalQuantity::UnitDefinition, PhysicalQuantity::KnownUnit
 {UN("T", "tesla", "teslas"), 1, {1,0,-2,0,-1}}, // some of these plurals might not be accurate, but will be permissive of user error when we know what they're talking about
 {UN("H", "henry", "henrys"), 1, {1,2,-2,0,-1}},
 
-//                      Ma Di Ti Te Cu An Ct
+//                      Ma Di Ti Te Cu An
 // Radiation
-{UN("ct", "count", "counts"), 1, {0,0,0,0,0,0,1}},
-{UN("cpm", "count_per_minute", "counts_per_minute"), 1.0/60.0, {0,0,-1,0,0,0,1}},
+{UN("ct", "count", "counts"), 1, {0,0,0,0,0,0}},
+{UN("cpm", "count_per_minute", "counts_per_minute"), 1.0/60.0, {0,0,-1,0,0,0}},
 {UN("Bq", "becquerel", "becquerels"), 1, {0,0,-1,0,0}}, // radionuclide activity, counts per second
 {UN("Rd", "rutherford", "rutherford"), 1e6, {0,0,-1,0,0}}, // radionuclide activity, counts per second
 {UN("Gy", "gray", "grays"), 1, {0,2,-2,0,0}},  // dose, J/kg
@@ -233,7 +241,7 @@ DEFINE_CONST_ARRAY(PhysicalQuantity::UnitDefinition, PhysicalQuantity::KnownUnit
 // TODO: Light: candela, lumens etc
 // dyne, kip, sthene
 
-//                      Ma Di Ti Te Cu An Ct
+//                      Ma Di Ti Te Cu An
 // Pressure
 {UN("Pa", "pascal","pascals"), 1,{1,-1,-2,0,0}},
 {UN("bar", "bar","bars"), 100000,{1,-1,-2,0,0}},

@@ -50,9 +50,9 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="..\README.txt" />
+    <Natvis Include="CSubString.natvis" />
   </ItemGroup>
   <ItemGroup>
-    <Natvis Include="CSubString.natvis" />
+    <None Include="..\README.md" />
   </ItemGroup>
 </Project>

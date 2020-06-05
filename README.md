@@ -314,19 +314,18 @@ will be false except `!=`, and any additions or subtractions will return the unm
 
 
 ##### A note about angles:
->Caution: Subject to change in a planned 'scalar units' update.
 
-Since angles are dimensionless ratios (length/length), they are stored internally as a
-simple scalar value. However, one can `convert()` this internal value to and from degrees 
-or radian units. You may use the literal operators `1_deg` and `1_rad` to specify
-hard coded values, as well as the nominal units of "deg" and "rad" when parsing / 
-printing / `convert()`ing, to apply the proper conversion factor.
-Currently there is no method of internally differentiating an angle from any other 
-scalar value. Most quantities which are ratios of like units will exhibit this property.
-(TODO: angle flag?)
-
+Technically, angles do not have any dimension - they are a ratio of distance/distance,
+but I thought they should be represented in code as an orthogonal dimension
+for clarity's sake. This was different before June 2020, they were originally simple scalars.
+However, that would not display "deg" on any values requested in degrees, and it could
+theoretically be possible to apply degree --> radian conversions to any arbitrary value,
+multiple times, with no change in units, thus yielding confusing results.
+This increases the dimension count from 5 to 6, so sizeof(PQ) will likely not be
+affected on 16-bit or higher systems. An further increase may affect the padded size.
 
 ##### A note about temperature:
+
 Temperature is a special snowflake. Degrees, whether Celsius or Fahrenheit, not
 only involve a conversion factor, but also a conversion offset. In other words, an
 amount that must be added to the value as well as a multiplication factor. The unique
