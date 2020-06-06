@@ -56,7 +56,7 @@ void showHelp()
 	"    Show all the units which match the result exactly\n"
 	"\n"
 	"[variable = ] expression\n"
-	"    creates a variable that you can use in expressions later"
+	"    creates a variable that you can use in expressions later\n"
 	"save [comma-separated variable list]\n"
 	"    saves variable(s) to file system\n"
 #ifdef __linux__
@@ -74,19 +74,20 @@ void showHelp()
 	"    removes/deletes a variable from current memory,\n"
 	"    and if the -s option is given, also from the save file.\n"
 	"	 Without -s, the variables will be loaded again when the\n"
-	"    program starts or you issue a 'reload' command."
+	"    program starts or you issue a 'reload' command.\n"
 	"reload\n"
 	"    reloads the save file and updates vars in memory.\n"
 	"    This does not delete or clear vars, but it will overwrite\n"
 	"    any vars by the same name with the value from file system.\n"
 	"clear [-s]\n"
 	"    Clears (deletes) all variables.\n"
-	"    If the -s option is given, clears the save file as well."
+	"    If the -s option is given, clears the save file as well.\n"
 	"\n"
 	"help\n"
 	"    This help\n"
 	"'exit' | 'quit'\n"
 	"    Exits the program\n"
+	"\n"
 	);
 }
 
