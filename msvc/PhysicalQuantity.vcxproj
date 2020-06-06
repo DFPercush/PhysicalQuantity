@@ -315,7 +315,6 @@
     <ClInclude Include="..\include\PhysicalQuantity\hashTables.ah" />
     <ClInclude Include="..\include\PhysicalQuantity\literals.ah" />
     <ClInclude Include="..\include\PhysicalQuantity\ppOptions.h" />
-    <ClInclude Include="..\include\PhysicalQuantity\vars.h" />
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="CSubString.natvis" />
