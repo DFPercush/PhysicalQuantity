@@ -60,7 +60,7 @@ void dumpLiterals(string rootpath)
 		//stringstream macroPushLines;
 		stringstream macroInnards;
 		string useMacro = "";
-		if (u.flags & NOLITERAL) { continue; }
+		if (u.flags & PQ::NOLITERAL) { continue; }
 		if (strlen(u.symbol) > 0)
 		{
 			macroInnards << u.symbol << ",";
@@ -73,23 +73,23 @@ void dumpLiterals(string rootpath)
 				<< ((ui < PQ::KnownUnitOffsetsLength) ? PQ::KnownUnitOffsets[ui] : 0);
 				//<< ")" << endl;
 
-			if (u.flags & NOPREFIX)
+			if (u.flags & PQ::NOPREFIX)
 			{
 				useMacro = "CxLiteral";
 			}
 			else 
 			{
-				if (u.flags & NOBASELITERAL) { useMacro = "CxLiteralWithPrefixesNoBase"; }
+				if (u.flags & PQ::NOBASELITERAL) { useMacro = "CxLiteralWithPrefixesNoBase"; }
 				else { useMacro = "CxLiteralWithPrefixes"; }
 				//literalDefLines << "CxLiteralWithPrefixesNoBase(";
 			}
 
-			if (((u.flags & NOBASELITERAL) == 0) && (u.flags & NOPREFIX))
+			if (((u.flags & PQ::NOBASELITERAL) == 0) && (u.flags & PQ::NOPREFIX))
 			{
 				header << "#pragma push_macro(\"_" << u.symbol << "\")\n#undef " << u.symbol << "\n"
 					<< useMacro << "(" << macroInnards.str() << ")\n#pragma pop_macro(\"_" << u.symbol << "\")\n";
 			}
-			if ((u.flags & NOPREFIX) == 0)
+			if ((u.flags & PQ::NOPREFIX) == 0)
 			{
 				header << "#pragma push_macro(\"_" << u.symbol << "\")\n#undef _" << u.symbol << endl;
 				for (int pi = 0; pi < PQ::KnownPrefixesLength; pi++)
@@ -126,11 +126,11 @@ void dumpLiterals(string rootpath)
 	for (int i = 0; i < PQ::KnownUnitsLength; i++)
 	{
 		const PQ::UnitDefinition& u = PQ::KnownUnits[i];
-		if (u.flags & NOLITERAL) { continue; }
+		if (u.flags & PQ::NOLITERAL) { continue; }
 		//if (u.offset == 0.0)
 		//if (i >= PQ::KnownUnitOffsetsLength)
 		//{
-			if (u.flags & NOPREFIX)
+			if (u.flags & PQ::NOPREFIX)
 			{
 				header << "DeclareLiteral(";
 				source << "DefineLiteral(";

@@ -341,6 +341,8 @@ public:
 	static const int ND;
 #endif
 
+typedef unsigned char UnitFlags_t;
+
 #if !defined(NO_TEXT) || defined(PQ_GENCODE)
 	struct UnitDefinition
 	{
@@ -352,13 +354,17 @@ public:
 #endif
 		num factor;
 		const signed char dim[(int)QuantityType::ENUM_MAX];
-		unsigned short flags = 0;
+		UnitFlags_t flags = 0; // watch size
 	};
-#define NOPREFIX  0x01
-#define CANPREFIX 0
-#define NOLITERAL 0x02
-#define MAKELITERAL 0
-#define NOBASELITERAL 0x04
+	enum UnitFlags
+	{
+		NOPREFIX = 0x01,
+		CANPREFIX = 0,
+		NOLITERAL = 0x02,
+		MAKELITERAL = 0,
+		NOBASELITERAL = 0x04,
+		EXPLICIT = 0x08 // Only output in these units if explicitly requested (*ahem* mph...)
+	};
 
 // Because some compilers (g++/arm 7.2.1 for example) have reserved literals like _N and _C
 

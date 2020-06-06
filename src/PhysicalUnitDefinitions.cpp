@@ -37,8 +37,6 @@ DEFINE_CONST_ARRAY(PhysicalQuantity::UnitDefinition, PhysicalQuantity::KnownUnit
 {
 //=============================================================================================================
 // Try not to change the order of things between these lines
-// { symbol, longName, plural, factor, { MASS, DISTANCE, TIME, TEMPERATURE, CURRENT }, flags }
-//                        Ma Di Ti Te Cu
 // Temperature always needs to come first.
 {UN("K","kelvin","kelvin"),1.0, {0,0,0,1,0}, CANPREFIX},
 {UN("degC","degreeC","degreesC"),1.0, {0,0,0,1,0}, NOPREFIX},
@@ -50,6 +48,9 @@ DEFINE_CONST_ARRAY(PhysicalQuantity::UnitDefinition, PhysicalQuantity::KnownUnit
 // Ok you can add stuff now
 //===================================================================================
 
+// { symbol, longName, plural, factor, { MASS, DISTANCE, TIME, TEMPERATURE, CURRENT }, flags }
+//                        Ma Di Ti Te Cu
+
 // TODO: Angle flag
 // Angles - dimensionless scalars, but certain conversion factors and constants can be used
 // Storage occurs in radians, if a value is parsed from degrees, 
@@ -60,11 +61,10 @@ DEFINE_CONST_ARRAY(PhysicalQuantity::UnitDefinition, PhysicalQuantity::KnownUnit
 
 {UN("pi","",""),3.1415926535897932384626433832795, {0,0,0,0,0}, NOPREFIX | NOLITERAL},
 {UN("tau","",""),6.283185307179586476925286766559, {0,0,0,0,0}, NOPREFIX | NOLITERAL},
-
-// Conflicts with fundamental charge
-//{"e", "e",         { 0, 0, 0, 0, 0}, 0, 2.7182818284590452353602874713527, NO_PREFIX},
+{UN("e", "e", "e"), 2.7182818284590452353602874713527, {0,0,0,0,0}, NOPREFIX | NOLITERAL},
 
 // Mass
+// gram is at gramIndex
 {UN("amu", "atomic_mass_unit","atomic_mass_units"),0.000000000000000000000000001660539, {1,0,0,0,0}, NOPREFIX},
 {UN("carat", "carat","carats"),0.0002, {1,0,0,0,0}, NOPREFIX},
 {UN("dram", "dram","drams"),0.001771845, {1,0,0,0,0}, NOPREFIX},
@@ -83,13 +83,16 @@ DEFINE_CONST_ARRAY(PhysicalQuantity::UnitDefinition, PhysicalQuantity::KnownUnit
 {UN("stick", "stick","sticks"),0.115, {1,0,0,0,0}, NOPREFIX},
 {UN("stone", "stone","stones"),6.350293, {1,0,0,0,0}, NOPREFIX},
 {UN("tola", "tola","tolas"),0.0116638, {1,0,0,0,0}, NOPREFIX},
-{UN("ton", "ton","tons"),907.1847, {1,0,0,0,0}, NOPREFIX},
+{UN("ton", "ton","tons"),907.1847, {1,0,0,0,0}},
 {UN("ozt", "troy_ounce","troy_ounces"),0.03110348, {1,0,0,0,0}, NOPREFIX},
 {UN("dwt", "pennyweight","pennyweights"),0.03110348/20, {1,0,0,0,0}, NOPREFIX},
 //{UN("grain", "grain","grains"),0.03110348/20/24, {1,0,0,0,0}},
 {UN("grain", "grain","grains"),0.00006479891, {1,0,0,0,0}, NOPREFIX}, // Same as prev line
 {UN("lbt", "troy_pound","troy_pounds"),0.03110348*12, {1,0,0,0,0}, NOPREFIX},
 {UN("lbst", "troy_pound","troy_pounds"),0.03110348*12, {1,0,0,0,0}, NOPREFIX},
+{UN("kip", "kip","kips"),453.59237, {1,0,0,0,0}, NOPREFIX},
+{UN("klb", "kip","kips"),453.59237, {1,0,0,0,0}, NOPREFIX},
+{UN("dalton", "dalton","daltons"),1.66053E-27, {1,0,0,0,0}, NOPREFIX},
 
 
 // Distance (Length)
@@ -155,11 +158,11 @@ DEFINE_CONST_ARRAY(PhysicalQuantity::UnitDefinition, PhysicalQuantity::KnownUnit
 
 
 // Speed
-{UN("mph","mile_per_hour","miles_per_hour"),1609.3439999931/3600.0, {0,1,-1,0,0}, NOPREFIX},
-{UN("kt","knot","knots"),0.51444444444444444444444444444444, {0,1,-1,0,0}, NOPREFIX},
+{UN("mph","mile_per_hour","miles_per_hour"),1609.3439999931/3600.0, {0,1,-1,0,0}, NOPREFIX | EXPLICIT},
+{UN("kt","knot","knots"),0.51444444444444444444444444444444, {0,1,-1,0,0}, NOPREFIX | EXPLICIT},
 
 // Acceleration
-{UN("g0","gee","gees"),9.80665, {0,1,-2,0,0}, NOPREFIX},
+{UN("g0","gee","gees"),9.80665, {0,1,-2,0,0}, NOPREFIX | EXPLICIT},
 
 
 // Energy
@@ -174,23 +177,22 @@ DEFINE_CONST_ARRAY(PhysicalQuantity::UnitDefinition, PhysicalQuantity::KnownUnit
 //                        Ma Di Ti Te Cu
 // Power
 {"W", "watt", "watts", 1, {1,2,-3,0,0}},
-{"hp", "horsepower","", 745.699872, {1,2,-3,0,0}},
-{"hp_electric", "electrichorsepower", "", 746, {1,2,-3,0,0}},
-{"hp_metric", "metrichorsepower", "", 735.49875, {1,2,-3,0,0}},
+{"hp_mech", "mechanical_horsepower","", 745.699872, {1,2,-3,0,0}},
+{"hp", "","", 745.699872, {1,2,-3,0,0}},
+{"hp_electric", "electric_horsepower", "", 746, {1,2,-3,0,0}},
+{"hp_metric", "metric_horsepower", "", 735.49875, {1,2,-3,0,0}},
 
 
 // Force
 {UN("N","newton","newtons"),1, {1,1,-2,0,0}}, //, NOBASELITERAL},
-{UN("oz_force","ounce_force","ounces_force"),0.2780139, {1,1,-2,0,0}, NOPREFIX},
-{UN("lbs_force","pound_force","pounds_force"),4.448221615260501, {1,1,-2,0,0}, NOPREFIX},
-{UN("lb_force","pound_force","lbs_force"),4.448221615260501, {1,1,-2,0,0}, NOPREFIX},
-{UN("t_force","metric_ton_force","metric_tons_force"),9806.65, {1,1,-2,0,0}, NOPREFIX},
-{UN("ton_force","ton_force","tons_force"),1, {1,1,-2,0,0}, NOPREFIX},
-// TODO: symbols
+{UN("ozf","ounce_force","ounces_force"),0.2780139, {1,1,-2,0,0}, NOPREFIX},
+{UN("lbf","pound_force","pounds_force"),4.448221615260501, {1,1,-2,0,0}, NOPREFIX},
+//{UN("t_force","metric_ton_force","metric_tons_force"),9806.65, {1,1,-2,0,0}, NOPREFIX},
+//{UN("ton_force","ton_force","tons_force"),1, {1,1,-2,0,0}, NOPREFIX},
 {UN("dyn","dyne","dynes"),0.00001, {1,1,-2,0,0}},
-{UN("gram_force","gram_force","grams_force"),0.00980665, {1,1,-2,0,0}},
-{UN("kip","kip","kips"),4448.222, {1,1,-2,0,0}, NOPREFIX},
-{UN("klb","kip","kips"),4448.222, {1,1,-2,0,0}, NOPREFIX},
+{UN("gf","gram_force","grams_force"),0.00980665, {1,1,-2,0,0}},
+{UN("kipf","kip","kips"),4448.222, {1,1,-2,0,0}, NOPREFIX},
+{UN("klbf","kip_force","kips_force"),4448.222, {1,1,-2,0,0}, NOPREFIX},
 
 
 
@@ -213,7 +215,8 @@ DEFINE_CONST_ARRAY(PhysicalQuantity::UnitDefinition, PhysicalQuantity::KnownUnit
 {UN("A","amp","amps"),1, {0,0,0,0,1}},
 {UN("","ampere","amperes"),1, {0,0,0,0,1}},
 {UN("C","coulomb","coulombs"),1, {0,0,1,0,1}}, //, NOBASELITERAL},
-{UN("e","FundamentalCharge","FundamentalCharges"),1.6021765314e-19, {0,0,1,0,1}, NOPREFIX},
+{UN("e+","fundamental_charge","fundamental_charges"),1.6021765314e-19, {0,0,1,0,1}, NOPREFIX | NOLITERAL},
+{UN("e-","fundamental_charge","fundamental_charges"),1.6021765314e-19, {0,0,1,0,1}, NOPREFIX | NOLITERAL},
 //{"e-","ElectronChargeNegative", {0,0,1,0,1},0, -1.6021765314e-19, NO_PREFIX},
 
 //                           Ma Di Ti Te Cu

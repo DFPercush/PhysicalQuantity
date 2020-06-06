@@ -690,21 +690,29 @@ size_t PhysicalQuantity::sprint(char* buf, size_t bufsize, unsigned int precisio
 		// and divide it out, repeat until no dimensions left.
 		// Whichever equivalent unit has the lowest index in KnownUnits takes priority.
 
+		// Buffer overflow checking
+		if (nouts >= outslen)
+		{
+#ifdef NO_THROW
+			errorHandler(errorUserContext, E_MEMORY);
+			return 0;
+#else
+			throw bad_alloc();
+#endif
+		}
+
+
 		int iBestReductionUnit = -1;
 		int bestReductionUnitPower = 0;
 		int bestReductionMagdim = 0;
 		PhysicalQuantity bestReductionValue;
 		for (int iUnit = 0; iUnit < KnownUnitsLength; iUnit++)
 		{
-			if (nouts >= outslen)
-			{
-#ifdef NO_THROW
-				errorHandler(errorUserContext, E_MEMORY);
-#else
-				throw bad_alloc();
-#endif
-			}
 			UnitDefinition unit = rom(KnownUnits[iUnit]);
+
+			// Some units should not be automatically converted to
+			if (unit.flags & EXPLICIT) { continue; }
+
 			// Omitting the second parameter will make bestReductionPower return 0 if
 			// the unit would result in the same dimension count. Only preferred units
 			// are applied when net result is zero.
