@@ -395,16 +395,16 @@ void runLine(csubstr &line, bool useConvert, bool useSprint)
 	}
 	else if (line == "clear")
 	{
-		int nVarsCleared = vars.size();
+		int nVarsCleared = (int)vars.size();
 		vars.clear();
 		printf(" %d vars cleared. (Use -s to clear save file as well.)\n", nVarsCleared);
 		return;
 	}
 	else if (line == "clear -s")
 	{
-		int nVarsCleared = vars.size();
+		int nVarsCleared = (int)vars.size();
 		vars.clear();
-		int nSavesCleared = savedVars.size();
+		int nSavesCleared = (int)savedVars.size();
 		savedVars.clear();
 		saveVars();
 		printf(" %d session vars and %d saved vars were cleared.\n", nVarsCleared, nSavesCleared);
