@@ -143,37 +143,38 @@ bool InitLibPQ(int headerOptionFlags)
 
 void PhysicalQuantity::init()
 {
-//	if (!(PQHeaderOptionsMatch))
-//	{
-//#ifdef NO_THROW
-//		errorHandler(errorUserContext, E_HEADER_CONFIG);
-//#else
-//		throw HeaderConfigException("PhysicalQuantity: Module/object was compiled with different header options.");
-//#endif
-//	}
 	value = 0.0;
+	flags = 0;
 	memset(dim, 0, sizeof(dim));
 }
 
+#ifdef NO_CONSTEXPR
 PhysicalQuantity::PhysicalQuantity()
 {
 	init();
 }
-
-
 PhysicalQuantity::PhysicalQuantity(const PhysicalQuantity& copy)
 {
-	//init();
 	value = copy.value;
 	memcpy(dim, copy.dim, sizeof(dim));
+	flags = copy.flags
+}
+PhysicalQuantity::PhysicalQuantity(num value_p)
+{	
+	value = value_p
+	memset(dim, 0, sizeof(dim));
+	flags = 0;
 }
 
-PhysicalQuantity::PhysicalQuantity(PhysicalQuantity&& move) noexcept
-{
-	//init();
-	value = move.value;
-	memcpy(dim, move.dim, sizeof(dim));
-}
+#endif // NO_CONSTEXPR
+
+
+//PhysicalQuantity::PhysicalQuantity(PhysicalQuantity&& move) noexcept
+//{
+//	//init();
+//	value = move.value;
+//	memcpy(dim, move.dim, sizeof(dim));
+//}
 
 #ifndef NO_TEXT
 PhysicalQuantity::PhysicalQuantity(num value_p, const char* units_text)
@@ -194,16 +195,16 @@ PhysicalQuantity::PhysicalQuantity(CSubString str)
 }
 #endif //#ifndef NO_TEXT
 
+#if defined(NO_CONSTEXPR) // || defined(NO_INLINE)
 PhysicalQuantity::PhysicalQuantity(PhysicalQuantity::num valueArg)
 {
 	init();
 	value = valueArg;
 }
 
-#if !defined(YES_CONSTEXPR) // || defined(NO_INLINE)
-PhysicalQuantity::PhysicalQuantity(num value_p, const signed char dim_p[(int)QuantityType::ENUM_MAX])
-	: value(value_p), dim {dim_p[0], dim_p[1], dim_p[2], dim_p[3], dim_p[4]} {}
-#endif
+PhysicalQuantity::PhysicalQuantity(num value_p, const signed char dim_p[(int)QuantityType::ENUM_MAX], unsigned char flags_p)
+	: value(value_p), dim {dim_p[0], dim_p[1], dim_p[2], dim_p[3], dim_p[4]}, flags {flags_p & INSTANCE} {}
+#endif // NO_CONSTEXPR
 
 
 PhysicalQuantity& PhysicalQuantity::operator=(PhysicalQuantity::num valueArg)
@@ -522,6 +523,10 @@ void PhysicalQuantity::mulUnit(signed char(&unitsOut)[(int)QuantityType::ENUM_MA
 	{
 		unitsOut[i] += power * unit.dim[i];
 	}
+	// TODO: Angle flag... but is it numerator or denominator... shit. CUT!
+	// plus this function is static. Yeah this isn't working.
+	//if (invert) { flags &= unit.flags; }
+	//else { flags |= unit.flags; }
 }
 
 void PhysicalQuantity::parse(const CSubString& text_arg)
@@ -869,6 +874,7 @@ size_t PhysicalQuantity::sprint(char* buf, size_t bufsize, unsigned int precisio
 
 #if !defined(NO_STD_STRING) && !defined(NO_PRINTF)
 
+// TODO: toString slash option
 std::string PhysicalQuantity::toString() const
 {
 	char buf[TOSTRING_BUFFER_SIZE];
@@ -919,6 +925,7 @@ PhysicalQuantity PhysicalQuantity::operator* (const PhysicalQuantity& rhs) const
 	{
 		ret.dim[i] = dim[i] + rhs.dim[i];
 	}
+	ret.flags = flags | rhs.flags;
 	return ret;
 }
 
@@ -930,6 +937,7 @@ PhysicalQuantity PhysicalQuantity::operator/ (const PhysicalQuantity& rhs) const
 	{
 		ret.dim[i] = dim[i] - rhs.dim[i];
 	}
+	ret.flags = flags & rhs.flags
 	return ret;
 }
 #endif //#if !defined(YES_CONSTEXPR) || defined(NO_INLINE)
@@ -937,6 +945,15 @@ PhysicalQuantity PhysicalQuantity::operator/ (const PhysicalQuantity& rhs) const
 
 PhysicalQuantity PhysicalQuantity::operator+ (const PhysicalQuantity& rhs) const
 {
+	if (flags != rhs.flags)
+	{
+#ifdef NO_THROW
+		errorHandler(errorUserContext, E_UNIT_MISMATCH);
+		return *this;
+#else
+		throw UnitMismatchException("");
+#endif
+	}
 	if (memcmp(dim, rhs.dim, sizeof(dim)) != 0)
 	{
 #ifdef NO_THROW
@@ -953,6 +970,15 @@ PhysicalQuantity PhysicalQuantity::operator+ (const PhysicalQuantity& rhs) const
 
 PhysicalQuantity PhysicalQuantity::operator- (const PhysicalQuantity& rhs) const
 {
+	if (flags != rhs.flags)
+	{
+#ifdef NO_THROW
+		errorHandler(errorUserContext, E_UNIT_MISMATCH);
+		return *this;
+#else
+		throw UnitMismatchException("");
+#endif
+	}
 	if (memcmp(dim, rhs.dim, sizeof(dim)) != 0)
 	{
 #ifdef NO_THROW
@@ -1866,7 +1892,7 @@ bool PhysicalQuantity::readNetworkBinary(void* buf)
 	return true;
 }
 
-PhysicalQuantity PhysicalQuantity::pow(int x)
+PhysicalQuantity PhysicalQuantity::pow(int x) const
 {
 	PQ ret;
 	ret.value = ::pow(value, x);
@@ -1987,7 +2013,7 @@ PhysicalQuantity PhysicalQuantity::get1m() {  signed char d[5]={0,1,0,0,0}; retu
 PhysicalQuantity PhysicalQuantity::get1s() {  signed char d[5]={0,0,1,0,0}; return PhysicalQuantity(1.0, d); }
 PhysicalQuantity PhysicalQuantity::get1K() {  signed char d[5]={0,0,0,1,0}; return PhysicalQuantity(1.0, d); }
 PhysicalQuantity PhysicalQuantity::get1A() {  signed char d[5]={0,0,0,0,1}; return PhysicalQuantity(1.0, d); }
-PhysicalQuantity PhysicalQuantity::fromUnit(const UnitDefinition& u) { PhysicalQuantity ret(u.factor, u.dim); return ret; }
+PhysicalQuantity PhysicalQuantity::fromUnit(const UnitDefinition& u) { PhysicalQuantity ret(u.factor, u.dim, u.flags); return ret; }
 PhysicalQuantity operator*(PhysicalQuantity::num left, const PhysicalQuantity& right) { return PhysicalQuantity(left) * right; }
 PhysicalQuantity operator/(PhysicalQuantity::num left, const PhysicalQuantity& right) { return PhysicalQuantity(left) / right; }
 PhysicalQuantity operator+(PhysicalQuantity::num left, const PhysicalQuantity& right) { return PhysicalQuantity(left) + right; }
@@ -2001,7 +2027,7 @@ PhysicalQuantity PhysicalQuantity::fromUnit(const PhysicalQuantity::UnitDefiniti
 	num fac;
 	if (power == 1) { fac = u.factor; }
 	else { fac = ::pow(u.factor, power); }
-	PhysicalQuantity ret(fac, dim);
+	PhysicalQuantity ret(fac, dim, u.flags);
 	return ret;
 }
 

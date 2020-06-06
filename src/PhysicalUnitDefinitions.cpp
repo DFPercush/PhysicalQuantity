@@ -53,10 +53,10 @@ DEFINE_CONST_ARRAY(PhysicalQuantity::UnitDefinition, PhysicalQuantity::KnownUnit
 // TODO: Angle flag
 // Angles - dimensionless scalars, but certain conversion factors and constants can be used
 // Storage occurs in radians, if a value is parsed from degrees, 
-{UN("rd","radian","radians"),1, { 0, 0, 0, 0, 0}, NOPREFIX},
-{UN("deg","degree","degrees"),0.01745329251994329576923690768489, {0,0,0,0,0}, NOPREFIX},
-{UN("grad","gradians","gradians"), 0.0157079632679489661923132169164, { 0, 0, 0, 0, 0}, NOPREFIX},
-{UN("rev","revolution","revolutions"),6.283185307179586476925286766559, { 0, 0, 0, 0, 0}, NOPREFIX},
+{UN("rd","radian","radians"),1, { 0, 0, 0, 0, 0}, NOPREFIX | ANGLE},
+{UN("deg","degree","degrees"),0.01745329251994329576923690768489, {0,0,0,0,0}, NOPREFIX | ANGLE},
+{UN("grad","gradians","gradians"), 0.0157079632679489661923132169164, { 0, 0, 0, 0, 0}, NOPREFIX | ANGLE},
+{UN("rev","revolution","revolutions"),6.283185307179586476925286766559, { 0, 0, 0, 0, 0}, NOPREFIX | ANGLE},
 
 {UN("pi","",""),3.1415926535897932384626433832795, {0,0,0,0,0}, NOPREFIX | NOLITERAL},
 {UN("tau","",""),6.283185307179586476925286766559, {0,0,0,0,0}, NOPREFIX | NOLITERAL},
@@ -151,7 +151,7 @@ DEFINE_CONST_ARRAY(PhysicalQuantity::UnitDefinition, PhysicalQuantity::KnownUnit
 
 {UN("Hz", "hertz",""),1, {0,0,-1,0,0}},
 // TODO: Angle flag
-{ UN("rpm","revolution_per_minute","revolutions_per_minute"),0.10471975511965977461542144610932, { 0, 0, -1, 0, 0}, NOPREFIX },
+{ UN("rpm","revolution_per_minute","revolutions_per_minute"),0.10471975511965977461542144610932, { 0, 0, -1, 0, 0}, NOPREFIX | ANGLE },
 
 
 // Speed
