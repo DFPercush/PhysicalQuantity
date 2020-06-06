@@ -3,6 +3,9 @@
 
 #include <PhysicalQuantity.h>
 #include <stdio.h>
+#include <fstream>
+#include <exception>
+#include <vector>
 
 #ifdef NO_TEXT
 int main()
@@ -36,6 +39,12 @@ void showHelp()
 	"    ---> 115.87276799950321 km / hr\n" \
 	"\n"
 	"Interactive commands:\n"
+	"\n"
+	"sprint\n"
+	"    Switches to (string) print mode, non strict output units\n"
+	"convert\n"
+	"    Switches to convert mode, output units must be an exact match\n"
+	"\n"
 	"pref [space-separated unit list]\n"
 	"    sets your preferred output units so you don't have to\n"
 	"    type them every time\n"
@@ -45,10 +54,35 @@ void showHelp()
 	"    to switch between the divide sign or negative exponents\n"
 	"['whatis'] expression\n"
 	"    Show all the units which match the result exactly\n"
-	"sprint\n"
-	"    Switches to (string) print mode, non strict output units\n"
-	"convert\n"
-	"    Switches to convert mode, output units must be an exact match\n"
+	"\n"
+	"[variable = ] expression\n"
+	"    creates a variable that you can use in expressions later"
+	"save [comma-separated variable list]\n"
+	"    saves variable(s) to file system\n"
+#ifdef __linux__
+	"    (home directory)\n"
+#elif _WIN32
+	"    (AppData\\Roaming)\n"
+#else
+	"    (current directory)\n"
+#endif
+	"save-all\n"
+	"    saves all variables currently in memory\n"
+	"vars\n"
+	"    lists all variables and their saved status\n"
+	"rm [-s] [comma-separated variable list]\n"
+	"    removes/deletes a variable from current memory,\n"
+	"    and if the -s option is given, also from the save file.\n"
+	"	 Without -s, the variables will be loaded again when the\n"
+	"    program starts or you issue a 'reload' command."
+	"reload\n"
+	"    reloads the save file and updates vars in memory.\n"
+	"    This does not delete or clear vars, but it will overwrite\n"
+	"    any vars by the same name with the value from file system.\n"
+	"clear [-s]\n"
+	"    Clears (deletes) all variables.\n"
+	"    If the -s option is given, clears the save file as well."
+	"\n"
 	"help\n"
 	"    This help\n"
 	"'exit' | 'quit'\n"
@@ -56,14 +90,13 @@ void showHelp()
 	);
 }
 
-void runEval(const csubstr& line)
+void condenseSpace(string& s)
 {
-	PQ x = 1_C;
-	PQ y = 1_N;
-}
-
-void runConvert(const char* s)
-{
+	size_t sp2;
+	while ((sp2 = s.find("  ")) != string::npos)
+	{
+		s = s.substr(0, sp2) + s.substr(sp2 + 1);
+	}
 }
 
 #ifdef NO_THROW
@@ -74,29 +107,134 @@ char buf[1000];
 bool useSlash = true;
 std::string pustr; // preferred units
 
+PQVarList vars;
+PQVarList savedVars;
+
+#ifdef __linux__
+string saveFilePathName = "~/pq-savedvars.txt";
+#elif _WIN32
+#pragma warning(disable:4996)
+string saveFilePathName = string(getenv("APPDATA")) + "\\pq-savedvars.txt";
+#else
+string saveFilePathName = "./pq-savedvars.txt";
+#endif
+
+int saveVars()
+{
+	ofstream svf;
+	svf.open(saveFilePathName);
+	if (!svf.is_open())
+	{
+		fprintf(stderr, "Warning: vars file could not be saved.\n");
+		return 0;
+	}
+	int ret = 0;
+	for (auto kv : savedVars)
+	{
+		svf << kv.first << "=" << kv.second.toString() << endl;
+		ret++;
+	}
+	svf.close();
+	return ret;
+}
+
+void loadVars(bool clear = false)
+{
+	ifstream svf;
+	svf.open(saveFilePathName);
+	if (!svf.is_open())
+	{
+		fprintf(stderr, "Warning: Could not open saved vars file.\n");
+		return;
+	}
+	if (clear) { savedVars.clear(); }
+	string line;
+	size_t eq;
+	while (!svf.eof())
+	{
+		getline(svf, line);
+		eq = line.find("=");
+		if (eq == string::npos) { continue; }
+		savedVars.set(line.substr(0, eq), PQ(line.substr(eq + 1)));
+	}
+}
+
+vector<string> split(string s, string delimiter) {
+	size_t pos_start = 0, pos_end, delim_len = delimiter.length();
+	string token;
+	vector<string> res;
+
+	while ((pos_end = s.find(delimiter, pos_start)) != string::npos) {
+		token = s.substr(pos_start, pos_end - pos_start);
+		pos_start = pos_end + delim_len;
+		res.push_back(token);
+	}
+
+	res.push_back(s.substr(pos_start));
+	return res;
+}
 
 void runLine(csubstr &line, bool useConvert, bool useSprint)
 {
 	PQ val;
 	csubstr units;
-
 	bool whatis = false;
+
+	// Commands
 	if (line.substr(0, 6) == "whatis")
 	{
 		whatis = true;
 		line = line.substr(6);
 	}
-	else if (line.substr(0, 5) == "pref ")
+	else if (line.substr(0, 5) == "pref " || (line == "pref"))
 	{
-		pustr = line.substr(5).toStdString();
+		string putmp = line.substr(5).trim().toStdString();
+		if (putmp == "")
+		{
+			printf("%s\n", pustr.c_str());
+			return;
+		}
+		else if (putmp == "clear")
+		{
+			pustr = "";
+			printf("Preferred units cleared.\n");
+			return;
+		}
+		pustr = putmp;
 		printf("%s\n", pustr.c_str());
 		return;
 	}
 	else if (line.substr(0, 6) == "pref+ ")
 	{
-		pustr += " ";
-		pustr += line.substr(6).toStdString();
+		pustr = line.substr(6).toStdString() + " " + pustr;
+		condenseSpace(pustr);
 		printf("%s\n", pustr.c_str());
+		return;
+	}
+	else if (line.substr(0, 6) == "pref- ")
+	{
+		csubstr torm = line.substr(6).trim();
+		auto rmpos = pustr.find(torm);
+		if (rmpos != string::npos)
+		{
+			// Make sure it's a whole word
+			if ((rmpos == 0 && torm.length() == pustr.length() )
+			 || (rmpos == 0 && pustr[torm.length()] == ' ')
+			 || (pustr[rmpos - 1] == ' ' && rmpos + torm.length() == pustr.length())
+			 || (pustr[rmpos - 1] == ' ' && pustr[rmpos + torm.length()] == ' ')
+			)
+			{
+				pustr = pustr.substr(0, rmpos) + pustr.substr(rmpos + torm.length());
+			}
+			else { goto prefMinusNotFound; }
+			condenseSpace(pustr);
+			printf("'%s' removed from preferred units list.\n%s\n", torm.toStdString().c_str(), pustr.c_str());
+		}
+		else
+		{
+			prefMinusNotFound:
+			printf("'%s' was not in preferred units list anyway.\n%s\n", torm.toStdString().c_str(), pustr.c_str());
+		}
 		return;
 	}
 	else if (line.substr(0, 5) == "slash")
@@ -111,7 +249,195 @@ void runLine(csubstr &line, bool useConvert, bool useSprint)
 		printf("Set slash = false\n");
 		return;
 	}
+	else if (line == "save-all")
+	{
+		int saveOldCount = 0;
+		int saveNewCount = 0;
+		int currentCount = 0;
+		for (auto kv : vars)
+		{
+			if (savedVars.contains(kv.first))
+			{
+				if (savedVars[kv.first] != kv.second)
+				{
+					saveOldCount++;
+					savedVars.set(kv.first, kv.second);
+				}
+				else
+				{
+					currentCount++;
+				}
+			}
+			else
+			{
+				saveNewCount++;
+				savedVars.set(kv.first, kv.second);
+			}
+		}
+		printf("Saved %d vars. %d updated, %d new, %d current\n", saveVars(), saveOldCount, saveNewCount, currentCount);
+		return;
+	}
+	else if (line.substr(0, 5) == "save ")
+	{
+		int nNewSaved = 0;
+		int nUpdated = 0;
+		int nCurrent = 0;
+		int nBadName = 0;
+		auto varsToSave = split(line.substr(5), ",");
+		for (auto varNameStdStr : varsToSave)
+		{
+			csubstr varname = csubstr(varNameStdStr).trim();
+			if (vars.contains(varname))
+			{
+				if (savedVars.contains(varname))
+				{
+					if (savedVars.get(varname) == vars.get(varname))
+					{
+						nCurrent++;
+					}
+					else
+					{
+						savedVars.set(varname, vars.get(varname));
+						nUpdated++;
+					}
+				}
+				else
+				{
+					savedVars.set(varname, vars.get(varname));
+					nNewSaved++;
+				}
+			}
+			else
+			{
+				printf("Not found: %s\n", varname.toStdString().c_str());
+				nBadName++;
+			}
+		}
+		int nSavedToFile = saveVars();
+		printf("Saved %d variables to file. %d new, %d updated, %d current, %d errors\n",
+			nSavedToFile, nNewSaved, nUpdated, nCurrent, nBadName);
+		return;
 
+		//csubstr svname = line.substr(5);
+		//svname = svname.trim();
+		//if (vars.contains(svname))
+		//{
+		//	bool saveAlreadyContainsVar = savedVars.contains(svname);
+		//	savedVars.set(svname, vars.get(svname));
+		//	if (saveVars() > 0)
+		//	{
+		//		if (saveAlreadyContainsVar) { printf("Updated var '%s'.\n", svname.toStdString().c_str()); }
+		//		else { printf("Saved new var '%s'\n", svname.toStdString().c_str()); }
+		//	}
+		//	else
+		//	{
+		//		printf("Error: Save failed!\n");
+		//	}
+		//}
+		//return;
+	}
+	else if (line == "vars")
+	{
+		// TODO: sort
+		for (auto kv : vars)
+		{
+			bool insave = savedVars.contains(kv.first);
+			bool current = (insave && (savedVars[kv.first] == kv.second));
+			printf("%s %s = %s\n",
+				current ? " (saved) " : ( insave ? "(changed)" : "(session)"),
+				kv.first.c_str(), kv.second.toString().c_str());
+		}
+		return;
+	}
+	else if (line.substr(0, 3) == "rm ")
+	{
+		csubstr rmliststr;
+		bool rmsaved = false;
+		if (line.substr(0, 6) == "rm -s ")
+		{
+			rmsaved = true;
+			rmliststr = line.substr(6).trim();
+		}
+		else
+		{
+			rmliststr = line.substr(3).trim();
+		}
+		auto tormstrv = split(rmliststr.toStdString(), ",");
+		int nRmSaved = 0;
+		int nKeptSaved = 0;
+		int nRmVars = 0;
+		for (auto item : tormstrv)
+		{
+			string varname = csubstr(item).trim().toStdString();
+			int rmThisIter = (int)vars.erase(varname);
+			nRmVars += rmThisIter;
+			if (rmsaved) { nRmSaved += (int)savedVars.erase(varname); }
+			else if ((rmThisIter > 0) && savedVars.contains(varname)) { nKeptSaved++; }
+		}
+		printf(" %d session vars and %d saved vars were deleted. %d were unloaded but still in save file.\n", nRmVars, nRmSaved, nKeptSaved);
+		if ((nKeptSaved != 0) && (!rmsaved))
+		{
+			printf("(Use 'rm -s' to delete the saved copy as well.)\n");
+		}
+		saveVars();
+		return;
+	}
+	else if (line == "reload")
+	{
+		loadVars();
+		int before = (int)vars.size();
+		for (auto item : savedVars)
+		{
+			vars.insert_or_assign(item.first, item.second);
+		}
+		printf("Reloaded %d vars, %d were not present\n", (int)savedVars.size(), (int)vars.size() - before);
+		return;
+	}
+	else if (line == "clear")
+	{
+		int nVarsCleared = vars.size();
+		vars.clear();
+		printf(" %d vars cleared. (Use -s to clear save file as well.)\n", nVarsCleared);
+		return;
+	}
+	else if (line == "clear -s")
+	{
+		int nVarsCleared = vars.size();
+		vars.clear();
+		int nSavesCleared = savedVars.size();
+		savedVars.clear();
+		saveVars();
+		printf(" %d session vars and %d saved vars were cleared.\n", nVarsCleared, nSavesCleared);
+		return;
+	}
+	// End commands
+
+	//=================================================================================
+	// Variable assignment
+	const char nullstr[] = {0};
+	csubstr varname(nullstr,0,0);
+	int eq = line.find_first_of('=');
+	if (eq != -1)
+	{
+		varname = line.substr(0, eq).trim();
+		if (varname.find_first_of(' ') == -1)
+		{
+			line = line.substr(eq + 1);
+		}
+		else
+		{
+			varname.clear();
+		}
+		if (!PQVarList::isLegalName(varname))
+		{
+			printf("Warning: Invalid variable name.\n");
+			varname.clear();
+		}
+	}
+	// End variable name scanning, will be assigned later
+
+	//====================================================================
+	// Evaluation
 	int commapos = line.find_first_of(',');
 
 	if (commapos == -1)
@@ -134,7 +460,12 @@ void runLine(csubstr &line, bool useConvert, bool useSprint)
 		});
 #endif // #ifndef NO_THROW
 	{
-		val = PQ::eval(evalexpr);
+		val = PQ::eval(evalexpr, vars);
+		if (varname.length() > 0)
+		{
+			vars.set(varname, val);
+		}
+
 		if (useConvert)
 		{
 			double cval = val.convert(units);
@@ -142,19 +473,15 @@ void runLine(csubstr &line, bool useConvert, bool useSprint)
 		}
 		else if (useSprint)
 		{
-			val.sprint(buf, 1000, 15, (pustr + " " + units.toStdString()).c_str(), useSlash);
+			//val.sprint(buf, 1000, 15, (pustr + " " + units.toStdString()).c_str(), useSlash);
+			val.sprint(buf, 1000, 15, (units.toStdString() + " " + pustr).c_str(), useSlash);
 			printf("%s\n", buf);
 			if (whatis)
 			{
 				signed char d[PQ::ND];
 				val.getDim(d, sizeof(d));
-				printf("[");
-				for (int di = 0; di < PQ::ND; di++)
-				{
-					if (di != 0) printf(",");
-					printf("%d", (int)d[di]);
-				}
-				printf("] // Mass, Distance, Time, Temperature, Current\n");
+				printf("Mass^%d Distance^%d Time^%d Temperature^%d Current^%d\n", d[0], d[1], d[2], d[3], d[4]);
+
 				for (int i = 0; i < PQ::KnownUnitsLength; i++)
 				{
 					if (!memcmp(d, PQ::KnownUnits[i].dim, sizeof(d)))
@@ -162,6 +489,15 @@ void runLine(csubstr &line, bool useConvert, bool useSprint)
 						printf("%s, %s, %s\n", PQ::KnownUnits[i].symbol, PQ::KnownUnits[i].longName, PQ::KnownUnits[i].plural);
 					}
 				}
+
+				printf("[");
+				for (int di = 0; di < PQ::ND; di++)
+				{
+					if (di != 0) printf(",");
+					printf("%d", (int)d[di]);
+				}
+				printf("]\n");
+
 				fflush(stdout);
 			}
 		}
@@ -233,6 +569,9 @@ int main(int argc, char** argv)
 		printf("Error: library code was compiled with different header options.\n");
 		return 1;
 	}
+
+	loadVars(true);
+	vars = savedVars;
 
 	bool interactive = false;
 	bool useConvert = false;
@@ -314,8 +653,8 @@ int main(int argc, char** argv)
 	string line_std_string;
 	while (true)
 	{
-		if (useConvert) { printf("\nconvert> "); }
-		else if (useSprint) { printf("sprint> "); }
+		if (useConvert) { printf("\nPQ::convert> "); }
+		else if (useSprint) { printf("PQ::sprint> "); }
 		else { printf(">"); }
 
 		getline(cin, line_std_string);

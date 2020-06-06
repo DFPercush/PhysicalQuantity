@@ -5,6 +5,8 @@
 typedef PhysicalQuantity::CSubString csubstr;
 typedef PhysicalQuantity::CSubString CSubString;
 
+char CSubString::nullstr[] = {0};
+
 CSubString::CSubString(const char* str_arg, int start_arg, int len_arg)
 {
 	str = str_arg;
@@ -148,7 +150,7 @@ CSubString& CSubString::operator=(const CSubString& cp)
 
 CSubString::CSubString()
 {
-	str = nullptr;
+	str = nullstr;
 	start = 0;
 	end = 0;
 #ifdef ROM_READ_BYTE
@@ -518,6 +520,7 @@ bool CSubString::isnumber() const
 	{
 		if (!((t[pm - 1] == 'e') || (t[pm - 1] == 'E'))) { return false; }
 	}
+	if (t[0] == 'e' || t[0] == 'E') { return false; }
 	return (t.find_first_not_of("0123456789.+-Ee") == -1);
 }
 
@@ -530,14 +533,23 @@ bool CSubString::isint() const
 }
 
 #ifndef NO_STD_STRING
-std::string CSubString::toStdString()
+CSubString::CSubString(const std::string& stdstr)
 {
-	std::string ret = "";
-	for (int i = 0; i < length(); i++)
-	{
-		ret += (*this)[i];
-	}
-	return ret;
+	str = stdstr.c_str();
+	start = 0;
+	end = (int)stdstr.length();
+}
+
+std::string CSubString::toStdString() const
+{
+	if (start > end) { return std::string(); }
+	return std::string(str + start, length());
+	//ret.append(str + start, end - start);
+	//for (int i = 0; i < length(); i++)
+	//{
+	//	ret += (*this)[i];
+	//}
+	//return ret;
 }
 #endif
 
@@ -574,6 +586,9 @@ int CSubString::size() const { return end - start; }
 int CSubString::length() const { return (end - start) >= 0 ? (end-start) : 0 ; }
 int CSubString::find_first_of(const char* find, int startOfs) const { return find_first_of(CSubString(find), startOfs); }
 int CSubString::find_first_not_of(const char* find, int startOfs) const { return find_first_not_of(CSubString(find), startOfs); }
+void CSubString::clear()
+	{ str = nullstr; start = 0; end = 0; }
+
 #endif //#ifdef NO_INLINE
 
 #endif // !NO_TEXT

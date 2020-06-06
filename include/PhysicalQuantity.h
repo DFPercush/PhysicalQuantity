@@ -186,6 +186,11 @@
 #include <string>
 #endif
 
+#if !defined(NO_STD_MAP) && !defined(NO_NEW)
+#define PQVARS
+#include <unordered_map>
+#endif
+
 // get size_t
 #include <stddef.h>
 #include <math.h>
@@ -218,6 +223,10 @@ template <typename T> T rom(const T& v)
 // Main class
 bool InitLibPQ(int headerOptionFlags = PQ_HEADER_OPTIONS);
 
+#ifdef PQVARS
+class PQVarList;
+#endif
+
 class PhysicalQuantity
 {
 public:
@@ -238,6 +247,7 @@ public:
 	class CSubString
 	{
 	protected:
+		static char nullstr[];
 		const char* str;
 		int start;
 		int end; // constructor takes a length to emulate standard behavior, but internally end is easier
@@ -248,6 +258,9 @@ public:
 		CSubString();
 		CSubString(const char* str_arg, int start_arg = 0, int len_arg = -1);
 		CSubString(const CSubString& from, int start_arg = 0, int len_arg = -1);
+#ifndef NO_STD_STRING
+		CSubString(const std::string& stdstr); // Be careful of object mutation and lifetime!
+#endif
 		CSubString& operator=(const CSubString& cp);
 		bool operator== (const char* cmp) const;
 		bool operator==(const CSubString& cmp) const;
@@ -272,7 +285,8 @@ public:
 		CSubString trim() const;
 		const char* getPtr() const { return &str[start]; }
 #ifndef NO_STD_STRING
-		std::string toStdString();
+		std::string toStdString() const;
+		operator std::string() const { return toStdString(); }
 #endif
 
 #ifdef NO_INLINE
@@ -285,7 +299,9 @@ public:
 		int find_first_not_of(const char* find, int startOfs = 0) const;
 		bool operator!= (const char* cmp) const;
 		bool operator!=(const CSubString& cmp) const;
+		void clear();
 #else
+		void clear() { str = nullstr; start = 0; end = 0; }
 #ifdef ROM_READ_BYTE
 		INLINE_KEYWORD char operator[](int index) const
 		{
@@ -534,6 +550,7 @@ typedef unsigned char UnitFlags_t;
 	//==================================================================================
 
 
+
 	//==================================================================================
 	// Main class members
 	PhysicalQuantity();
@@ -544,6 +561,7 @@ typedef unsigned char UnitFlags_t;
 	PhysicalQuantity(CSubString str);
 #endif // #ifndef NO_TEXT
 	PhysicalQuantity(num value);
+	PhysicalQuantity(int value) : PhysicalQuantity((num)value) {}
 #if defined(YES_CONSTEXPR)
 	constexpr PhysicalQuantity(num value_p, const signed char dim_p[(int)QuantityType::ENUM_MAX])
 		: value(value_p), dim {dim_p[0], dim_p[1], dim_p[2], dim_p[3], dim_p[4]} {}
@@ -557,11 +575,34 @@ typedef unsigned char UnitFlags_t;
 #ifndef NO_TEXT
 	void parse(const CSubString& text);
 	num convert(const CSubString& units) const;
-	//size_t sprint(char* buf, size_t bufsize, unsigned int precision, bool useSlash = true) const;
+
+	// sprint() has many overloads, but this is the main one they all call eventually
 	size_t sprint(char* buf, size_t bufsize, unsigned int precision, const UnitListBase& pu, bool useSlash = true) const;
-	size_t sprint(char* buf, size_t bufsize, unsigned int precision, const CSubString& sspu, bool useSlash = true) const; // TODO: inline
+
+#ifdef NO_INLINE
+	size_t sprint(char* buf, size_t bufsize, unsigned int precision, bool useSlash = true) const;
 	size_t sprint(char* buf, size_t bufsize, unsigned int precision, const CSubString& sspu, void* puBuf, size_t puBufSize, bool useSlash = true) const;
+	size_t sprint(char* buf, size_t bufsize, unsigned int precision, const CSubString& sspu, bool useSlash = true) const; // TODO: inline
+#else //#ifdef NO_INLINE
+	size_t sprint(char* buf, size_t bufsize, unsigned int precision, bool useSlash = true) const
+		{ return sprint(buf,bufsize, precision, UnitList(""), useSlash); }
+	size_t sprint(char* buf, size_t bufsize, unsigned int precision, const CSubString& sspu, void* puBuf, size_t puBufSize, bool useSlash = true) const
+		{ return sprint(buf, bufsize, precision, UnitList_static(sspu, puBuf, puBufSize), useSlash); }
+	size_t sprint(char* buf, size_t bufsize, unsigned int precision, const CSubString& sspu, bool useSlash = true) const
+		{ return sprint(buf, bufsize, precision, UnitList(sspu), useSlash); }
+#endif //#ifdef NO_INLINE
+
 	static size_t printNum(char* buf, size_t size, num value, unsigned int precision);
+//#ifndef NO_INLINE
+//	INLINE_KEYWORD size_t sprint(char* buf, size_t size, unsigned int precision, bool useSlash = true) const
+//	{
+//		UnitList u("");
+//		return sprint(buf, size, precision, u, useSlash);
+//	}
+//#else // #ifndef NO_INLINE
+//	size_t sprint(char* buf, size_t size, const char* pu, bool useSlash = true) const;
+//	size_t sprint(char* buf, size_t size, unsigned int precision, bool useSlash = true) const;
+//#endif // #ifndef NO_INLINE
 #endif //#ifndef NO_TEXT
 
 #ifdef NO_INLINE
@@ -705,7 +746,10 @@ typedef unsigned char UnitFlags_t;
 	static const unitIndex_t gramIndex;
 
 #ifndef NO_TEXT
-	static PhysicalQuantity eval(CSubString str);
+	static PhysicalQuantity eval(CSubString str, const void* vars_internal = nullptr);
+#ifdef PQVARS
+	static PhysicalQuantity eval(CSubString str, const PQVarList& vars) { return eval(str, &vars); }
+#endif
 	//static PhysicalQuantity eval1(CSubString str);
 	static bool findUnit(CSubString name, unitIndex_t& outUnitIndex, prefixIndex_t& outPrefixIndex);
 #endif
@@ -740,14 +784,9 @@ public:
 	bool getDim(signed char *d, int bufSize);
 
 #ifndef NO_TEXT
-	static void parseUnits(const char* unitStr, signed char(&unitsOut)[(int)QuantityType::ENUM_MAX], num& factorOut, num& offsetOut);
 	num convert(const char* units) const;
 	static bool findUnit(const char* pcharName, unitIndex_t& outUnitIndex, prefixIndex_t& outPrefixIndex);
-	//bool sameUnitAs(const PhysicalQuantity& rhs) const;
-	//bool unitsMatch(const PhysicalQuantity& rhs) const;
 	void parse(const char* text);
-	//size_t sprint(char* buf, size_t size, const char* pu, bool useSlash = true) const;
-	size_t sprint(char* buf, size_t size, unsigned int precision, bool useSlash = true) const;
 #endif //#ifndef NO_TEXT
 #else //#ifdef NO_INLINE
 
@@ -760,19 +799,26 @@ public:
 
 #ifndef NO_TEXT
 	INLINE_KEYWORD 	PhysicalQuantity(const char* str) { PhysicalQuantity(CSubString(str)); }
-	INLINE_KEYWORD static void parseUnits(const char* unitStr, signed char (&unitsOut)[(int)QuantityType::ENUM_MAX], num& factorOut, num& offsetOut) { return parseUnits(CSubString(unitStr), unitsOut, factorOut, offsetOut); }
 	INLINE_KEYWORD num convert(const char* units) const { return convert(CSubString(units)); }
 	INLINE_KEYWORD static bool findUnit(const char* pcharName, unitIndex_t& outUnitIndex, prefixIndex_t& outPrefixIndex) { return findUnit(CSubString(pcharName), outUnitIndex, outPrefixIndex); }
-	//INLINE_KEYWORD bool sameUnitAs(const PhysicalQuantity& rhs) const { return isLikeQuantity(rhs); }
-	//INLINE_KEYWORD bool unitsMatch(const PhysicalQuantity& rhs) const { return isLikeQuantity(rhs); }
 	INLINE_KEYWORD void parse(const char* text) { parse(CSubString(text)); }
-	//INLINE_KEYWORD size_t sprint(char* buf, int size, const char* pu, bool useSlash = true) const { return sprint(buf, size, UnitList(pu), useSlash); }
-	INLINE_KEYWORD size_t sprint(char* buf, size_t size, unsigned int precision, bool useSlash = true) const { return PhysicalQuantity::sprint(buf, size, precision, UnitList(""), useSlash); }
+
 #endif //#ifndef NO_TEXT
 #endif //#else of #ifdef NO_INLINE
 	// End main class members
 	//==================================================================================
 };
+// END class PhysicalQuantity
+//===================================================================================================
+
+#ifndef NO_TYPEDEFS
+typedef PhysicalQuantity PQ;
+#ifndef NO_TEXT
+typedef PhysicalQuantity::CSubString csubstr;
+#endif // #ifndef NO_TEXT
+#endif // #ifndef NO_TYPEDEFS
+
+
 
 #ifdef NO_INLINE
 PhysicalQuantity operator*(PhysicalQuantity::num left, const PhysicalQuantity& right);
@@ -785,6 +831,39 @@ INLINE_KEYWORD PhysicalQuantity operator/(PhysicalQuantity::num left, const Phys
 INLINE_KEYWORD PhysicalQuantity operator+(PhysicalQuantity::num left, const PhysicalQuantity& right) { return PhysicalQuantity(left) + right; }
 INLINE_KEYWORD PhysicalQuantity operator-(PhysicalQuantity::num left, const PhysicalQuantity& right) { return PhysicalQuantity(left) - right; }
 #endif
+
+// Now that the PQ class is complete...
+
+//==================================================================================
+// Variables
+#ifdef PQVARS
+//#if !defined(NO_NEW)
+
+class PQVarList : public std::unordered_map<std::string, PhysicalQuantity>
+{
+public:
+	bool set(const PhysicalQuantity::CSubString& name, PhysicalQuantity value);
+	PQ get(const PhysicalQuantity::CSubString name) const;
+	bool contains(const PQ::CSubString name) const;
+	// erase() already exists in unordered_map
+	static bool isLegalName(PQ::CSubString name);
+};
+
+#else  // #ifdef PQVARS
+class PQVarList
+{
+public:
+	bool set(const PhysicalQuantity::CSubString& name, PhysicalQuantity value) { return false; }
+	PQ get(const PhysicalQuantity::CSubString name) const { return PQ(NAN); }
+	int erase(const PhysicalQuantity::CSubString name) { return 0; }
+	bool contains(const PQ::CSubString name) const { return false; }
+	static bool isLegalName(PQ::CSubString name) { return false; }
+};
+#endif // #ifdef PQVARS
+
+// End variables
+//==================================================================================
+
 
 #define PQHeaderOptionsMatch (PQ_HEADER_OPTIONS == PhysicalQuantity::compiledHeaderOptions)
 
@@ -928,12 +1007,6 @@ INLINE_KEYWORD PhysicalQuantity operator-(PhysicalQuantity::num left, const Phys
 #include <PhysicalQuantity/literals.ah>
 #endif
 
-#ifndef NO_TYPEDEFS
-typedef PhysicalQuantity PQ;
-#ifndef NO_TEXT
-typedef PhysicalQuantity::CSubString csubstr;
-#endif // #ifndef NO_TEXT
-#endif // #ifndef NO_TYPEDEFS
 
 // Useful for testing if there are any unclosed #if blocks
 //#pragma message("Hello from the end of PhysicalQuantity.h")

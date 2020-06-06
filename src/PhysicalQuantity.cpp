@@ -532,17 +532,31 @@ void PhysicalQuantity::parse(const CSubString& text_arg)
 	if (firstNotSpace > 0) { text = text.substr(firstNotSpace); }
 	if (text.length() == 0)
 	{
-#ifdef NO_THROW
-		errorHandler(errorUserContext, E_INVALID_EXPRESSION);
+//#ifdef NO_THROW
+//		errorHandler(errorUserContext, E_INVALID_EXPRESSION);
+//		return;
+//#else
+//		throw InvalidExpressionException("Quantity can not be null.");
+//#endif
 		return;
-#else
-		throw InvalidExpressionException("Quantity can not be null.");
-#endif
 	}
 
-	int firstSpace = (int)text.find_first_of(' ');
+	int firstSpace = text.find_first_of(' ');
 	csubstr unitStr;
-	if (text.substr(0, firstSpace).isnumber())
+	if (firstSpace == -1)
+	{
+		if (text.isnumber())
+		{
+			value = text.atof();
+			return;
+		}
+		else
+		{
+			value = (num)1.0;
+			unitStr = text;
+		}
+	}
+	else if (text.substr(0, firstSpace).isnumber())
 	{
 		value = text.atof();
 		if (firstSpace == -1)
@@ -556,7 +570,7 @@ void PhysicalQuantity::parse(const CSubString& text_arg)
 	}
 	else
 	{
-		value = 1.0;
+		value = (num)1.0;
 		unitStr = text;
 	}
 	num unitFactor = 1.0;
@@ -1375,7 +1389,7 @@ bool PhysicalQuantity::operator!=(const PhysicalQuantity& rhs) const
 		PQERRMSG(UnitMismatchException, "operator unit mismatch", E_UNIT_MISMATCH);
 		return true;
 	}
-	return PhysicalQuantity::feq(value, rhs.value, equalityToleranceFactor);
+	return !PhysicalQuantity::feq(value, rhs.value, equalityToleranceFactor);
 }
 bool PhysicalQuantity::operator>=(const PhysicalQuantity& rhs) const
 {
@@ -1552,8 +1566,12 @@ const PhysicalQuantity::UnitListBase::UnitPref& PhysicalQuantity::UnitListBase::
 //	}
 //}
 
-PhysicalQuantity PhysicalQuantity::eval(CSubString str)
+PhysicalQuantity PhysicalQuantity::eval(CSubString str, const void* vars_internal)
 {
+#ifdef PQVARS
+	const PQVarList& vars = *(PQVarList*)vars_internal;
+#endif
+
 	str = str.trim();
 	if (str.length() == 0) { return PQ((num)0); }
 	int pleft = -1;
@@ -1597,20 +1615,20 @@ PhysicalQuantity PhysicalQuantity::eval(CSubString str)
 		}
 		else if (c == '+' && plevel == 0 && str[i - 1] != 'e' && str[i - 1] != 'E' && ((str[i + 1] < '0') || (str[i + 1] > '9')))
 		{
-			//left = eval(str.substr(0, i));
-			//right = eval(str.substr(i + 1));
+			//left = eval(str.substr(0, i), vars_internal);
+			//right = eval(str.substr(i + 1), vars_internal);
 			//return left + right;
 			DEBUG_LR_STR(leftstr, rightstr, "+");
 			if (leftstr == "")
 			{
 				left = (num)0;
-				right = eval(rightstr);
+				right = eval(rightstr, vars_internal);
 				ret = right; // (num)(-1) * right;
 			}
 			else
 			{
-				left = eval(leftstr);
-				right = eval(rightstr);
+				left = eval(leftstr, vars_internal);
+				right = eval(rightstr, vars_internal);
 				ret = left + right;
 			}
 			DEBUG_LR_RESULT(left, right, "+", ret);
@@ -1618,20 +1636,20 @@ PhysicalQuantity PhysicalQuantity::eval(CSubString str)
 		}
 		else if (c == '-' && plevel == 0 && str[i - 1] != 'e' && str[i - 1] != 'E' && ((str[i + 1] < '0') || (str[i + 1] > '9')))
 		{
-			//left = eval(str.substr(0, i));
-			//right = eval(str.substr(i + 1));
+			//left = eval(str.substr(0, i), vars_internal);
+			//right = eval(str.substr(i + 1), vars_internal);
 			//return left - right;
 			DEBUG_LR_STR(leftstr, rightstr, "-");
 			if (leftstr == "")
 			{
 				left = (num)0;
-				right = eval(rightstr);
+				right = eval(rightstr, vars_internal);
 				ret = (num)(-1) * right;
 			}
 			else
 			{
-				left = eval(leftstr);
-				right = eval(rightstr);
+				left = eval(leftstr, vars_internal);
+				right = eval(rightstr, vars_internal);
 				ret = left - right;
 			}
 			DEBUG_LR_RESULT(left, right, "-", ret);
@@ -1667,24 +1685,24 @@ PhysicalQuantity PhysicalQuantity::eval(CSubString str)
 		//else if ((c == '*' || c == ' ') && plevel == 0)
 		else if (c == '*' && plevel == 0)
 		{
-			//left = eval(str.substr(0, i));
-			//right = eval(str.substr(i + 1));
+			//left = eval(str.substr(0, i), vars_internal);
+			//right = eval(str.substr(i + 1), vars_internal);
 			//return left * right;
 			DEBUG_LR_STR(leftstr, rightstr, "*");
-			left = eval(leftstr);
-			right = eval(rightstr);
+			left = eval(leftstr, vars_internal);
+			right = eval(rightstr, vars_internal);
 			ret = left * right;
 			DEBUG_LR_RESULT(left, right, "*", ret);
 			return ret;
 		}
 		else if (c == '/' && plevel == 0)
 		{
-			//left = eval(str.substr(0, i));
-			//right = eval(str.substr(i + 1));
+			//left = eval(str.substr(0, i), vars_internal);
+			//right = eval(str.substr(i + 1), vars_internal);
 			//return left / right;
 			DEBUG_LR_STR(leftstr, rightstr, "/");
-			left = eval(leftstr);
-			right = eval(rightstr);
+			left = eval(leftstr, vars_internal);
+			right = eval(rightstr, vars_internal);
 			ret = left / right;
 			DEBUG_LR_RESULT(left, right, "/", ret);
 			return ret;
@@ -1724,10 +1742,10 @@ PhysicalQuantity PhysicalQuantity::eval(CSubString str)
 			)
 		{
 			DEBUG_LR_STR(leftstr, rightstr, "^");
-			left = eval(leftstr);
-			right = eval(rightstr);
+			left = eval(leftstr, vars_internal);
+			right = eval(rightstr, vars_internal);
 
-			PQ mant = left; //eval(str.substr(0, i));
+			PQ mant = left; //eval(str.substr(0, i), vars_internal);
 			const PQ& exp = right; //(str.substr(i + 1));
 			for (int id = 0; id < (int)QuantityType::ENUM_MAX; id++)
 			{
@@ -1794,18 +1812,31 @@ PhysicalQuantity PhysicalQuantity::eval(CSubString str)
 
 	if (pleft == -1)
 	{
+#ifndef PQVARS
 		return PQ(str);
+#else
+		if (vars_internal == nullptr) { return PQ(str); }
+		csubstr tryvar = str.trim();
+		if (vars.contains(tryvar))
+		{
+			return vars.get(tryvar);
+		}
+		else
+		{
+			return PQ(str);
+		}
+#endif // #ifndef PQVARS
 	}
-	//left = eval(str.substr(pleft + 1, pright - pleft - 1));
+	//left = eval(str.substr(pleft + 1, pright - pleft - 1), vars_internal);
 	leftstr = str.substr(pleft + 1, pright - pleft - 1);
-	left = eval(leftstr);
+	left = eval(leftstr, vars_internal);
 	if (rightmostNonSpace > pright)
 	{
-		//right = eval(str.substr(pright + 1));
+		//right = eval(str.substr(pright + 1), vars_internal);
 		//return left * right;
 		rightstr = str.substr(pright + 1);
 		DEBUG_LR_STR(leftstr, rightstr, "(implicit)*");
-		right = eval(rightstr);
+		right = eval(rightstr, vars_internal);
 		ret = left * right;
 		DEBUG_LR_RESULT(left, right, "(implicit)*", ret);
 		return ret;
@@ -1816,15 +1847,17 @@ PhysicalQuantity PhysicalQuantity::eval(CSubString str)
 	}
 }
 
+#ifdef NO_INLINE
 size_t PhysicalQuantity::sprint(char* buf, size_t size, unsigned int precision, const PhysicalQuantity::CSubString& sspu, bool useSlash) const
-{
-	return sprint(buf, size, precision, UnitList(sspu), useSlash);
-}
+	{ return sprint(buf, size, precision, UnitList(sspu), useSlash); }
 
 size_t PhysicalQuantity::sprint(char* buf, size_t size, unsigned int precision, const CSubString& sspu, void* puBuf, size_t puBufSize, bool useSlash) const
-{
-	return sprint(buf, size, precision, UnitList_static(sspu, puBuf, puBufSize), useSlash);
-}
+	{ return sprint(buf, size, precision, UnitList_static(sspu, puBuf, puBufSize), useSlash); }
+
+size_t PhysicalQuantity::sprint(char* buf, size_t size, unsigned int precision, bool useSlash) const
+	{ return sprint(buf, size, precision, UnitList(""), useSlash); }
+
+#endif //#ifdef NO_INLINE
 #endif // #ifndef NO_TEXT
 
 bool PhysicalQuantity::feq(PhysicalQuantity::num a, PhysicalQuantity::num b, PhysicalQuantity::num toleranceFactor)
@@ -2013,6 +2046,12 @@ PhysicalQuantity PhysicalQuantity::fromUnit(const PhysicalQuantity::UnitDefiniti
 	return ret;
 }
 
+#ifdef NO_INLINE
+size_t PQ::sprint(char* buf, size_t size, const char* pu, bool useSlash = true) const
+{
+	return sprint(buf, size, UnitList(pu), useSlash);
+}
+#endif // #ifdef NO_INLINE
 
 #ifndef NO_TEXT
 #ifndef NO_HASHING
@@ -2041,8 +2080,6 @@ void PhysicalQuantity::parseUnits(const char* unitStr, signed char (&unitsOut)[(
 PhysicalQuantity::num PhysicalQuantity::convert(const char* units) const { return convert(csubstr(units)); }
 bool PhysicalQuantity::findUnit(const char* pcharName, unitIndex_t& outUnitIndex, prefixIndex_t& outPrefixIndex) { return findUnit(CSubString(pcharName), outUnitIndex, outPrefixIndex); }
 void PhysicalQuantity::parse(const char* text) { parse(csubstr(text)); }
-//size_t PhysicalQuantity::sprint(char* buf, int size, const char* pu, bool useSlash) const { return sprint(buf, size, UnitList(pu), useSlash); }
-size_t PhysicalQuantity::sprint(char* buf, size_t size, unsigned int precision, bool useSlash) const { return sprint(buf, size, precision, UnitList(""), useSlash); }
 #endif //#ifndef NO_TEXT
 
 #ifndef NO_HASHING
@@ -2060,3 +2097,34 @@ bool PhysicalQuantity::getDim(signed char* d, int bufSize)
 #endif //#ifdef NO_INLINE
 
 
+//=========================================================================
+// vars
+#ifdef PQVARS
+
+bool PQVarList::set(const PQ::CSubString& name, PQ value)
+{
+	auto r = insert_or_assign(name.toStdString(), value);
+	return r.second;
+}
+PQ PQVarList::get(const PQ::CSubString name) const
+{
+	auto it = find(name.toStdString());
+	if (it == end()) { return PQ(NAN); } //0.0); }
+	else { return it->second; }
+}
+
+bool PQVarList::contains(const PQ::CSubString name) const
+{
+	return (find(name) != end());
+}
+
+bool PQVarList::isLegalName(PQ::CSubString name)
+{
+	if (name[0] >= '0' && name[0] <= '9') { return false; }
+	if (name.find_first_not_of("0123456789_abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ") != -1) { return false; }
+	return true;
+	//if (name.find_first_not_of())
+}
+
+
+#endif  //#ifdef PQVARS
