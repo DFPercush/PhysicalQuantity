@@ -127,7 +127,7 @@ PQVarList vars;
 PQVarList savedVars;
 
 #ifdef __linux__
-string saveFilePathName = "~/pq-savedvars.txt";
+string saveFilePathName = string(getenv("HOME")) + "/pq-savedvars.txt";
 #elif _WIN32
 #pragma warning(disable:4996)
 string saveFilePathName = string(getenv("APPDATA")) + "\\pq-savedvars.txt";
@@ -249,9 +249,9 @@ void runLine(csubstr &line, bool useConvert, bool useSprint)
 		if (rmpos != string::npos)
 		{
 			// Make sure it's a whole word
-			if ((rmpos == 0 && torm.length() == pustr.length() )
+			if ((rmpos == 0 && (int)torm.length() == (int)pustr.length() )
 			 || (rmpos == 0 && pustr[torm.length()] == ' ')
-			 || (pustr[rmpos - 1] == ' ' && rmpos + torm.length() == pustr.length())
+			 || (pustr[rmpos - 1] == ' ' && (int)rmpos + (int)torm.length() == (int)pustr.length())
 			 || (pustr[rmpos - 1] == ' ' && pustr[rmpos + torm.length()] == ' ')
 			)
 			{
@@ -382,6 +382,7 @@ void runLine(csubstr &line, bool useConvert, bool useSprint)
 				current ? " (saved) " : ( insave ? "(changed)" : "(session)"),
 				kv.first.c_str(), kv.second.toString().c_str());
 		}
+		printf("Total: %d vars in session.\n", (int)vars.size());
 		return;
 	}
 	else if (line.substr(0, 3) == "rm ")
@@ -423,7 +424,8 @@ void runLine(csubstr &line, bool useConvert, bool useSprint)
 		int before = (int)vars.size();
 		for (auto item : savedVars)
 		{
-			vars.insert_or_assign(item.first, item.second);
+			//vars.insert_or_assign(item.first, item.second);
+			vars[item.first] = item.second;
 		}
 		printf("Reloaded %d vars, %d were not present\n", (int)savedVars.size(), (int)vars.size() - before);
 		return;
@@ -517,7 +519,9 @@ void runLine(csubstr &line, bool useConvert, bool useSprint)
 				val.getDim(d, sizeof(d));
 				printf("Mass^%d Distance^%d Time^%d Temperature^%d Current^%d\n", d[0], d[1], d[2], d[3], d[4]);
 
+#ifdef NO_LONG_NAMES
 				bool comma = false;
+#endif
 				for (int i = 0; i < PQ::KnownUnitsLength; i++)
 				{
 					if (!memcmp(d, PQ::KnownUnits[i].dim, sizeof(d)))
@@ -526,12 +530,14 @@ void runLine(csubstr &line, bool useConvert, bool useSprint)
 						printf("%s, %s, %s\n", PQ::KnownUnits[i].symbol, PQ::KnownUnits[i].longName, PQ::KnownUnits[i].plural);
 #else
 						printf("%s%s", (comma ? ", " : ""), PQ::KnownUnits[i].symbol);
-#endif
 						comma = true;
+#endif
 					}
 				}
-
-				printf("\n[");
+#ifdef NO_LONG_NAMES
+				printf("\n");
+#endif
+				printf("[");
 				for (int di = 0; di < PQ::ND; di++)
 				{
 					if (di != 0) printf(",");

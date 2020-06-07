@@ -199,9 +199,14 @@
 #endif
 #endif
 
-// get size_t
+// size_t
 #include <stddef.h>
+
+// abs(), pow()
 #include <math.h>
+
+// memcpy()
+#include <memory.h>
 
 // end standard library dependencies
 //========================================
@@ -990,32 +995,36 @@ public:
 
 #define DeclareLiteral(symbol_no_quotes) PhysicalQuantity operator ""_##symbol_no_quotes(long double); PhysicalQuantity operator ""_##symbol_no_quotes(unsigned long long);
 
+
+/********************************************************************************
 // gencode now makes all the individual prefix literals based on flags
-//#define DeclareLiteralPrefixes(symbol_no_quotes) \
-//	DeclareLiteral( c##symbol_no_quotes) \
-//	DeclareLiteral( k##symbol_no_quotes) \
-//	DeclareLiteral( m##symbol_no_quotes) \
-//	DeclareLiteral( M##symbol_no_quotes) \
-//	DeclareLiteral( u##symbol_no_quotes) \
-//	DeclareLiteral( G##symbol_no_quotes) \
-//	DeclareLiteral( n##symbol_no_quotes) \
-//	DeclareLiteral( T##symbol_no_quotes) \
-//	DeclareLiteral( p##symbol_no_quotes) \
-//	DeclareLiteral( P##symbol_no_quotes) \
-//	DeclareLiteral(da##symbol_no_quotes) \
-//	DeclareLiteral( f##symbol_no_quotes) \
-//	DeclareLiteral( d##symbol_no_quotes) \
-//	DeclareLiteral( h##symbol_no_quotes) \
-//	DeclareLiteral( E##symbol_no_quotes) \
-//	DeclareLiteral( a##symbol_no_quotes) \
-//	DeclareLiteral( z##symbol_no_quotes) \
-//	DeclareLiteral( Z##symbol_no_quotes) \
-//	DeclareLiteral( y##symbol_no_quotes) \
-//	DeclareLiteral( Y##symbol_no_quotes)
-//
-//#define DeclareLiteralWithPrefixes(symbol_no_quotes)  \
-//	DeclareLiteral(symbol_no_quotes) \
-//	DeclareLiteralPrefixes(symbol_no_quotes)
+#define DeclareLiteralPrefixes(symbol_no_quotes) \
+	DeclareLiteral( c##symbol_no_quotes) \
+	DeclareLiteral( k##symbol_no_quotes) \
+	DeclareLiteral( m##symbol_no_quotes) \
+	DeclareLiteral( M##symbol_no_quotes) \
+	DeclareLiteral( u##symbol_no_quotes) \
+	DeclareLiteral( G##symbol_no_quotes) \
+	DeclareLiteral( n##symbol_no_quotes) \
+	DeclareLiteral( T##symbol_no_quotes) \
+	DeclareLiteral( p##symbol_no_quotes) \
+	DeclareLiteral( P##symbol_no_quotes) \
+	DeclareLiteral(da##symbol_no_quotes) \
+	DeclareLiteral( f##symbol_no_quotes) \
+	DeclareLiteral( d##symbol_no_quotes) \
+	DeclareLiteral( h##symbol_no_quotes) \
+	DeclareLiteral( E##symbol_no_quotes) \
+	DeclareLiteral( a##symbol_no_quotes) \
+	DeclareLiteral( z##symbol_no_quotes) \
+	DeclareLiteral( Z##symbol_no_quotes) \
+	DeclareLiteral( y##symbol_no_quotes) \
+	DeclareLiteral( Y##symbol_no_quotes)
+
+#define DeclareLiteralWithPrefixes(symbol_no_quotes)  \
+	DeclareLiteral(symbol_no_quotes) \
+	DeclareLiteralPrefixes(symbol_no_quotes)
+// ***************************************************************************************/
+
 
 // Use these in a compiled .cpp file
 #define DefineLiteralBase(symbol_no_quotes, factor) \

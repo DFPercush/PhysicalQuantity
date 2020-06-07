@@ -2099,8 +2099,10 @@ bool PhysicalQuantity::getDim(signed char* d, int bufSize)
 
 bool PQVarList::set(const PQ::CSubString& name, PQ value)
 {
-	auto r = insert_or_assign(name.toStdString(), value);
-	return r.second;
+	(operator[](name.toStdString())) = value;
+	//auto r = insert_or_assign(name.toStdString(), value);
+	//return r.second;
+	return true;
 }
 PQ PQVarList::get(const PQ::CSubString name) const
 {

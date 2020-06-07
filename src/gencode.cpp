@@ -1,6 +1,6 @@
 
-// Note: PQ_GENCODE is defined in project settings /
-// preprocessor options, or as a compiler argument in makefile for
+// Note: PQ_GENCODE is defined in project settings / preprocessor options,
+// or as a compiler argument in makefile for
 // any source files built as a dependency of gencode.
 // If this #define is missing, you will get errors about undeclared identifiers *_HashTable
 // It's not enough to declare it here. Some source .cpp files also need it.
@@ -1063,7 +1063,7 @@ int main(int argc, char** argv)
 					if (ud != 0) { romtable << ","; }
 					romtable << (int)PQ::KnownUnits[ui].dim[ud];
 				}
-				romtable << "}, " << PQ::KnownUnits[ui].flags << "},\n";
+				romtable << "}, " << (int)PQ::KnownUnits[ui].flags << "},\n";
 					// {UN("m", "meter","meters"),1, {0,1,0,0,0}},
 			}
 			romtable << "};\n";
