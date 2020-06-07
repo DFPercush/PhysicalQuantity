@@ -207,11 +207,16 @@ PhysicalQuantity::PhysicalQuantity(PhysicalQuantity::num valueArg)
 PhysicalQuantity::PhysicalQuantity(num value_p, const signed char dim_p[(int)QuantityType::ENUM_MAX])
 	: value(value_p), dim {dim_p[0], dim_p[1], dim_p[2], dim_p[3], dim_p[4]} {}
 
-PhysicalQuantity(int value_p)
+PhysicalQuantity::PhysicalQuantity(int value_p)
 {
 	init();
 	value = (num) value_p;
 }
+
+PhysicalQuantity::PhysicalQuantity(std::chrono::duration<num> t)
+	: value{ std::chrono::duration<num, std::ratio<1,PQ_CHRONO_PRECISION>>(t).count() * (num)PQ_CHRONO_PRECISION },
+	dim{ 0,0,1,0,0 } {}
+
 #endif // #if defined NO_CONSTEXPR && defined(NO_INLINE)
 
 PhysicalQuantity& PhysicalQuantity::operator=(PhysicalQuantity::num valueArg)
@@ -2053,6 +2058,31 @@ PhysicalQuantity PhysicalQuantity::fromUnit(const PhysicalQuantity::UnitDefiniti
 	PhysicalQuantity ret(fac, dim);
 	return ret;
 }
+
+
+#ifdef _CHRONO_
+#ifdef NO_CONSTEXPR
+PhysicalQuantity::operator std::chrono::duration<num, std::ratio<1, 1>>()
+{
+	if ((dim[(int)QuantityType::MASS] != 0)
+		|| (dim[(int)QuantityType::DISTANCE] != 0)
+		|| (dim[(int)QuantityType::TIME] != 1)
+		|| (dim[(int)QuantityType::TEMPERATURE] != 0)
+		|| (dim[(int)QuantityType::CURRENT] != 0))
+	{
+#ifdef NO_THROW
+		errorHandler(errorUserContext, E_UNIT_MISMATCH);
+#else
+		throw UnitMismatchException("Not a time value.");
+#endif
+		return std::chrono::duration<num, std::ratio<1, 1>>(0);
+	}
+	else { return std::chrono::duration<num, std::ratio<1, 1>>(value); }
+}
+#endif // constexpr
+#endif // chrono
+
+
 
 #ifdef NO_INLINE
 size_t PQ::sprint(char* buf, size_t size, const char* pu, bool useSlash = true) const

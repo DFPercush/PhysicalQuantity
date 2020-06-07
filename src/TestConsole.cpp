@@ -153,12 +153,27 @@ void loadVars(bool clear = false)
 	if (clear) { savedVars.clear(); }
 	string line;
 	size_t eq;
+	int nErrors = 0;
 	while (!svf.eof())
 	{
 		getline(svf, line);
 		eq = line.find("=");
 		if (eq == string::npos) { continue; }
-		savedVars.set(line.substr(0, eq), PQ(line.substr(eq + 1)));
+		string varname = line.substr(0, eq);
+		try
+		{
+			savedVars.set(varname, PQ(line.substr(eq + 1)));
+		}
+		catch (const exception& err)
+		{
+			fprintf(stderr, "Error loading var '%s': %s\n", varname.c_str(), err.what());
+			nErrors++;
+		}
+	}
+	svf.close();
+	if (nErrors > 0)
+	{
+		fprintf(stderr, "Warning: %d vars could not be loaded and may be overwritten if you save.\n", nErrors);
 	}
 }
 

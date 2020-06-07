@@ -191,6 +191,13 @@
 #include <unordered_map>
 #endif
 
+#ifndef NO_STD_CHRONO
+#include <chrono>
+#ifndef _CHRONO_
+#define _CHRONO_
+#endif
+#endif
+
 // get size_t
 #include <stddef.h>
 #include <math.h>
@@ -594,23 +601,49 @@ typedef unsigned char UnitFlags_t;
 	 : value{value_p}, dim{0,0,0,0,0} {}
 	constexpr PhysicalQuantity(int value_p)
 	 : value{(num)value_p}, dim{0,0,0,0,0} {}
-#else
+#ifdef _CHRONO_
+	template <typename numType, intmax_t numer, intmax_t denom>
+	constexpr PhysicalQuantity(std::chrono::duration<numType, std::ratio<numer, denom>> t)
+	  : value {t.count() * (num)numer / (num)denom},
+	   dim{0,0,1,0,0} {}
+	
+	//: value {std::chrono::duration<num, std::ratio<1,PQ_CHRONO_PRECISION>>(t).count() * (num)PQ_CHRONO_PRECISION },
+	//: value {std::chrono::duration<num, std::ratio<1,1>>(t).count() * (num)numer / (num)denom},
+   //template<typename numType, intmax_t numer, intmax_t denom>
+	//constexpr PhysicalQuantity(std::chrono::duration<int, std::ratio<numer, denom>> t)
+	// : value {t.count() * (num)numer / (num)denom },
+	//   dim{0,0,0,0,0} {}
+#endif // chrono
+#else // constexpr 
 #ifdef NO_INLINE
 	PhysicalQuantity();
 	PhysicalQuantity(const PhysicalQuantity& copy);
 	PhysicalQuantity(num value_p, const signed char dim_p[(int)QuantityType::ENUM_MAX]);
 	PhysicalQuantity(num value);
 	PhysicalQuantity(int value);
-#else
-	PhysicalQuantity() { init(); }
-	PhysicalQuantity(const PhysicalQuantity& copy) { value=copy.value; memcpy(dim, copy.dim, sizeof(dim)); }
-	PhysicalQuantity(num value_p, const signed char dim_p[(int)QuantityType::ENUM_MAX])
+#ifdef _CHRONO_
+	template <typename numType, intmax_t numer, intmax_t denom>
+	PhysicalQuantity(std::chrono::duration<numType, std::ratio<numer, denom>> t)
+		: value{ t.count() * (num)numer / (num)denom },
+		dim{ 0,0,1,0,0 } {}
+#endif // chrono
+#else // inline
+	INLINE_KEYWORD PhysicalQuantity() { init(); }
+	INLINE_KEYWORD PhysicalQuantity(const PhysicalQuantity& copy) { value=copy.value; memcpy(dim, copy.dim, sizeof(dim)); }
+	INLINE_KEYWORD PhysicalQuantity(num value_p, const signed char dim_p[(int)QuantityType::ENUM_MAX])
 	{
 		value = value_p;
 		memcpy(dim, dim_p, sizeof(dim));
 	}
-	PhysicalQuantity(num value_p) { init(); value = value_p; }
-	PhysicalQuantity(int value_p) { init(); value = (num)value_p; }
+	INLINE_KEYWORD PhysicalQuantity(num value_p) { init(); value = value_p; }
+	INLINE_KEYWORD PhysicalQuantity(int value_p) { init(); value = (num)value_p; }
+#ifdef _CHRONO_
+	// TODO: template
+	template <typename numType, intmax_t numer, intmax_t denom>
+	INLINE_KEYWORD PhysicalQuantity(std::chrono::duration<numType, std::ratio<numer, denom>> t)
+		: value{ t.count() * (num)numer / (num)denom },
+		dim{ 0,0,1,0,0 } {}
+#endif // chrono
 #endif // NO_INLINE
 #endif // constexpr
 
@@ -679,6 +712,32 @@ typedef unsigned char UnitFlags_t;
 	std::string toString(const CSubString& preferredUnits) const;
 #endif // #ifndef NO_STD_STRING
 #endif //#ifndef NO_TEXT
+
+// Time conversion - in case people need their literals back
+#ifdef _CHRONO_
+#ifdef NO_CONSTEXPR
+	operator std::chrono::duration<num, std::ratio<1, 1>>();
+#else // constexpr
+	constexpr operator std::chrono::duration<num, std::ratio<1, 1>>()
+	{
+		if ((dim[(int)QuantityType::MASS] != 0)
+			|| (dim[(int)QuantityType::DISTANCE] != 0)
+			|| (dim[(int)QuantityType::TIME] != 1)
+			|| (dim[(int)QuantityType::TEMPERATURE] != 0)
+			|| (dim[(int)QuantityType::CURRENT] != 0))
+		{
+#ifdef NO_THROW
+			errorHandler(errorUserContext, E_UNIT_MISMATCH);
+#else
+			throw UnitMismatchException("Not a time value.");
+#endif
+			return std::chrono::duration<num, std::ratio<1, 1>>(0);
+		}
+		else { return std::chrono::duration<num, std::ratio<1, 1>>(value); }
+	}
+#endif // constexpr
+#endif // chrono
+
 
 #if defined(YES_CONSTEXPR)
 	constexpr PhysicalQuantity operator* (const PhysicalQuantity& rhs) const 
