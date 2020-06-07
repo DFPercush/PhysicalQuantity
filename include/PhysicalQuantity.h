@@ -442,6 +442,10 @@ typedef unsigned char UnitFlags_t;
 	static const int default_hashTableSize_UnitLongNames;
 	static const int default_hashTableSize_PrefixSymbols;
 	static const int default_hashTableSize_UnitPlurals;
+	static const int defaultHashSeed_UnitSymbols;
+	static const int defaultHashSeed_UnitLongNames;
+	static const int defaultHashSeed_UnitPlurals;
+	static const int defaultHashSeed_PrefixSymbols;
 #else //PQ_GENCODE
 	// Actual values are written by gencode to hashParams.acpp
 	static const int hashTableSize_UnitSymbols;

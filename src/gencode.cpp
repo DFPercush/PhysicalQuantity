@@ -880,21 +880,21 @@ int main(int argc, char** argv)
 
 #ifndef NO_HASHING
 		int unitSymbolsSize =   (int)PQ::default_hashTableSize_UnitSymbols;
-		int unitSymbolsSeed =   (int)PQ::defaultHashSeed;
+		int unitSymbolsSeed =   (int)PQ::defaultHashSeed_UnitSymbols;
 		int unitSymbolsBucketSize = 0;
 		float unitSymbolsRowCoverage = 0;
 //#ifndef NO_LONG_NAMES
 		int unitLongNamesSize = (int)PQ::default_hashTableSize_UnitLongNames;
-		int unitLongNamesSeed = (int)PQ::defaultHashSeed;
+		int unitLongNamesSeed = (int)PQ::defaultHashSeed_UnitLongNames;
 		int unitLongNamesBucketSize = 0;
 		float unitLongNamesRowCoverage = 0;
 		int unitPluralsSize   = (int)PQ::default_hashTableSize_UnitPlurals;
-		int unitPluralsSeed   = (int)PQ::defaultHashSeed;
+		int unitPluralsSeed   = (int)PQ::defaultHashSeed_UnitPlurals;
 		int unitPluralsBucketSize = 0;
 		float unitPluralsRowCoverage = 0;
 //#endif //#ifndef NO_LONG_NAMES
 		int prefixSymbolsSize = (int)PQ::default_hashTableSize_PrefixSymbols;
-		int prefixSymbolsSeed = (int)PQ::defaultHashSeed;
+		int prefixSymbolsSeed = (int)PQ::defaultHashSeed_PrefixSymbols;
 		int prefixSymbolsBucketSize = 0;
 		float prefixSymbolsRowCoverage = 0;
 
