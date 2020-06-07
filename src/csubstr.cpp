@@ -148,6 +148,7 @@ CSubString& CSubString::operator=(const CSubString& cp)
 	return *this;
 }
 
+#if defined(NO_CONSTEXPR) && defined(NO_INLINE)
 CSubString::CSubString()
 {
 	str = nullstr;
@@ -157,6 +158,7 @@ CSubString::CSubString()
 	rom = false;
 #endif
 }
+#endif 
 
 int CSubString::find_first_of(const CSubString& find, int startOfs) const
 {

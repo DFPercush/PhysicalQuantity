@@ -280,6 +280,10 @@ void runLine(csubstr &line, bool useConvert, bool useSprint)
 		printf("Saved %d vars. %d updated, %d new, %d current\n", saveVars(), saveOldCount, saveNewCount, currentCount);
 		return;
 	}
+	if (line == "save")
+	{
+		printf("Did you mean save-all?\n");
+	}
 	else if (line.substr(0, 5) == "save ")
 	{
 		int nNewSaved = 0;

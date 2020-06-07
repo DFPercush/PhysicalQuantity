@@ -255,12 +255,33 @@ public:
 #ifdef ROM_READ_BYTE
 		bool rom;
 #endif
+
+#ifdef YES_CONSTEXPR
+#ifdef ROM_READ_BYTE
+		CSubString() : str{nullstr}, start{0}, end{0}, rom{false} {}
+#else
+		CSubString() : str{nullstr}, start{0}, end{0} {}
+#endif
+#else // #ifdef YES_CONSTEXPR
+#ifdef NO_INLINE
 		CSubString();
+#else // #ifdef NO_INLINE
+
+#ifdef ROM_READ_BYTE
+		CSubString() { str = nullstr; start = 0; end = 0; rom = false; }
+#else
+		CSubString() { str = nullstr; start = 0; end = 0; }
+#endif
+#endif // #ifdef NO_INLINE / #else
+#endif // #ifdef YES_CONSTEXPR / else
+
 		CSubString(const char* str_arg, int start_arg = 0, int len_arg = -1);
 		CSubString(const CSubString& from, int start_arg = 0, int len_arg = -1);
+
 #ifndef NO_STD_STRING
 		CSubString(const std::string& stdstr); // Be careful of object mutation and lifetime!
 #endif
+
 		CSubString& operator=(const CSubString& cp);
 		bool operator== (const char* cmp) const;
 		bool operator==(const CSubString& cmp) const;
@@ -284,6 +305,7 @@ public:
 		bool isint() const;
 		CSubString trim() const;
 		const char* getPtr() const { return &str[start]; }
+
 #ifndef NO_STD_STRING
 		std::string toStdString() const;
 		operator std::string() const { return toStdString(); }
@@ -553,21 +575,45 @@ typedef unsigned char UnitFlags_t;
 
 	//==================================================================================
 	// Main class members
-	PhysicalQuantity();
-	PhysicalQuantity(const PhysicalQuantity& copy);
-	PhysicalQuantity(PhysicalQuantity&& move) noexcept;
+
+
+	// Constructors
+	void init();
 #ifndef NO_TEXT
 	PhysicalQuantity(num value, const char* unit);
 	PhysicalQuantity(CSubString str);
 #endif // #ifndef NO_TEXT
-	PhysicalQuantity(num value);
-	PhysicalQuantity(int value) : PhysicalQuantity((num)value) {}
 #if defined(YES_CONSTEXPR)
+	constexpr PhysicalQuantity()
+	 : value{0}, dim{0,0,0,0,0} {}
+	constexpr PhysicalQuantity(const PhysicalQuantity& copy)
+	 : value{copy.value}, dim{copy.dim[0], copy.dim[1], copy.dim[2], copy.dim[3], copy.dim[4]} {}
 	constexpr PhysicalQuantity(num value_p, const signed char dim_p[(int)QuantityType::ENUM_MAX])
-		: value(value_p), dim {dim_p[0], dim_p[1], dim_p[2], dim_p[3], dim_p[4]} {}
+	 : value(value_p), dim {dim_p[0], dim_p[1], dim_p[2], dim_p[3], dim_p[4]} {}
+	constexpr PhysicalQuantity(num value_p)
+	 : value{value_p}, dim{0,0,0,0,0} {}
+	constexpr PhysicalQuantity(int value_p)
+	 : value{(num)value_p}, dim{0,0,0,0,0} {}
 #else
+#ifdef NO_INLINE
+	PhysicalQuantity();
+	PhysicalQuantity(const PhysicalQuantity& copy);
 	PhysicalQuantity(num value_p, const signed char dim_p[(int)QuantityType::ENUM_MAX]);
-#endif
+	PhysicalQuantity(num value);
+	PhysicalQuantity(int value);
+#else
+	PhysicalQuantity() { init(); }
+	PhysicalQuantity(const PhysicalQuantity& copy) { value=copy.value; memcpy(dim, copy.dim, sizeof(dim)); }
+	PhysicalQuantity(num value_p, const signed char dim_p[(int)QuantityType::ENUM_MAX])
+	{
+		value = value_p;
+		memcpy(dim, dim_p, sizeof(dim));
+	}
+	PhysicalQuantity(num value_p) { init(); value = value_p; }
+	PhysicalQuantity(int value_p) { init(); value = (num)value_p; }
+#endif // NO_INLINE
+#endif // constexpr
+
 	PhysicalQuantity& operator=(num value);
 	PhysicalQuantity& operator=(const PhysicalQuantity& cp);
 	~PhysicalQuantity() = default;
@@ -765,7 +811,6 @@ private:
 	num value;
 	signed char dim[(int)QuantityType::ENUM_MAX];
 
-	void init();
 	unsigned int magdim() const; // Magnitude of dimension = sum(abs(dim[x]))
 
 #ifndef NO_TEXT

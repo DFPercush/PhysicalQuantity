@@ -143,17 +143,40 @@ bool InitLibPQ(int headerOptionFlags)
 
 void PhysicalQuantity::init()
 {
-//	if (!(PQHeaderOptionsMatch))
-//	{
-//#ifdef NO_THROW
-//		errorHandler(errorUserContext, E_HEADER_CONFIG);
-//#else
-//		throw HeaderConfigException("PhysicalQuantity: Module/object was compiled with different header options.");
-//#endif
-//	}
+	//	if (!(PQHeaderOptionsMatch))
+	//	{
+	//#ifdef NO_THROW
+	//		errorHandler(errorUserContext, E_HEADER_CONFIG);
+	//#else
+	//		throw HeaderConfigException("PhysicalQuantity: Module/object was compiled with different header options.");
+	//#endif
+	//	}
 	value = 0.0;
 	memset(dim, 0, sizeof(dim));
 }
+
+
+#ifndef NO_TEXT
+PhysicalQuantity::PhysicalQuantity(num value_p, const char* units_text)
+{
+	init();
+	value = value_p;
+	num unitFactor;
+	num unitOfs;
+	parseUnits(units_text, dim, unitFactor, unitOfs);
+	value *= unitFactor;
+	value += unitOfs;
+}
+
+PhysicalQuantity::PhysicalQuantity(CSubString str)
+{
+	init();
+	parse(str);
+}
+#endif //#ifndef NO_TEXT
+
+
+#if defined NO_CONSTEXPR && defined(NO_INLINE)
 
 PhysicalQuantity::PhysicalQuantity()
 {
@@ -175,36 +198,21 @@ PhysicalQuantity::PhysicalQuantity(PhysicalQuantity&& move) noexcept
 	memcpy(dim, move.dim, sizeof(dim));
 }
 
-#ifndef NO_TEXT
-PhysicalQuantity::PhysicalQuantity(num value_p, const char* units_text)
-{
-	init();
-	value = value_p;
-	num unitFactor;
-	num unitOfs;
-	parseUnits(units_text, dim, unitFactor, unitOfs);
-	value *= unitFactor;
-	value += unitOfs;
-}
-
-PhysicalQuantity::PhysicalQuantity(CSubString str)
-{
-	init();
-	parse(str);
-}
-#endif //#ifndef NO_TEXT
-
 PhysicalQuantity::PhysicalQuantity(PhysicalQuantity::num valueArg)
 {
 	init();
 	value = valueArg;
 }
 
-#if !defined(YES_CONSTEXPR) // || defined(NO_INLINE)
 PhysicalQuantity::PhysicalQuantity(num value_p, const signed char dim_p[(int)QuantityType::ENUM_MAX])
 	: value(value_p), dim {dim_p[0], dim_p[1], dim_p[2], dim_p[3], dim_p[4]} {}
-#endif
 
+PhysicalQuantity(int value_p)
+{
+	init();
+	value = (num) value_p;
+}
+#endif // #if defined NO_CONSTEXPR && defined(NO_INLINE)
 
 PhysicalQuantity& PhysicalQuantity::operator=(PhysicalQuantity::num valueArg)
 {
