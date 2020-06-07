@@ -176,11 +176,11 @@ DEFINE_CONST_ARRAY(PhysicalQuantity::UnitDefinition, PhysicalQuantity::KnownUnit
 
 //                        Ma Di Ti Te Cu
 // Power
-{"W", "watt", "watts", 1, {1,2,-3,0,0}},
-{"hp_mech", "mechanical_horsepower","", 745.699872, {1,2,-3,0,0}},
-{"hp", "","", 745.699872, {1,2,-3,0,0}},
-{"hp_electric", "electric_horsepower", "", 746, {1,2,-3,0,0}},
-{"hp_metric", "metric_horsepower", "", 735.49875, {1,2,-3,0,0}},
+{UN("W", "watt", "watts"), 1, {1,2,-3,0,0}},
+{UN("hp_mech", "mechanical_horsepower",""), 745.699872, {1,2,-3,0,0}},
+{UN("hp", "",""), 745.699872, {1,2,-3,0,0}},
+{UN("hp_electric", "electric_horsepower", ""), 746, {1,2,-3,0,0}},
+{UN("hp_metric", "metric_horsepower", ""), 735.49875, {1,2,-3,0,0}},
 
 
 // Force
@@ -226,7 +226,7 @@ DEFINE_CONST_ARRAY(PhysicalQuantity::UnitDefinition, PhysicalQuantity::KnownUnit
 {UN("S", "siemens", ""), 1, {-1,-2,3,0,2}}, // conductance
 {UN("F", "farad", "farads"), 1, {-1,-2,4,0,2}}, // capacitance
 {UN("Wb", "weber", "webers"), 1, {1,2,-2,0,-1}},
-{UN("T", "tesla", "teslas"), 1, {1,0,-2,0,-1}}, // some of these plurals might not be accurate, but will be permissive of user error when we know what they're talking about
+{UN("T", "tesla", "teslas"), 1, {1,0,-2,0,-1}, NOBASELITERAL}, // some of these plurals might not be accurate, but will be permissive of user error when we know what they're talking about
 {UN("H", "henry", "henrys"), 1, {1,2,-2,0,-1}},
 
 //                      Ma Di Ti Te Cu

@@ -124,12 +124,13 @@
 #define YES_CONSTEXPR
 #endif
 
-#if !defined(NO_INLINE) && !defined(INLINE_KEYWORD)
+#if !defined(INLINE_KEYWORD)
+#if !defined(NO_INLINE)
 #define INLINE_KEYWORD __inline
-#else 
+#else
 #define INLINE_KEYWORD
-#endif //#if !defined(NO_INLINE) && !defined(INLINE_KEYWORD)
-
+#endif
+#endif
 
 #if defined(PQ_GENCODE)
 #ifdef DECLARE_CONST_ARRAY
@@ -186,7 +187,7 @@
 #include <string>
 #endif
 
-#if !defined(NO_STD_MAP) && !defined(NO_NEW)
+#if !defined(NO_STD_MAP) && !defined(NO_NEW) && !defined(NO_STD_STRING) && !defined(NO_TEXT)
 #define PQVARS
 #include <unordered_map>
 #endif
@@ -690,17 +691,23 @@ typedef unsigned char UnitFlags_t;
 	static PhysicalQuantity get1s();
 	static PhysicalQuantity get1K();
 	static PhysicalQuantity get1A();
+#ifndef NO_TEXT
 	static PhysicalQuantity fromUnit(const UnitDefinition& u);
+#endif
 #else // NO_INLINE
 	static PhysicalQuantity get1kg() { const signed char d[5]={1,0,0,0,0}; return PhysicalQuantity(1.0, d); }
 	static PhysicalQuantity get1m() { const signed char d[5]={0,1,0,0,0}; return PhysicalQuantity(1.0, d); }
 	static PhysicalQuantity get1s() { const signed char d[5]={0,0,1,0,0}; return PhysicalQuantity(1.0, d); }
 	static PhysicalQuantity get1K() { const signed char d[5]={0,0,0,1,0}; return PhysicalQuantity(1.0, d); }
 	static PhysicalQuantity get1A() { const signed char d[5]={0,0,0,0,1}; return PhysicalQuantity(1.0, d); }
+#ifndef NO_TEXT
 	PhysicalQuantity fromUnit(const UnitDefinition& u) { PhysicalQuantity ret(u.factor, u.dim); return ret; }
+#endif
 #endif // #else of #ifdef NO_INLINE
 
+#ifndef NO_TEXT
 	static PhysicalQuantity fromUnit(const UnitDefinition& u, int power = 1);
+#endif
 
 	bool isScalar();
 	num getScalar(); // Error if the value has units
@@ -954,15 +961,15 @@ public:
 };
 
 #else  // #ifdef PQVARS
-class PQVarList
-{
-public:
-	bool set(const PhysicalQuantity::CSubString& name, PhysicalQuantity value) { return false; }
-	PQ get(const PhysicalQuantity::CSubString name) const { return PQ(NAN); }
-	int erase(const PhysicalQuantity::CSubString name) { return 0; }
-	bool contains(const PQ::CSubString name) const { return false; }
-	static bool isLegalName(PQ::CSubString name) { return false; }
-};
+//class PQVarList
+//{
+//public:
+//	bool set(const PhysicalQuantity::CSubString& name, PhysicalQuantity value) { return false; }
+//	PQ get(const PhysicalQuantity::CSubString name) const { return PQ(NAN); }
+//	int erase(const PhysicalQuantity::CSubString name) { return 0; }
+//	bool contains(const PQ::CSubString name) const { return false; }
+//	static bool isLegalName(PQ::CSubString name) { return false; }
+//};
 #endif // #ifdef PQVARS
 
 // End variables
@@ -974,32 +981,41 @@ public:
 
 //==================================================================================
 // Literals
-#ifndef NO_LITERALS
+// Use the Declare... macros in a header, Define... in a source file.
+// gencode should take care of all that automatically.
 
-// Use these in a header.
+#ifdef NO_LITERALS
+#define DeclareLiteral(symbol_no_quotes)
+#else
+
 #define DeclareLiteral(symbol_no_quotes) PhysicalQuantity operator ""_##symbol_no_quotes(long double); PhysicalQuantity operator ""_##symbol_no_quotes(unsigned long long);
-#define DeclareLiteralWithPrefixes(symbol_no_quotes) \
-	DeclareLiteral(  symbol_no_quotes) \
-	DeclareLiteral( c##symbol_no_quotes) \
-	DeclareLiteral( k##symbol_no_quotes) \
-	DeclareLiteral( m##symbol_no_quotes) \
-	DeclareLiteral( M##symbol_no_quotes) \
-	DeclareLiteral( u##symbol_no_quotes) \
-	DeclareLiteral( G##symbol_no_quotes) \
-	DeclareLiteral( n##symbol_no_quotes) \
-	DeclareLiteral( T##symbol_no_quotes) \
-	DeclareLiteral( p##symbol_no_quotes) \
-	DeclareLiteral( P##symbol_no_quotes) \
-	DeclareLiteral(da##symbol_no_quotes) \
-	DeclareLiteral( f##symbol_no_quotes) \
-	DeclareLiteral( d##symbol_no_quotes) \
-	DeclareLiteral( h##symbol_no_quotes) \
-	DeclareLiteral( E##symbol_no_quotes) \
-	DeclareLiteral( a##symbol_no_quotes) \
-	DeclareLiteral( z##symbol_no_quotes) \
-	DeclareLiteral( Z##symbol_no_quotes) \
-	DeclareLiteral( y##symbol_no_quotes) \
-	DeclareLiteral( Y##symbol_no_quotes)
+
+// gencode now makes all the individual prefix literals based on flags
+//#define DeclareLiteralPrefixes(symbol_no_quotes) \
+//	DeclareLiteral( c##symbol_no_quotes) \
+//	DeclareLiteral( k##symbol_no_quotes) \
+//	DeclareLiteral( m##symbol_no_quotes) \
+//	DeclareLiteral( M##symbol_no_quotes) \
+//	DeclareLiteral( u##symbol_no_quotes) \
+//	DeclareLiteral( G##symbol_no_quotes) \
+//	DeclareLiteral( n##symbol_no_quotes) \
+//	DeclareLiteral( T##symbol_no_quotes) \
+//	DeclareLiteral( p##symbol_no_quotes) \
+//	DeclareLiteral( P##symbol_no_quotes) \
+//	DeclareLiteral(da##symbol_no_quotes) \
+//	DeclareLiteral( f##symbol_no_quotes) \
+//	DeclareLiteral( d##symbol_no_quotes) \
+//	DeclareLiteral( h##symbol_no_quotes) \
+//	DeclareLiteral( E##symbol_no_quotes) \
+//	DeclareLiteral( a##symbol_no_quotes) \
+//	DeclareLiteral( z##symbol_no_quotes) \
+//	DeclareLiteral( Z##symbol_no_quotes) \
+//	DeclareLiteral( y##symbol_no_quotes) \
+//	DeclareLiteral( Y##symbol_no_quotes)
+//
+//#define DeclareLiteralWithPrefixes(symbol_no_quotes)  \
+//	DeclareLiteral(symbol_no_quotes) \
+//	DeclareLiteralPrefixes(symbol_no_quotes)
 
 // Use these in a compiled .cpp file
 #define DefineLiteralBase(symbol_no_quotes, factor) \

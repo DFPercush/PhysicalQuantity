@@ -152,7 +152,7 @@
       <Command>copy /Y "$(TargetPath)" "$(ProjectDir)..\lib\"</Command>
     </PostBuildEvent>
     <CustomBuildStep>
-      <Command>$(SolutionDir)..\bin\gencode.exe --rootpath $(SolutionDir)..\ generate optimize</Command>
+      <Command>$(SolutionDir)..\bin\gencode.exe --rootpath $(SolutionDir)..\ generate</Command>
     </CustomBuildStep>
     <CustomBuildStep>
       <Message>gencode: auto generating dependencies</Message>
@@ -197,6 +197,7 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
+      <PreprocessToFile>false</PreprocessToFile>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -205,7 +206,7 @@
       <Command>copy /Y "$(TargetPath)" "$(ProjectDir)..\lib\"</Command>
     </PostBuildEvent>
     <CustomBuildStep>
-      <Command>$(SolutionDir)..\bin\gencode.exe --rootpath $(SolutionDir)..\ generate optimize</Command>
+      <Command>$(SolutionDir)..\bin\gencode.exe --rootpath $(SolutionDir)..\ generate</Command>
     </CustomBuildStep>
     <CustomBuildStep>
       <Message>gencode: auto generating dependencies</Message>

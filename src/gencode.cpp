@@ -46,6 +46,14 @@ void dumpLiterals(string rootpath)
 		throw runtime_error("Could not open src/literals.acpp");
 	}
 
+#ifdef NO_LITERALS
+	source << "// NO_LITERALS was defined in gencode, skipping.";
+	header << "// NO_LITERALS was defined in gencode, skipping.";
+	source.close();
+	header.close();
+	return;
+#endif
+
 	//source << "#pragma once\n";
 	source << "#ifndef NO_LITERALS\n";
 	source << "#include <PhysicalQuantity.h>\n";
@@ -86,7 +94,7 @@ void dumpLiterals(string rootpath)
 
 			if (((u.flags & PQ::NOBASELITERAL) == 0) && (u.flags & PQ::NOPREFIX))
 			{
-				header << "#pragma push_macro(\"_" << u.symbol << "\")\n#undef " << u.symbol << "\n"
+				header << "#pragma push_macro(\"_" << u.symbol << "\")\n#undef _" << u.symbol << "\n"
 					<< useMacro << "(" << macroInnards.str() << ")\n#pragma pop_macro(\"_" << u.symbol << "\")\n";
 			}
 			if ((u.flags & PQ::NOPREFIX) == 0)
@@ -105,8 +113,9 @@ void dumpLiterals(string rootpath)
 					unitWithPrefix += u.symbol;
 					header << "#pragma pop_macro(\"_" << unitWithPrefix << "\")\n";
 				}
-				header << "#pragma pop_macro(\"_" << u.symbol << "\")\n";
+				header << "#pragma pop_macro(\"_" << u.symbol << "\")\n\n";
 			}
+			header << "\n\n\n";
 			macroInnards.clear();
 
 			//else
@@ -126,23 +135,50 @@ void dumpLiterals(string rootpath)
 	for (int i = 0; i < PQ::KnownUnitsLength; i++)
 	{
 		const PQ::UnitDefinition& u = PQ::KnownUnits[i];
+		if (!strcmp(u.symbol, "")) { continue; }
 		if (u.flags & PQ::NOLITERAL) { continue; }
 		//if (u.offset == 0.0)
 		//if (i >= PQ::KnownUnitOffsetsLength)
 		//{
-			if (u.flags & PQ::NOPREFIX)
+
+		
+		if ((u.flags & PQ::NOBASELITERAL) == 0)
+		{
+			header << "#pragma push_macro(\"_" << u.symbol << "\")\n#undef _" << u.symbol << "\n"
+				<< "DeclareLiteral(" << u.symbol << ")\n#pragma pop_macro(\"_" << u.symbol << "\")\n\n";
+			source << "#pragma push_macro(\"_" << u.symbol << "\")\n#undef _" << u.symbol << "\n"
+				<< "DefineLiteral(" << u.symbol << ")\n#pragma pop_macro(\"_" << u.symbol << "\")\n\n";
+		}
+		if ((u.flags & PQ::NOPREFIX) == 0)
+		{
+			for (int pi = 0; pi < PQ::KnownPrefixesLength; pi++)
 			{
-				header << "DeclareLiteral(";
-				source << "DefineLiteral(";
+				const PQ::Prefix& pre = PQ::KnownPrefixes[pi];
+				if (strcmp(pre.symbol, "") == 0) { continue; }
+				string def = string(pre.symbol) + u.symbol;
+				header << "#pragma push_macro(\"_" << def << "\")\n#undef _" << def << "\n"
+					<< "DeclareLiteral(" << def << ")\n#pragma pop_macro(\"_" << def << "\")\n\n";
+				source << "#pragma push_macro(\"_" << def << "\")\n#undef _" << def << "\n"
+					<< "DefineLiteral(" << def << ")\n#pragma pop_macro(\"_" << def << "\")\n\n";
 			}
-			else
-			{
-				header << "DeclareLiteralWithPrefixes(";
-				source << "DefineLiteralWithPrefixes(";
-			}
-			header << u.symbol << ")\n";
-			source << u.symbol << ")\n";
-		//}
+		}
+		header << "\n\n\n";
+
+
+
+		//	if (u.flags & PQ::NOPREFIX)
+		//	{
+		//		header << "DeclareLiteral(";
+		//		source << "DefineLiteral(";
+		//	}
+		//	else
+		//	{
+		//		header << "DeclareLiteralWithPrefixes(";
+		//		source << "DefineLiteralWithPrefixes(";
+		//	}
+		//	header << u.symbol << ")\n";
+		//	source << u.symbol << ")\n";
+		////}
 	}
 
 	header << "#endif //#else of #if defined(YES_CONSTEXPR)\n\n//Units with additive offsets:\n";
@@ -964,14 +1000,12 @@ int main(int argc, char** argv)
 #endif //#else of #ifdef NO_TEXT
 	
 
-#ifndef NO_LITERALS
 		if (writeFiles)
 		{
 			cout << "gencode: Generating literals... ";
 			dumpLiterals(rootpath);
 			cout << " OK\n";
 		}
-#endif
 
 
 		if (writeFiles)
@@ -981,6 +1015,7 @@ int main(int argc, char** argv)
 			romtable.open(rootpath + "src/romtable.acpp");
 			if (!romtable.is_open()) { throw runtime_error("Could not open src/romtable.acpp"); }
 			romtable << "#include <PhysicalQuantity.h>\n";
+			romtable << "#ifndef NO_TEXT\n";
 			romtable << "#ifdef ROM_READ_BYTE\n";
 			romtable << "typedef PhysicalQuantity PQ;\n";
 			romtable << "#ifndef NO_LONG_NAMES\n";
@@ -1040,7 +1075,7 @@ int main(int argc, char** argv)
 #ifndef NO_LONG_NAMES
 				romtable << "prefixLongName" << pi;
 #else
-				romtable << "\"\""
+				romtable << "\"\"";
 #endif
 					//<< "), (PQ::num)" << setprecision(20) << PQ::KnownPrefixes[pi].factor << "},\n";
 				romtable << "), (PQ::num)" << setprecision(pqNumDigits) << PQ::KnownPrefixes[pi].factor << "},\n";
@@ -1049,6 +1084,7 @@ int main(int argc, char** argv)
 			romtable << "};\n";
 			romtable << "const PhysicalQuantity::prefixIndex_t PhysicalQuantity::KnownPrefixesLength = sizeof(PhysicalQuantity::KnownPrefixes) / sizeof(PhysicalQuantity::Prefix);\n";
 			romtable << "#endif //#ifdef ROM_READ_BYTE\n";
+			romtable << "#endif // !NO_TEXT\n";
 			romtable.close();
 			cout << "OK\n";
 		}

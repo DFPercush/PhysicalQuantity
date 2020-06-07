@@ -68,7 +68,7 @@ PhysicalQuantity::HeaderConfigException::HeaderConfigException(const char* messa
 typedef PhysicalQuantity PQ;
 
 #ifdef NO_CONSTEXPR
-const PhysicalQuantity::ND = (int)PhysicalQuantity::QuantityTypes::ENUM_MAX;
+const int PhysicalQuantity::ND = (int)PhysicalQuantity::QuantityType::ENUM_MAX;
 #endif
 
 #ifdef ROM_READ_BYTE
@@ -191,13 +191,6 @@ PhysicalQuantity::PhysicalQuantity(const PhysicalQuantity& copy)
 	memcpy(dim, copy.dim, sizeof(dim));
 }
 
-PhysicalQuantity::PhysicalQuantity(PhysicalQuantity&& move) noexcept
-{
-	//init();
-	value = move.value;
-	memcpy(dim, move.dim, sizeof(dim));
-}
-
 PhysicalQuantity::PhysicalQuantity(PhysicalQuantity::num valueArg)
 {
 	init();
@@ -212,10 +205,6 @@ PhysicalQuantity::PhysicalQuantity(int value_p)
 	init();
 	value = (num) value_p;
 }
-
-PhysicalQuantity::PhysicalQuantity(std::chrono::duration<num> t)
-	: value{ std::chrono::duration<num, std::ratio<1,PQ_CHRONO_PRECISION>>(t).count() * (num)PQ_CHRONO_PRECISION },
-	dim{ 0,0,1,0,0 } {}
 
 #endif // #if defined NO_CONSTEXPR && defined(NO_INLINE)
 
@@ -1954,6 +1943,7 @@ PhysicalQuantity::num PhysicalQuantity::getScalar()
 	return value;
 }
 
+#ifndef NO_TEXT
 #ifdef NO_SPRINTF_FLOAT
 size_t PhysicalQuantity::printNum(char* buf, size_t size, PhysicalQuantity::num val, unsigned int precision)
 {
@@ -2032,8 +2022,8 @@ size_t PhysicalQuantity::printNum(char* buf, size_t size, PhysicalQuantity::num 
 	sprintf(buf, formatbuf, val);
 	return strlen(buf);
 }
-#endif
-
+#endif // NO_SPRINTF_FLOAT
+#endif // NO_TEXT
 
 #ifdef NO_INLINE
 PhysicalQuantity PhysicalQuantity::get1kg() { signed char d[5]={1,0,0,0,0}; return PhysicalQuantity(1.0, d); }
@@ -2041,13 +2031,16 @@ PhysicalQuantity PhysicalQuantity::get1m() {  signed char d[5]={0,1,0,0,0}; retu
 PhysicalQuantity PhysicalQuantity::get1s() {  signed char d[5]={0,0,1,0,0}; return PhysicalQuantity(1.0, d); }
 PhysicalQuantity PhysicalQuantity::get1K() {  signed char d[5]={0,0,0,1,0}; return PhysicalQuantity(1.0, d); }
 PhysicalQuantity PhysicalQuantity::get1A() {  signed char d[5]={0,0,0,0,1}; return PhysicalQuantity(1.0, d); }
-PhysicalQuantity PhysicalQuantity::fromUnit(const UnitDefinition& u) { PhysicalQuantity ret(u.factor, u.dim); return ret; }
 PhysicalQuantity operator*(PhysicalQuantity::num left, const PhysicalQuantity& right) { return PhysicalQuantity(left) * right; }
 PhysicalQuantity operator/(PhysicalQuantity::num left, const PhysicalQuantity& right) { return PhysicalQuantity(left) / right; }
 PhysicalQuantity operator+(PhysicalQuantity::num left, const PhysicalQuantity& right) { return PhysicalQuantity(left) + right; }
 PhysicalQuantity operator-(PhysicalQuantity::num left, const PhysicalQuantity& right) { return PhysicalQuantity(left) - right; }
+#ifndef NO_TEXT
+PhysicalQuantity PhysicalQuantity::fromUnit(const UnitDefinition& u) { PhysicalQuantity ret(u.factor, u.dim); return ret; }
+#endif
 #endif //#ifdef NO_INLINE
 
+#ifndef NO_TEXT
 PhysicalQuantity PhysicalQuantity::fromUnit(const PhysicalQuantity::UnitDefinition& u, int power)
 {
 	signed char dim[5];
@@ -2059,39 +2052,6 @@ PhysicalQuantity PhysicalQuantity::fromUnit(const PhysicalQuantity::UnitDefiniti
 	return ret;
 }
 
-
-#ifdef _CHRONO_
-#ifdef NO_CONSTEXPR
-PhysicalQuantity::operator std::chrono::duration<num, std::ratio<1, 1>>()
-{
-	if ((dim[(int)QuantityType::MASS] != 0)
-		|| (dim[(int)QuantityType::DISTANCE] != 0)
-		|| (dim[(int)QuantityType::TIME] != 1)
-		|| (dim[(int)QuantityType::TEMPERATURE] != 0)
-		|| (dim[(int)QuantityType::CURRENT] != 0))
-	{
-#ifdef NO_THROW
-		errorHandler(errorUserContext, E_UNIT_MISMATCH);
-#else
-		throw UnitMismatchException("Not a time value.");
-#endif
-		return std::chrono::duration<num, std::ratio<1, 1>>(0);
-	}
-	else { return std::chrono::duration<num, std::ratio<1, 1>>(value); }
-}
-#endif // constexpr
-#endif // chrono
-
-
-
-#ifdef NO_INLINE
-size_t PQ::sprint(char* buf, size_t size, const char* pu, bool useSlash = true) const
-{
-	return sprint(buf, size, UnitList(pu), useSlash);
-}
-#endif // #ifdef NO_INLINE
-
-#ifndef NO_TEXT
 #ifndef NO_HASHING
 PhysicalQuantity::cstrHasherTiny::cstrHasherTiny()
 {
@@ -2109,12 +2069,10 @@ PhysicalQuantity::cstrHasherTiny::cstrHasherTiny(size_t seed_p)
 void PhysicalQuantity::SetErrorHandler(void (*errorHandler_arg)(void* context, ErrorCode e)) { errorHandler = errorHandler_arg; }
 #endif //#ifdef NO_THROW
 
-int PhysicalQuantity::UnitListBase::count() const { return count_; }
-//bool PhysicalQuantity::unitsMatch(const PhysicalQuantity& rhs) const { return isLikeQuantity(rhs); }
-
 #ifndef NO_TEXT
+int PhysicalQuantity::UnitListBase::count() const { return count_; }
 PhysicalQuantity::PhysicalQuantity(const char* str) { PhysicalQuantity(CSubString(str)); }
-void PhysicalQuantity::parseUnits(const char* unitStr, signed char (&unitsOut)[(int)QuantityType::ENUM_MAX], num& factorOut, num& offsetOut) { return parseUnits(CSubString(unitStr), unitsOut, factorOut, offsetOut); }
+//void PhysicalQuantity::parseUnits(const char* unitStr, signed char (&unitsOut)[(int)QuantityType::ENUM_MAX], num& factorOut, num& offsetOut) { return parseUnits(CSubString(unitStr), unitsOut, factorOut, offsetOut); }
 PhysicalQuantity::num PhysicalQuantity::convert(const char* units) const { return convert(csubstr(units)); }
 bool PhysicalQuantity::findUnit(const char* pcharName, unitIndex_t& outUnitIndex, prefixIndex_t& outPrefixIndex) { return findUnit(CSubString(pcharName), outUnitIndex, outPrefixIndex); }
 void PhysicalQuantity::parse(const char* text) { parse(csubstr(text)); }

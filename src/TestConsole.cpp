@@ -1,21 +1,34 @@
-
-//#define NO_INLINE
-
 #include <PhysicalQuantity.h>
 #include <stdio.h>
+
+#if defined(NO_TEXT) || defined(NO_NEW) || defined(NO_STD_STRING) || defined(NO_STD_MAP)
+int main()
+{
+	printf(" *** Test Console is not available due to the following #defines:\n"
+#ifdef NO_NEW	
+"	NO_NEW\n"
+#endif
+#ifdef NO_TEXT
+"	NO_TEXT\n"
+#endif
+#ifdef NO_STD_STRING
+"	NO_STD_STRING\n"
+#endif
+#ifdef NO_STD_MAP
+"	NO_STD_MAP\n"
+#endif
+	"\n This was a library-only build.\n"
+	);
+	return 0;
+}
+
+#else // Master enable #defines
+
+
+#include <iostream>
 #include <fstream>
 #include <exception>
 #include <vector>
-
-#ifdef NO_TEXT
-int main()
-{
-	printf(" *** testconsole: Compiled with NO_TEXT. Console not available.\n");
-	return 0;
-}
-#else //NO_TEXT
-
-#include <iostream>
 #include <string>
 #include <string.h>
 using namespace std;
@@ -500,19 +513,25 @@ void runLine(csubstr &line, bool useConvert, bool useSprint)
 			printf("%s\n", buf);
 			if (whatis)
 			{
-				signed char d[PQ::ND];
+				signed char d[(int)PQ::QuantityType::ENUM_MAX];
 				val.getDim(d, sizeof(d));
 				printf("Mass^%d Distance^%d Time^%d Temperature^%d Current^%d\n", d[0], d[1], d[2], d[3], d[4]);
 
+				bool comma = false;
 				for (int i = 0; i < PQ::KnownUnitsLength; i++)
 				{
 					if (!memcmp(d, PQ::KnownUnits[i].dim, sizeof(d)))
 					{
+#ifndef NO_LONG_NAMES
 						printf("%s, %s, %s\n", PQ::KnownUnits[i].symbol, PQ::KnownUnits[i].longName, PQ::KnownUnits[i].plural);
+#else
+						printf("%s%s", (comma ? ", " : ""), PQ::KnownUnits[i].symbol);
+#endif
+						comma = true;
 					}
 				}
 
-				printf("[");
+				printf("\n[");
 				for (int di = 0; di < PQ::ND; di++)
 				{
 					if (di != 0) printf(",");
@@ -701,5 +720,5 @@ int main(int argc, char** argv)
 	}
 	return 0;
 }
-#endif // !NO_TEXT
+#endif // Master enable #defines
 
