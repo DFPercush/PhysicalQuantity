@@ -27,6 +27,6 @@ BinPath=bin/
 
 # gencode hash table optimization, how much brute force to use
 HashMaxSeed=255
-HashMaxTableSize=100
+HashMaxTableSize=255
 HashMinBucketSize=2
 # Scan will stop when all elements in the table have <= HashMinBucketSize collisions.
