@@ -148,10 +148,14 @@ DEFINE_CONST_ARRAY(PhysicalQuantity::UnitDefinition, PhysicalQuantity::KnownUnit
 //                  Ma Di Ti Te Cu
 
 // Time
-{UN("s", "second","seconds"),1, {0,0,1,0,0}}, //, NOPREFIX},
+{UN("s", "second","seconds"),1, {0,0,1,0,0}},
 {UN("min", "minute","minutes"),60, {0,0,1,0,0}, NOPREFIX},
 {UN("hr", "hour","hours"),3600, {0,0,1,0,0}, NOPREFIX},
 {UN("h", "hour","hours"),3600, {0,0,1,0,0}, NOPREFIX},
+{UN("d", "day","days"),3600*24, {0,0,1,0,0}, NOPREFIX},
+{UN("w", "week","weeks"),3600*24*7, {0,0,1,0,0}, NOPREFIX | EXPLICIT},
+{UN("y", "year","years"),3600*24*365.25, {0,0,1,0,0}, NOPREFIX},
+
 
 {UN("Hz", "hertz","hertz"),1, {0,0,-1,0,0}},
 // TODO: Angle flag

@@ -15,14 +15,17 @@ typedef PhysicalQuantity::CSubString csubstr;
 const size_t PhysicalQuantity::defaultHashSeed = 8;
 
 #ifdef PQ_GENCODE
-const int PhysicalQuantity::default_hashTableSize_UnitSymbols = 233;
-const int PhysicalQuantity::defaultHashSeed_UnitSymbols = 18;
-const int PhysicalQuantity::default_hashTableSize_UnitLongNames = 80;
-const int PhysicalQuantity::defaultHashSeed_UnitLongNames = 202;
-const int PhysicalQuantity::default_hashTableSize_UnitPlurals = 123;
-const int PhysicalQuantity::defaultHashSeed_UnitPlurals = 85;
+const int PhysicalQuantity::default_hashTableSize_UnitSymbols = 110;
+const int PhysicalQuantity::defaultHashSeed_UnitSymbols = 229;
+
+const int PhysicalQuantity::default_hashTableSize_UnitLongNames = 108;
+const int PhysicalQuantity::defaultHashSeed_UnitLongNames = 181;
+
+const int PhysicalQuantity::default_hashTableSize_UnitPlurals = 117;
+const int PhysicalQuantity::defaultHashSeed_UnitPlurals = 177;
+
 const int PhysicalQuantity::default_hashTableSize_PrefixSymbols = 14;
-const int PhysicalQuantity::defaultHashSeed_PrefixSymbols = 6;
+const int PhysicalQuantity::defaultHashSeed_PrefixSymbols = 2;
 #endif
 
 
