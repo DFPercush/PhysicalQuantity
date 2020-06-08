@@ -1926,14 +1926,14 @@ PhysicalQuantity PhysicalQuantity::eval(CSubString str, const void* vars_interna
 }
 
 #ifdef NO_INLINE
-size_t PhysicalQuantity::sprint(char* buf, size_t size, unsigned int precision, const PhysicalQuantity::CSubString& sspu, bool useSlash) const
-	{ return sprint(buf, size, precision, UnitList(sspu), useSlash); }
+size_t PhysicalQuantity::sprint(char* buf, size_t size, unsigned int precision, const PhysicalQuantity::CSubString& sspu, int flags) const
+	{ return sprint(buf, size, precision, UnitList(sspu), flags); }
 
-size_t PhysicalQuantity::sprint(char* buf, size_t size, unsigned int precision, const CSubString& sspu, void* puBuf, size_t puBufSize, bool useSlash) const
-	{ return sprint(buf, size, precision, UnitList_static(sspu, puBuf, puBufSize), useSlash); }
+size_t PhysicalQuantity::sprint(char* buf, size_t size, unsigned int precision, const CSubString& sspu, void* puBuf, size_t puBufSize, int flags) const
+	{ return sprint(buf, size, precision, UnitList_static(sspu, puBuf, puBufSize), flags); }
 
-size_t PhysicalQuantity::sprint(char* buf, size_t size, unsigned int precision, bool useSlash) const
-	{ return sprint(buf, size, precision, UnitList(""), useSlash); }
+size_t PhysicalQuantity::sprint(char* buf, size_t size, unsigned int precision, int flags) const
+	{ return sprint(buf, size, precision, UnitList(""), flags); }
 
 #endif //#ifdef NO_INLINE
 #endif // #ifndef NO_TEXT
