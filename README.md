@@ -88,7 +88,7 @@ Whitespace is important!
 		Note: "5 * m^2" == "5 m^2"
 
 > `convert()` is more strict with whitespace, there should always be a space 
-between every number, unit, and `/`. `eval()` has more spohisticated parsing
+between every number, unit, and `/`. `eval()` has more sophisticated parsing
 logic to handle arithmetic expressions, so it knows what to do with `"m*s"`
 while the basic unit parser does not.
 
@@ -171,15 +171,15 @@ every time I want to do a quick test.
 Open `msvc/RootDevDir.props` - this should contain the path where you put most new projects.
 By default it contains a relative path from within this project's directory structure,
 to make out-of-the-box builds easier. But if you always put your projects in a certain
-place like I do, you can change RootDevDir to that absolute path.
+place like I do, you can change `RootDevDir` to that absolute path.
 Using a text editor to modify `RootDevDir.props` might be easier than trying to
 navigate visual studio's property pages, but it will be in the user macros section.  
 `msvc/PhysicalQuantity-IncludeLib.props` contains the settings for the include and 
 library directories, relative to `$(RootDevDir)`. So, in your new project, open the 
 property manager and add your modified `RootDevDir.props`, then 
-PhysicalQuantity-IncludeLib.props, in that order, and your paths will be all set.
-Now you can #include <PhysicalQuantity.h> instead of
-#include "../../only/works/on/your/machine/PhysicalQuantity.h"
+`PhysicalQuantity-IncludeLib.props`, in that order, and your paths will be all set.
+Now you can `#include <PhysicalQuantity.h>` instead of
+`#include "../../only/works/on/your/machine/PhysicalQuantity.h"`
 
 
 ##### Cross compiling for embedded development
