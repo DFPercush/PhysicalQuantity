@@ -15,7 +15,8 @@
 //#define INLINE_KEYWORD inline  // default is __inline
 //#define NO_HASHING       // Do not use hash tables for unit string lookups. Makes it smaller, slower. Tables can be in ROM, but it takes a few KB.
 //#define NO_THROW         // Do not use 'throw' for errors, instead use an error callback (see errorHandler)
-//#define NO_LONG_NAMES    // Do not include full names and plural names for units and prefixes. Symbols only. Saves a little storage space.
+//#define NO_LONG_NAMES    // Do not include full names and plural names for units and prefixes.
+                           // Symbols only. Saves a little space.
 //#define NO_STD_MAP       // Do not use std::unordered_map, necessary for variables feature
 //#define NO_STD_CHRONO    // Do not #include <chrono> - std::chrono::duration can be cast and assigned.
 //#define NO_TEXT          // Provide no text parsing or output, saves space

@@ -38,6 +38,7 @@ DEFINE_CONST_ARRAY(PhysicalQuantity::UnitDefinition, PhysicalQuantity::KnownUnit
 //=============================================================================================================
 // Try not to change the order of things between these lines
 // Temperature always needs to come first.
+// Note: There is a separate array for temperature offsets
 {UN("K","kelvin","kelvin"),1.0, {0,0,0,1,0}, CANPREFIX},
 {UN("degC","degreeC","degreesC"),1.0, {0,0,0,1,0}, NOPREFIX},
 {UN("degF","degreeF","degreesF"),0.55555555555555555555555555555556, {0,0,0,1,0}, NOPREFIX},
@@ -59,8 +60,8 @@ DEFINE_CONST_ARRAY(PhysicalQuantity::UnitDefinition, PhysicalQuantity::KnownUnit
 {UN("grad","gradians","gradians"), 0.0157079632679489661923132169164, { 0, 0, 0, 0, 0}, NOPREFIX},
 {UN("rev","revolution","revolutions"),6.283185307179586476925286766559, { 0, 0, 0, 0, 0}, NOPREFIX},
 
-{UN("pi","",""),3.1415926535897932384626433832795, {0,0,0,0,0}, NOPREFIX | NOLITERAL},
-{UN("tau","",""),6.283185307179586476925286766559, {0,0,0,0,0}, NOPREFIX | NOLITERAL},
+{UN("pi","pi","pi"),3.1415926535897932384626433832795, {0,0,0,0,0}, NOPREFIX | NOLITERAL},
+{UN("tau","tau","tau"),6.283185307179586476925286766559, {0,0,0,0,0}, NOPREFIX | NOLITERAL},
 {UN("e", "e", "e"), 2.7182818284590452353602874713527, {0,0,0,0,0}, NOPREFIX | NOLITERAL},
 
 // Mass
@@ -105,10 +106,10 @@ DEFINE_CONST_ARRAY(PhysicalQuantity::UnitDefinition, PhysicalQuantity::KnownUnit
 {UN("ang","angstrom","angstroms"),1e-10, {0,1,0,0,0}},  // unicode wchar_t is not supported at this time
 {UN("AU","astronomical_unit","astronomical_units"), 149597900000, {0,1,0,0,0}},
 {UN("ly","lightyear","lightyears"),9460732325561360, {0,1,0,0,0}},
-{UN("","light_year","light_years"),9460732325561360, {0,1,0,0,0}},
+{UN("ly","light_year","light_years"),9460732325561360, {0,1,0,0,0}, NOLITERAL},
 {UN("pc","parsec","parsecs"),30856778900000000, {0,1,0,0,0}},
 {UN("ls","lightsecond","lightseconds"),299792458, {0,1,0,0,0}},
-{UN("","light_second","light_seconds"),299792458, {0,1,0,0,0}},
+{UN("ls","light_second","light_seconds"),299792458, {0,1,0,0,0}, NOLITERAL},
 {UN("mil","mil","mils"),0.0000254, {0,1,0,0,0}, NOPREFIX}, // thousandth of an inch
 {UN("thou","thou","thous"),0.0000254, {0,1,0,0,0}, NOPREFIX}, // thousandth of an inch
 {UN("chain","chain","chains"),20.11680394008, {0,1,0,0,0}, NOPREFIX},
@@ -152,7 +153,7 @@ DEFINE_CONST_ARRAY(PhysicalQuantity::UnitDefinition, PhysicalQuantity::KnownUnit
 {UN("hr", "hour","hours"),3600, {0,0,1,0,0}, NOPREFIX},
 {UN("h", "hour","hours"),3600, {0,0,1,0,0}, NOPREFIX},
 
-{UN("Hz", "hertz",""),1, {0,0,-1,0,0}},
+{UN("Hz", "hertz","hertz"),1, {0,0,-1,0,0}},
 // TODO: Angle flag
 { UN("rpm","revolution_per_minute","revolutions_per_minute"),0.10471975511965977461542144610932, { 0, 0, -1, 0, 0}, NOPREFIX },
 
@@ -170,17 +171,17 @@ DEFINE_CONST_ARRAY(PhysicalQuantity::UnitDefinition, PhysicalQuantity::KnownUnit
 {UN("Wh","watt_hour","watt_hours"),3600, {1,2,-2,0,0}},
 {UN("eV","electron_volt","electron_volts"),1.602176634e-19, {1,2,-2,0,0}},
 {UN("BTU","british_thermal_unit","british_thermal_units"),1055.056, {1,2,-2,0,0}},
-{UN("","btu","btus"),1055.056, {1,2,-2,0,0}},
+{UN("btu","british_thermal_unit","british_thermal_units"),1055.056, {1,2,-2,0,0}},
 {UN("erg","erg","ergs"),0.0000001, {1,2,-2,0,0}},
 {UN("cal","calorie","calories"),4.184, {1,2,-2,0,0}},
 
 //                        Ma Di Ti Te Cu
 // Power
 {UN("W", "watt", "watts"), 1, {1,2,-3,0,0}},
-{UN("hp_mech", "mechanical_horsepower",""), 745.699872, {1,2,-3,0,0}},
-{UN("hp", "",""), 745.699872, {1,2,-3,0,0}},
-{UN("hp_electric", "electric_horsepower", ""), 746, {1,2,-3,0,0}},
-{UN("hp_metric", "metric_horsepower", ""), 735.49875, {1,2,-3,0,0}},
+{UN("hp_mech", "mechanical_horsepower","mechanical_horsepower"), 745.699872, {1,2,-3,0,0}},
+{UN("hp", "horsepower","horsepower"), 745.699872, {1,2,-3,0,0}},
+{UN("hp_electric", "electric_horsepower", "electric_horsepower"), 746, {1,2,-3,0,0}},
+{UN("hp_metric", "metric_horsepower", "metric_horsepower"), 735.49875, {1,2,-3,0,0}},
 
 
 // Force
@@ -213,17 +214,19 @@ DEFINE_CONST_ARRAY(PhysicalQuantity::UnitDefinition, PhysicalQuantity::KnownUnit
 
 // Current and charge
 {UN("A","amp","amps"),1, {0,0,0,0,1}},
-{UN("","ampere","amperes"),1, {0,0,0,0,1}},
+{UN("A","ampere","amperes"),1, {0,0,0,0,1}, NOLITERAL},
 {UN("C","coulomb","coulombs"),1, {0,0,1,0,1}}, //, NOBASELITERAL},
 {UN("e+","fundamental_charge","fundamental_charges"),1.6021765314e-19, {0,0,1,0,1}, NOPREFIX | NOLITERAL},
-{UN("e-","fundamental_charge","fundamental_charges"),1.6021765314e-19, {0,0,1,0,1}, NOPREFIX | NOLITERAL},
+{UN("e+","positron","positrons"),1.6021765314e-19, {0,0,1,0,1}, NOPREFIX | NOLITERAL},
+{UN("e-","fundamental_charge_negative","fundamental_charges_negative"),-1.6021765314e-19, {0,0,1,0,1}, NOPREFIX | NOLITERAL},
+{UN("e-","electron","electrons"),-1.6021765314e-19, {0,0,1,0,1}, NOPREFIX | NOLITERAL},
 //{"e-","ElectronChargeNegative", {0,0,1,0,1},0, -1.6021765314e-19, NO_PREFIX},
 
 //                           Ma Di Ti Te Cu
 // Composite electromagnetic units
 {UN("V", "volt", "volts"), 1, {1,2,-3,0,-1}},
 {UN("ohm", "ohm", "ohms"), 1, {1,2,-3,0,-2}}, // TODO: Test unicode support? I think UTF-8 would still work with strcmp() for equality testing
-{UN("S", "siemens", ""), 1, {-1,-2,3,0,2}}, // conductance
+{UN("S", "siemens", "siemens"), 1, {-1,-2,3,0,2}}, // conductance
 {UN("F", "farad", "farads"), 1, {-1,-2,4,0,2}}, // capacitance
 {UN("Wb", "weber", "webers"), 1, {1,2,-2,0,-1}},
 {UN("T", "tesla", "teslas"), 1, {1,0,-2,0,-1}, NOBASELITERAL}, // some of these plurals might not be accurate, but will be permissive of user error when we know what they're talking about
@@ -251,15 +254,15 @@ DEFINE_CONST_ARRAY(PhysicalQuantity::UnitDefinition, PhysicalQuantity::KnownUnit
 // Pressure
 {UN("Pa", "pascal","pascals"), 1,{1,-1,-2,0,0}},
 {UN("bar", "bar","bars"), 100000,{1,-1,-2,0,0}},
-{UN("psi", "",""), 6894.757293178,{1,-1,-2,0,0}},
-{UN("torr", "Torr",""), 133.3223684211,{1,-1,-2,0,0}},
-{UN("mmHg", "",""), 133.322,{1,-1,-2,0,0}},
-{UN("cmHg", "",""), 1333.22,{1,-1,-2,0,0}},
+{UN("psi", "pound_per_square_inch","pounds_per_square_inch"), 6894.757293178,{1,-1,-2,0,0}},
+{UN("torr", "torr","torr"), 133.3223684211,{1,-1,-2,0,0}},
+{UN("mmHg", "millimeter_mercury","millimeters_mercury"), 133.322,{1,-1,-2,0,0}},
+{UN("cmHg", "centimeter_mercury","centimeters_mercury"), 1333.22,{1,-1,-2,0,0}},
 {UN("atm", "atmosphere","atmospheres"), 101325,{1,-1,-2,0,0}},
 {UN("Ba", "bary","barye"), 0.1,{1,-1,-2,0,0}},
-{UN("", "pièze","pieze"), 1000,{1,-1,-2,0,0}},
-{UN("cmH2O", "",""), 98.0665,{1,-1,-2,0,0}},
-{UN("mmH2O", "",""), 9.80665,{1,-1,-2,0,0}},
+{UN("pieze", "pieze","pieze"), 1000,{1,-1,-2,0,0}}, // e is suppoed to have a grave accent but we're making compromises
+{UN("cmH2O", "centimeter_water","centimeters_water"), 98.0665,{1,-1,-2,0,0}},
+{UN("mmH2O", "millimeter_water","millimeters_water"), 9.80665,{1,-1,-2,0,0}},
 
 //{UN("", "",""), ,{1,-1,-2,0,0}},
 

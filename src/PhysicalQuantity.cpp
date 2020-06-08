@@ -1,8 +1,3 @@
-/*
-TODO:
-	. initializer_list ? {1.23, {0,1,0,0,0}}
-	. Pay attention to NO_PREFIX in eval()
-*/
 
 #include <PhysicalQuantity.h>
 //#include <math.h>
@@ -10,6 +5,7 @@ template <typename T> T abs(T x) { return ((x >= 0) ? x : -x); }
 //#include <memory.h>
 #include <string.h>
 #include <stdio.h>
+#include <algorithm>
 
 #ifndef NO_HASHING
 #ifndef PQ_GENCODE
@@ -582,7 +578,7 @@ void PhysicalQuantity::parse(const CSubString& text_arg)
 	value += unitOfs;
 }
 
-void PhysicalQuantity::WriteOutputUnit(const PhysicalQuantity::UnitDefinition& unit, int power, prefixIndex_t iPrefix, char* buf, size_t totalBufferSize, size_t cursorPos, size_t& out_cursorPosAfter) const
+void PhysicalQuantity::WriteOutputUnit(const PhysicalQuantity::UnitDefinition& unit, int power, prefixIndex_t iPrefix, char* buf, size_t totalBufferSize, size_t cursorPos, size_t& out_cursorPosAfter, bool longNames) const
 {
 	int ulen = (int)strlen(unit.symbol); // TODO: switch long names
 	int plen = 0;
@@ -592,10 +588,10 @@ void PhysicalQuantity::WriteOutputUnit(const PhysicalQuantity::UnitDefinition& u
 		pre = rom(KnownPrefixes[iPrefix]);
 		plen = (int)strlen(pre.symbol);
 	}
-	WriteOutputUnit(plen, ulen, power, out_cursorPosAfter, totalBufferSize, buf, iPrefix, unit);
+	WriteOutputUnit(plen, ulen, power, out_cursorPosAfter, totalBufferSize, buf, iPrefix, unit, longNames);
 }
 
-void PhysicalQuantity::WriteOutputUnit(int plen, int ulen, int reduceExp, size_t &outofs, size_t size, char * buf, PhysicalQuantity::prefixIndex_t ipre, const PhysicalQuantity::UnitDefinition & testunit) const
+void PhysicalQuantity::WriteOutputUnit(int plen, int ulen, int reduceExp, size_t &outofs, size_t size, char * buf, PhysicalQuantity::prefixIndex_t ipre, const PhysicalQuantity::UnitDefinition & testunit, bool longNames) const
 {
 	size_t reduceExpLen = 0;
 	size_t nextLengthNeeded = plen + ulen + 1;
@@ -614,17 +610,67 @@ void PhysicalQuantity::WriteOutputUnit(int plen, int ulen, int reduceExp, size_t
 		// write space
 		buf[outofs++] = ' ';
 		// write prefix
-		if (plen > 0 && ipre != -1)
+		//if (plen > 0 && ipre != -1)
+		if (ipre != -1)
 		{
 #ifdef ROM_READ_BYTE
-			romcpy(buf + outofs, KnownPrefixes[ipre].symbol, plen);
+			if (longNames)
+			{
+				plen = (int)romstrlen(KnownPrefixes[ipre].longName);
+				if (outofs + plen > size) { outofs += plen; return; }
+				romcpy(buf + outofs, KnownPrefixes[ipre].longName, plen);
+			}
+			else
+			{
+				plen = (int)romstrlen(KnownPrefixes[ipre].symbol);
+				if (outofs + plen > size) { outofs += plen; return; }
+				romcpy(buf + outofs, KnownPrefixes[ipre].symbol, plen);
+			}
 #else
-			memcpy(buf + outofs, KnownPrefixes[ipre].symbol, plen);
+#ifndef NO_LONG_NAMES
+			if (longNames)
+			{
+				plen = (int)strlen(KnownPrefixes[ipre].longName);
+				if (outofs + plen > size) { outofs += plen; return; }
+				memcpy(buf + outofs, KnownPrefixes[ipre].longName, plen);
+			}
+			else
+			{
+#endif
+				plen = (int)strlen(KnownPrefixes[ipre].symbol);
+				if (outofs + plen > size) { outofs += plen; return; }
+				memcpy(buf + outofs, KnownPrefixes[ipre].symbol, plen);
+#ifndef NO_LONG_NAMES
+			}
+#endif
 #endif
 			outofs += plen;
 		}
 		// write unit
-		memcpy(buf + outofs, testunit.symbol, ulen);
+#ifndef NO_LONG_NAMES
+		if (longNames)
+		{
+			ulen = (int)strlen(testunit.longName);
+			if (outofs + ulen + 1 > size)
+			{
+				outofs += ulen;
+				return;
+			}
+			memcpy(buf + outofs, testunit.longName, ulen);
+		}
+		else
+		{
+#endif
+			ulen = (int)strlen(testunit.symbol);
+			if (outofs + ulen + 1 > size)
+			{
+				outofs += ulen;
+				return;
+			}
+			memcpy(buf + outofs, testunit.symbol, ulen);
+#ifndef NO_LONG_NAMES
+		}
+#endif
 		outofs += ulen;
 		// write power
 		if (reduceExp != 1)
@@ -640,9 +686,12 @@ void PhysicalQuantity::WriteOutputUnit(int plen, int ulen, int reduceExp, size_t
 	}
 }
 
-size_t PhysicalQuantity::sprint(char* buf, size_t bufsize, unsigned int precision, const UnitListBase& pu, bool useSlash) const
+size_t PhysicalQuantity::sprint(char* buf, size_t bufsize, unsigned int precision, const UnitListBase& pu, int flags) const
 {
 	PhysicalQuantity r = *this;
+	bool useSlash = ((flags & SPRINT_SLASH) != 0);
+	bool useLongNames = ((flags & SPRINT_LONG_NAMES) != 0);
+
 	struct outputElement
 	{
 		unitIndex_t unit;
@@ -672,6 +721,7 @@ size_t PhysicalQuantity::sprint(char* buf, size_t bufsize, unsigned int precisio
 #endif
 		}
 		UnitDefinition unit = rom(KnownUnits[pu[ipu].iUnit]);
+
 
 		// Passing true as a second argument means that, if the unit results in
 		// the same dimension count before and after, go ahead and use it.
@@ -857,7 +907,7 @@ size_t PhysicalQuantity::sprint(char* buf, size_t bufsize, unsigned int precisio
 		if (outs[iOut].power < 0) { foundNeg = true; }
 		if ((outs[iOut].power > 0) || (!useSlash))
 		{
-			WriteOutputUnit(rom(KnownUnits[outs[iOut].unit]), (int)outs[iOut].power, (int)outs[iOut].prefix, buf, bufsize, outpos, outpos);
+			WriteOutputUnit(rom(KnownUnits[outs[iOut].unit]), (int)outs[iOut].power, (int)outs[iOut].prefix, buf, bufsize, outpos, outpos, useLongNames);
 		}
 	}
 	// If there were any units with negative exponent and we're using slash notation, write them now
@@ -871,7 +921,7 @@ size_t PhysicalQuantity::sprint(char* buf, size_t bufsize, unsigned int precisio
 		{
 			if (outs[iOut].power < 0)
 			{
-				WriteOutputUnit(rom(KnownUnits[outs[iOut].unit]), -1 * outs[iOut].power, outs[iOut].prefix, buf, bufsize, outpos, outpos);
+				WriteOutputUnit(rom(KnownUnits[outs[iOut].unit]), -1 * outs[iOut].power, outs[iOut].prefix, buf, bufsize, outpos, outpos, useLongNames);
 			}
 		}
 	}
@@ -893,19 +943,7 @@ size_t PhysicalQuantity::sprint(char* buf, size_t bufsize, unsigned int precisio
 
 #if !defined(NO_STD_STRING) && !defined(NO_PRINTF)
 
-std::string PhysicalQuantity::toString() const
-{
-	char buf[TOSTRING_BUFFER_SIZE];
-	sprint(buf, TOSTRING_BUFFER_SIZE,
-#ifdef LOW_PRECISION
-		7);
-#else
-		16);
-#endif
-	return string(buf);
-}
-
-string PhysicalQuantity::toString(const UnitListBase& pu) const
+std::string PhysicalQuantity::toString(int flags) const
 {
 	char buf[TOSTRING_BUFFER_SIZE];
 	sprint(buf, TOSTRING_BUFFER_SIZE,
@@ -914,11 +952,11 @@ string PhysicalQuantity::toString(const UnitListBase& pu) const
 #else
 		16
 #endif
-		, pu);
+		, flags);
 	return string(buf);
 }
 
-std::string PhysicalQuantity::toString(const CSubString& sspu) const
+string PhysicalQuantity::toString(const UnitListBase& pu, int flags) const
 {
 	char buf[TOSTRING_BUFFER_SIZE];
 	sprint(buf, TOSTRING_BUFFER_SIZE,
@@ -927,7 +965,20 @@ std::string PhysicalQuantity::toString(const CSubString& sspu) const
 #else
 		16
 #endif
-		, sspu);
+		, pu, flags);
+	return string(buf);
+}
+
+std::string PhysicalQuantity::toString(const CSubString& sspu, int flags) const
+{
+	char buf[TOSTRING_BUFFER_SIZE];
+	sprint(buf, TOSTRING_BUFFER_SIZE,
+#ifdef LOW_PRECISION
+		7
+#else
+		16
+#endif
+		, sspu, flags);
 	return string(buf);
 }
 
@@ -1437,7 +1488,6 @@ bool PhysicalQuantity::operator<(const PhysicalQuantity& rhs) const
 #ifndef NO_TEXT
 void PhysicalQuantity::UnitListBase::build(const CSubString& unitList, PhysicalQuantity::UnitListBase::UnitPref* buffer, int bufferSizeBytes, bool dynamic)   //(const CSubString& unitList, int* buffer, int bufferLen, bool dynamic)
 {
-	// TODO: "any prefix" wildcard designator in preferred units, e.g. "1 A, *s"
 	int len = (int)unitList.length();
 	int pos = 0;
 	unitIndeces = buffer;
@@ -1498,6 +1548,32 @@ void PhysicalQuantity::UnitListBase::build(const CSubString& unitList, PhysicalQ
 			wordStart = wordEnd + 1;
 			while (unitList[wordStart] == ' ') { wordStart++; }
 			pos = wordStart;
+		}
+	}
+
+	// Sort by decreasing magdim.
+	// Avoids things like "1 J, ft lbf" to go "ft^2 lbf / ft"
+	// simple insertion sort
+	signed char d[PQND];
+	for (int a = 0; a < count_; a++)
+	{
+		int greatestIndex = a;
+		int greatest = 0;
+		for (int b = a; b < count_; b++)
+		{
+			romcpy(d, PQ::KnownUnits[unitIndeces[b].iUnit].dim, PQND);
+			int md = PQ(0, d).magdim();
+			if (md > greatest)
+			{
+				greatest = md;
+				greatestIndex = b;
+			}
+		}
+		if (greatestIndex != a)
+		{
+			UnitPref tmp = unitIndeces[a];
+			unitIndeces[a] = unitIndeces[greatestIndex];
+			unitIndeces[greatestIndex] = tmp;
 		}
 	}
 }
@@ -1947,6 +2023,7 @@ PhysicalQuantity::num PhysicalQuantity::getScalar()
 #ifdef NO_SPRINTF_FLOAT
 size_t PhysicalQuantity::printNum(char* buf, size_t size, PhysicalQuantity::num val, unsigned int precision)
 {
+	// TODO: Friendlier small numbers, e.g. "123.4" instead of "1.234e2"
 	unsigned int iOut = 0;
 	if (iOut == size - 1) { buf[size - 1] = 0; return size; }
 	if (val < 0)

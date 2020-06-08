@@ -65,6 +65,12 @@ Sample test console output:
 	cc, cubic_centimeter, cubic_centimeters
 	gal, gallon, gallons
 	...
+	sprint> myDistance = 1 mile
+	1.6093439999931 km
+	sprint> myTime = 2 min
+	120 s
+	sprint> myVel = myDistance / myTime , mph
+	30 mph
 
 > You can use 'whatis' to see what other units are available for the result.
 
@@ -80,6 +86,11 @@ Whitespace is important!
 		OK: 1 km - -2 m
 		Note: "3 m^2"   !=   ( "3 m ^ 2" == "(3 m) ^ 2" == "9 m^2")
 		Note: "5 * m^2" == "5 m^2"
+
+> `convert()` is more strict with whitespace, there should always be a space 
+between every number, unit, and `/`. `eval()` has more spohisticated parsing
+logic to handle arithmetic expressions, so it knows what to do with `"m*s"`
+while the basic unit parser does not.
 
 
 

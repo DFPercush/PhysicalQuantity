@@ -67,6 +67,8 @@ void showHelp()
 	"    removes units from the preferred list\n"
 	"['slash' | 'noslash']\n"
 	"    to switch between the divide sign or negative exponents\n"
+	"longnames ['on'|'off']\n"
+	"    switch output to use long unit names instead of symbols\n"
 	"['whatis'] expression\n"
 	"    Show all the units which match the result exactly\n"
 	"\n"
@@ -204,6 +206,8 @@ vector<string> split(string s, string delimiter) {
 	res.push_back(s.substr(pos_start));
 	return res;
 }
+
+bool useLongNames = false;
 
 void runLine(csubstr &line, bool useConvert, bool useSprint)
 {
@@ -447,6 +451,33 @@ void runLine(csubstr &line, bool useConvert, bool useSprint)
 		printf(" %d session vars and %d saved vars were cleared.\n", nVarsCleared, nSavesCleared);
 		return;
 	}
+	else if (line == "longnames")
+	{
+#ifdef NO_LONG_NAMES
+		printf(" Command unavailable, compiled with NO_LONG_NAMES\n");
+#else
+		printf(" Long names set to %s\n", (useLongNames ? "ON" : "OFF"));
+#endif
+		return;
+	}
+	else if (line.substr(0, 10) == "longnames ")
+	{
+#ifdef NO_LONG_NAMES
+	printf(" Command unavailable, compiled with NO_LONG_NAMES\n");
+#else
+
+		string aftersp = line.substr(10).trim();
+		if (aftersp == "on" || aftersp == "ON" || aftersp == "On") { useLongNames = true; }
+		else if (aftersp == "off" || aftersp == "OFF" || aftersp == "Off") { useLongNames = false; }
+		else
+		{
+			printf("'longnames' expects 'on' or 'off'");
+			return;
+		}
+		printf(" Long names set to %s\n", (useLongNames ? "ON" : "OFF"));
+#endif
+		return;
+	}
 	// End commands
 
 	//=================================================================================
@@ -511,7 +542,8 @@ void runLine(csubstr &line, bool useConvert, bool useSprint)
 		else if (useSprint)
 		{
 			//val.sprint(buf, 1000, 15, (pustr + " " + units.toStdString()).c_str(), useSlash);
-			val.sprint(buf, 1000, 15, (units.toStdString() + " " + pustr).c_str(), useSlash);
+			val.sprint(buf, 1000, 15, (units.toStdString() + " " + pustr).c_str(),
+				(useSlash ? PQ::SPRINT_SLASH : 0) | (useLongNames ? PQ::SPRINT_LONG_NAMES : 0));
 			printf("%s\n", buf);
 			if (whatis)
 			{

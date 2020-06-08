@@ -300,7 +300,7 @@ public:
 		bool operator==(const CSubString& cmp) const;
 		bool begins(const CSubString& test) const;
 		bool ends(const CSubString& test) const;
-		//int find(const char* test, int start = 0) const; // where this needle appears in a haystack argument, or -1
+		//TODO: int find(const char* test, int start = 0) const; // where this needle appears in a haystack argument, or -1
 		bool copyTo(char* buf, int size) const;
 		int find_first_of(const CSubString& find, int startOfs = 0) const;
 		int find_first_not_of(const CSubString& find, int startOfs = 0) const;
@@ -308,7 +308,6 @@ public:
 		int find_first_not_of(char c, int startOfs = 0) const;
 		int find_last_of(const CSubString& find, int startOfs = -1) const;
 		int find_last_not_of(const CSubString& find, int startOfs = -1) const;
-		// TODO: const char* inline
 		int find_last_of(char c, int startOfs = -1) const;
 		int find_last_not_of(char c, int startOfs = -1) const;
 		int atoi();
@@ -413,11 +412,11 @@ typedef unsigned char UnitFlags_t;
 		CANPREFIX = 0,
 		NOLITERAL = 0x02,
 		MAKELITERAL = 0,
-		NOBASELITERAL = 0x04,
+		NOBASELITERAL = 0x04, // Because some compilers (g++/arm 7.2.1 for example) have reserved literals like _N and _C
 		EXPLICIT = 0x08 // Only output in these units if explicitly requested (*ahem* mph...)
 	};
-
-// Because some compilers (g++/arm 7.2.1 for example) have reserved literals like _N and _C
+// PQ Number of Dimensions
+#define PQND ((int)PQ::QuantityType::ENUM_MAX)
 
 
 	struct Prefix
@@ -543,10 +542,11 @@ typedef unsigned char UnitFlags_t;
 		{
 			unitIndex_t iUnit;
 			prefixIndex_t iPrefix;
-			unitPower_t power; // TODO: <-- for convert()
+			unitPower_t power;
 			bool anyPrefix;
 		};
-		~UnitListBase(); // Note: This was virtual, but these are not allocated from within the library. 
+		~UnitListBase(); // Note: This was virtual, but decided against it. These are not
+			// allocated from within the library.
 			// Any user instantiating a UnitList should know (by typedef) whether it's static or dynamic.
 			// Having it virtual caused problems on Arduino with undefined linker referenced to deleting dtor.
 	protected:
@@ -648,37 +648,46 @@ typedef unsigned char UnitFlags_t;
 	INLINE_KEYWORD PhysicalQuantity(num value_p) { init(); value = value_p; }
 	INLINE_KEYWORD PhysicalQuantity(int value_p) { init(); value = (num)value_p; }
 #ifdef _CHRONO_
-	// TODO: template
 	template <typename numType, intmax_t numer, intmax_t denom>
 	INLINE_KEYWORD PhysicalQuantity(std::chrono::duration<numType, std::ratio<numer, denom>> t)
 		: value{ t.count() * (num)numer / (num)denom },
 		dim{ 0,0,1,0,0 } {}
 #endif // chrono
 #endif // NO_INLINE
+
 #endif // constexpr
 
 	PhysicalQuantity& operator=(num value);
 	PhysicalQuantity& operator=(const PhysicalQuantity& cp);
 	~PhysicalQuantity() = default;
 
+
+enum sprintFlags
+{
+	SPRINT_SLASH = 1,
+	SPRINT_NO_SLASH = 0,
+	SPRINT_LONG_NAMES = 2,
+	SPRINT_SYMBOLS = 0
+};
+
 #ifndef NO_TEXT
 	void parse(const CSubString& text);
 	num convert(const CSubString& units) const;
 
 	// sprint() has many overloads, but this is the main one they all call eventually
-	size_t sprint(char* buf, size_t bufsize, unsigned int precision, const UnitListBase& pu, bool useSlash = true) const;
+	size_t sprint(char* buf, size_t bufsize, unsigned int precision, const UnitListBase& pu, int flags = 0) const;
 
 #ifdef NO_INLINE
-	size_t sprint(char* buf, size_t bufsize, unsigned int precision, bool useSlash = true) const;
-	size_t sprint(char* buf, size_t bufsize, unsigned int precision, const CSubString& sspu, void* puBuf, size_t puBufSize, bool useSlash = true) const;
-	size_t sprint(char* buf, size_t bufsize, unsigned int precision, const CSubString& sspu, bool useSlash = true) const; // TODO: inline
+	size_t sprint(char* buf, size_t bufsize, unsigned int precision, int flags = 0) const;
+	size_t sprint(char* buf, size_t bufsize, unsigned int precision, const CSubString& sspu, void* puBuf, size_t puBufSize, int flags = 0) const;
+	size_t sprint(char* buf, size_t bufsize, unsigned int precision, const CSubString& sspu, int flags = 0) const;
 #else //#ifdef NO_INLINE
-	size_t sprint(char* buf, size_t bufsize, unsigned int precision, bool useSlash = true) const
-		{ return sprint(buf,bufsize, precision, UnitList(""), useSlash); }
-	size_t sprint(char* buf, size_t bufsize, unsigned int precision, const CSubString& sspu, void* puBuf, size_t puBufSize, bool useSlash = true) const
-		{ return sprint(buf, bufsize, precision, UnitList_static(sspu, puBuf, puBufSize), useSlash); }
-	size_t sprint(char* buf, size_t bufsize, unsigned int precision, const CSubString& sspu, bool useSlash = true) const
-		{ return sprint(buf, bufsize, precision, UnitList(sspu), useSlash); }
+	size_t sprint(char* buf, size_t bufsize, unsigned int precision, int flags = 0) const
+		{ return sprint(buf,bufsize, precision, UnitList(""), flags); }
+	size_t sprint(char* buf, size_t bufsize, unsigned int precision, const CSubString& sspu, void* puBuf, size_t puBufSize, int flags = 0) const
+		{ return sprint(buf, bufsize, precision, UnitList_static(sspu, puBuf, puBufSize), flags); }
+	size_t sprint(char* buf, size_t bufsize, unsigned int precision, const CSubString& sspu, int flags = 0) const
+		{ return sprint(buf, bufsize, precision, UnitList(sspu), flags); }
 #endif //#ifdef NO_INLINE
 
 	static size_t printNum(char* buf, size_t size, num value, unsigned int precision);
@@ -723,9 +732,9 @@ typedef unsigned char UnitFlags_t;
 
 #ifndef NO_TEXT
 #ifndef NO_STD_STRING
-	std::string toString() const;
-	std::string toString(const UnitListBase& preferredUnits) const;
-	std::string toString(const CSubString& preferredUnits) const;
+	std::string toString(int flags = 0) const;
+	std::string toString(const UnitListBase& preferredUnits, int flags = 0) const;
+	std::string toString(const CSubString& preferredUnits, int flags = 0) const;
 #endif // #ifndef NO_STD_STRING
 #endif //#ifndef NO_TEXT
 
@@ -892,8 +901,8 @@ private:
 	static void parseUnits(const CSubString& unitStr, signed char (&dimOut)[(int)QuantityType::ENUM_MAX], num& factorOut, num& offsetOut); // throws if unknown/invalid unit
 	static void mulUnit(signed char (&dimOut)[(int)QuantityType::ENUM_MAX], const UnitDefinition& unit, signed int power, bool invert = false); // deals only with quantity dimension, conversion factors are handled elsewhere
 	int bestReductionPower(const UnitDefinition& unit, bool preferred = false) const;  // Divide by what power of (unit) to minimize magdim? Used in text output logic.
-	void WriteOutputUnit(int plen, int ulen, int reduceExp, size_t &outofs, size_t size, char * buf, prefixIndex_t ipre, const PhysicalQuantity::UnitDefinition & testunit) const;
-	void WriteOutputUnit(const PhysicalQuantity::UnitDefinition& unit, int power, prefixIndex_t iPrefix, char* buf, size_t size, size_t cursorPos, size_t &out_cursorPosAfter) const;
+	void WriteOutputUnit(int plen, int ulen, int reduceExp, size_t &outofs, size_t size, char * buf, prefixIndex_t ipre, const PhysicalQuantity::UnitDefinition & testunit, bool longNames = false) const;
+	void WriteOutputUnit(const PhysicalQuantity::UnitDefinition& unit, int power, prefixIndex_t iPrefix, char* buf, size_t size, size_t cursorPos, size_t &out_cursorPosAfter, bool longNames = false) const;
 #endif
 
 
