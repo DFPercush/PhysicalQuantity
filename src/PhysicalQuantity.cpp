@@ -149,6 +149,7 @@ void PhysicalQuantity::init()
 	//	}
 	value = 0.0;
 	memset(dim, 0, sizeof(dim));
+	iofs = 0;
 }
 
 
@@ -159,7 +160,7 @@ PhysicalQuantity::PhysicalQuantity(num value_p, const char* units_text)
 	value = value_p;
 	num unitFactor;
 	num unitOfs;
-	parseUnits(units_text, dim, unitFactor, unitOfs);
+	parseUnits(units_text, dim, unitFactor, unitOfs, iofs);
 	value *= unitFactor;
 	value += unitOfs;
 }
@@ -185,6 +186,7 @@ PhysicalQuantity::PhysicalQuantity(const PhysicalQuantity& copy)
 	//init();
 	value = copy.value;
 	memcpy(dim, copy.dim, sizeof(dim));
+	iofs = copy.iofs
 }
 
 PhysicalQuantity::PhysicalQuantity(PhysicalQuantity::num valueArg)
@@ -194,7 +196,7 @@ PhysicalQuantity::PhysicalQuantity(PhysicalQuantity::num valueArg)
 }
 
 PhysicalQuantity::PhysicalQuantity(num value_p, const signed char dim_p[(int)QuantityType::ENUM_MAX])
-	: value(value_p), dim {dim_p[0], dim_p[1], dim_p[2], dim_p[3], dim_p[4]} {}
+	: value(value_p), dim {dim_p[0], dim_p[1], dim_p[2], dim_p[3], dim_p[4]}, iofs(0) {}
 
 PhysicalQuantity::PhysicalQuantity(int value_p)
 {
@@ -208,12 +210,14 @@ PhysicalQuantity& PhysicalQuantity::operator=(PhysicalQuantity::num valueArg)
 {
 	value = valueArg;
 	memset(dim, 0, sizeof(dim));
+	iofs = 0;
 	return *this;
 }
 PhysicalQuantity& PhysicalQuantity::operator=(const PhysicalQuantity& cp)
 {
 	value = cp.value;
 	memcpy(dim, cp.dim, sizeof(dim));
+	iofs = cp.iofs;
 	return *this;
 }
 
@@ -223,7 +227,8 @@ PhysicalQuantity::num PhysicalQuantity::convert(const CSubString& units) const
 	signed char tdim[(int)QuantityType::ENUM_MAX];
 	num factor;
 	num offset;
-	parseUnits(units, tdim, factor, offset);
+	char l_iofs;
+	parseUnits(units, tdim, factor, offset, l_iofs);
 	if (memcmp(dim, tdim, sizeof(dim)) != 0)
 	{
 #ifdef NO_THROW
@@ -294,7 +299,7 @@ int PhysicalQuantity::bestReductionPower(const UnitDefinition& unit, bool prefer
 }
 
 
-void PhysicalQuantity::parseUnits(const CSubString& unitStr, signed char (&unitsOut_arg)[(int)QuantityType::ENUM_MAX], num& factorOut_arg, num& ofsOut_arg)
+void PhysicalQuantity::parseUnits(const CSubString& unitStr, signed char (&unitsOut_arg)[(int)QuantityType::ENUM_MAX], num& factorOut_arg, num& ofsOut_arg, char& iofsOut_arg)
 {
 	signed char unitsOut[(int)QuantityType::ENUM_MAX];
 	memset(unitsOut, 0, sizeof(unitsOut));
@@ -322,6 +327,7 @@ void PhysicalQuantity::parseUnits(const CSubString& unitStr, signed char (&units
 	int upow = 0;
 	bool denomNext = false;
 	char hasOffsetMask = 0;
+	char temp_iofs = 0;
 
 #ifdef ROM_READ_BYTE
 	char foundUnitVal[sizeof(UnitDefinition)]; // const array dim means we have to be roundabout
@@ -444,7 +450,7 @@ void PhysicalQuantity::parseUnits(const CSubString& unitStr, signed char (&units
 							errorHandler(errorUserContext, E_INVALID_EXPRESSION);
 							return;
 #else
-							throw InvalidExpressionException("Multiple units given which apply an offset (e.g. degrees F)");
+							throw InvalidExpressionException("Multiple units given which apply an offset (e.g. degC / degF)");
 #endif
 						}
 						if (upow < -1 || upow > 1)
@@ -453,7 +459,7 @@ void PhysicalQuantity::parseUnits(const CSubString& unitStr, signed char (&units
 							errorHandler(errorUserContext, E_INVALID_EXPRESSION);
 							return;
 #else
-							throw InvalidExpressionException("Can not handle an offset unit with a power greater than 1. (e.g. degrees F squared)");
+							throw InvalidExpressionException("Can not handle an offset unit with a power greater than 1. (e.g. degC^2)");
 #endif
 						}
 
@@ -462,6 +468,7 @@ void PhysicalQuantity::parseUnits(const CSubString& unitStr, signed char (&units
 #else
 						tempOfs = KnownUnitOffsets[foundUnit];
 #endif
+						temp_iofs = (char)foundUnit;
 
 						for (int iSetOffsetFlags = 0; iSetOffsetFlags < (int)QuantityType::ENUM_MAX; iSetOffsetFlags++)
 						{
@@ -502,10 +509,12 @@ void PhysicalQuantity::parseUnits(const CSubString& unitStr, signed char (&units
 	if (applyOfs)
 	{
 		ofsOut = tempOfs;
+		iofsOut_arg = temp_iofs;
 	}
 	else
 	{
 		ofsOut = 0;
+		iofsOut_arg = 0;
 	}
 	factorOut_arg = factorOut;
 	ofsOut_arg = ofsOut;
@@ -573,7 +582,7 @@ void PhysicalQuantity::parse(const CSubString& text_arg)
 	}
 	num unitFactor = 1.0;
 	num unitOfs = 0.0;
-	parseUnits(unitStr, dim, unitFactor, unitOfs);
+	parseUnits(unitStr, dim, unitFactor, unitOfs, iofs);
 	value *= unitFactor;
 	value += unitOfs;
 }
@@ -735,14 +744,31 @@ size_t PhysicalQuantity::sprint(char* buf, size_t bufsize, unsigned int precisio
 			outs[nouts].power = p;
 			outs[nouts].prefix = pu[ipu].iPrefix;
 			outs[nouts].flags = PREFERRED | (pu[ipu].anyPrefix ? ANYPREFIX : 0);
-			PhysicalQuantity d = PhysicalQuantity::fromUnit(unit, p);
-			if (pu[ipu].iPrefix != -1)
+
+
+
+			if (pu[ipu].iUnit < KnownUnitOffsetsLength && p == 1 && pu.count() == 1)
 			{
-				d.value *= ::pow(rom(KnownPrefixes[pu[ipu].iPrefix].factor), p);
-				//Prefix pre = rom(KnownPrefixes[pu[ipu].iPrefix]);
-				//d *= pre.factor;
+				// Unit with offset like temperature degrees
+				r.value = (r.value - rom(KnownUnitOffsets[pu[ipu].iUnit])) / rom(KnownUnits[pu[ipu].iUnit].factor);
+				for (int i = 0; i < PQ::ND; i++) { r.dim[i] -= rom(KnownUnits[pu[ipu].iUnit].dim[i]); }
 			}
-			r /= d;
+			else
+			{
+				PhysicalQuantity d = PhysicalQuantity::fromUnit(unit, p);
+				if (pu[ipu].iPrefix != -1)
+				{
+					d.value *= ::pow(rom(KnownPrefixes[pu[ipu].iPrefix].factor), p);
+					//Prefix pre = rom(KnownPrefixes[pu[ipu].iPrefix]);
+					//d *= pre.factor;
+				}
+				// TODO: BUG: Temperature offsets
+				//if (pu.count() == 1 && (p == 1) && pu[0].iUnit < KnownUnitOffsetsLength)
+				//{
+				//	r = (r - KnownUnitOffsets[pu[ipu].iUnit]) / d;
+				//}
+				r /= d;
+			}
 			nouts++;
 			if (r.magdim() == 0) { break; }
 		}
@@ -855,6 +881,7 @@ size_t PhysicalQuantity::sprint(char* buf, size_t bufsize, unsigned int precisio
 					// What will the value be if we use this prefix?
 					// We need to test two different values depending on the sign of the exponent we eventually apply it to.
 					//num testFactor = rom(KnownPrefixes[iPrefix]).factor;
+					// TODO: BUG: Temperature offsets
 					num testDiv = r.value / ::pow(rom(KnownPrefixes[iPrefix]).factor, outs[iOut].power);
 					if (testDiv >= 1 && testDiv < 1000)
 					{
@@ -895,9 +922,9 @@ size_t PhysicalQuantity::sprint(char* buf, size_t bufsize, unsigned int precisio
 	size_t outpos = 0;
 	printNum(buf, bufsize, r.value,
 #ifdef LOW_PRECISION
-		7);
+		6);
 #else
-		16);
+		15);
 #endif
 	while (buf[outpos] != 0) { outpos++; }
 	bool foundNeg = false;
@@ -948,9 +975,9 @@ std::string PhysicalQuantity::toString(int flags) const
 	char buf[TOSTRING_BUFFER_SIZE];
 	sprint(buf, TOSTRING_BUFFER_SIZE,
 #ifdef LOW_PRECISION
-		7
+		6
 #else
-		16
+		15
 #endif
 		, flags);
 	return string(buf);
@@ -961,9 +988,9 @@ string PhysicalQuantity::toString(const UnitListBase& pu, int flags) const
 	char buf[TOSTRING_BUFFER_SIZE];
 	sprint(buf, TOSTRING_BUFFER_SIZE,
 #ifdef LOW_PRECISION
-		7
+		6
 #else
-		16
+		15
 #endif
 		, pu, flags);
 	return string(buf);
@@ -974,9 +1001,9 @@ std::string PhysicalQuantity::toString(const CSubString& sspu, int flags) const
 	char buf[TOSTRING_BUFFER_SIZE];
 	sprint(buf, TOSTRING_BUFFER_SIZE,
 #ifdef LOW_PRECISION
-		7
+		6
 #else
-		16
+		15
 #endif
 		, sspu, flags);
 	return string(buf);
@@ -989,22 +1016,29 @@ std::string PhysicalQuantity::toString(const CSubString& sspu, int flags) const
 PhysicalQuantity PhysicalQuantity::operator* (const PhysicalQuantity& rhs) const
 {
 	PhysicalQuantity ret;
-	ret.value = value * rhs.value;
 	for (int i = 0; i < (int)QuantityType::ENUM_MAX; i++)
 	{
 		ret.dim[i] = dim[i] + rhs.dim[i];
 	}
+	//ret.value = value * rhs.value;
+	
+	if (iofs == 0 && rhs.iofs == 0) { ret.value = value * rhs.value; }
+	else { ret.value = (value - rom(KnownUnitOffsets[iofs])) * (rhs.value - rom(KnownUnitOffsets[rhs.iofs])); }
+	ret.iofs = 0;
 	return ret;
 }
 
 PhysicalQuantity PhysicalQuantity::operator/ (const PhysicalQuantity& rhs) const
 {
 	PhysicalQuantity ret;
-	ret.value = value / rhs.value;
 	for (int i = 0; i < (int)QuantityType::ENUM_MAX; i++)
 	{
 		ret.dim[i] = dim[i] - rhs.dim[i];
 	}
+	//ret.value = value / rhs.value;
+	if (iofs == 0 && rhs.iofs == 0) { ret.value = value / rhs.value; }
+	else { ret.value = (value - rom(KnownUnitOffsets[iofs])) / (rhs.value - rom(KnownUnitOffsets[rhs.iofs])); }
+	ret.iofs = 0;
 	return ret;
 }
 #endif //#if !defined(YES_CONSTEXPR) || defined(NO_INLINE)
@@ -1022,7 +1056,9 @@ PhysicalQuantity PhysicalQuantity::operator+ (const PhysicalQuantity& rhs) const
 #endif
 	}
 	PhysicalQuantity ret(*this);
-	ret.value = value + rhs.value;
+	//ret.value = value + rhs.value;
+	if (rhs.iofs == 0) { ret.value = value + rhs.value; }
+	else { ret.value = value + (rhs.value - rom(KnownUnitOffsets[rhs.iofs])); }
 	return ret;
 }
 
@@ -1038,7 +1074,9 @@ PhysicalQuantity PhysicalQuantity::operator- (const PhysicalQuantity& rhs) const
 #endif
 	}
 	PhysicalQuantity ret(*this);
-	ret.value = value - rhs.value;
+	//ret.value = value - rhs.value;
+	if (rhs.iofs == 0) { ret.value = value + rhs.value; }
+	else { ret.value = value + (rhs.value - rom(KnownUnitOffsets[rhs.iofs])); }
 	return ret;
 }
 
@@ -1128,18 +1166,51 @@ bool PhysicalQuantity::findUnit(CSubString name, PhysicalQuantity::unitIndex_t& 
 	csubstr possibleUnitPart;
 	int foundPrefixLen = 0;
 	int foundUnitLen = 0;
+	const char* pKnownUnitCmp;
+	char firstLetter[2];
+
 
 #ifndef NO_HASHING
 	static cstrHasherTiny hashPrefixSymbol(PQ::hashTableSeed_PrefixSymbols);
 	static cstrHasherTiny hashUnitSymbol(PQ::hashTableSeed_UnitSymbols);
+	unsigned int iBucket, hashRaw, hashSymbol;
 #ifndef NO_LONG_NAMES
 	static cstrHasherTiny hashUnitLongName(PQ::hashTableSeed_UnitLongNames);
 	static cstrHasherTiny hashUnitPlural(PQ::hashTableSeed_UnitPlurals);
 	unsigned int hashLongName, hashPlural;
-#endif //#ifndef NO_LONG_NAMES
-	unsigned int iBucket, hashRaw, hashSymbol;
 
-	char firstLetter[2];
+	// "day" fix
+	// 20200927: "day" parses as deka-years, this is a problem.
+	// So first, prioritize an exact long name match
+	hashRaw = (unsigned int)hashUnitLongName(name);
+	hashLongName = hashRaw % hashTableSize_UnitLongNames;
+#ifdef ROM_READ_BYTE
+	UnitLongNames_HashTableEntry_t ulent;
+	romcpy(&ulent, &UnitLongNames_HashTable[hashLongName], sizeof(ulent));
+#endif
+	for (iBucket = 0; iBucket < IFROM(UnitLongNames_HashTable[hashLongName].bucketSize, ulent.bucketSize); iBucket++)
+	{
+#ifdef ROM_READ_BYTE
+		romcpy(kubuf, &KnownUnits[ulent.bucket[iBucket]], sizeof(UnitDefinition));
+#endif
+		pKnownUnitCmp = IFROM(KnownUnits[UnitLongNames_HashTable[hashLongName].bucket[iBucket]].longName, ku.longName);
+		if ((name == pKnownUnitCmp) && strlen(pKnownUnitCmp) > 0)
+		{
+			iUnit = IFROM(UnitLongNames_HashTable[hashLongName].bucket[iBucket], ulent.bucket[iBucket]);
+			foundUnitLen = (int)IFROM(strlen(KnownUnits[iUnit].longName), romstrlen(ku.longName));
+			break;
+		}
+	}
+	//if (iUnit != -1) { break; }
+	if (foundUnitLen > 0)
+	{
+		outUnitIndex = iUnit;
+		outPrefixIndex = -1;
+		return true;
+	}
+	// end "day" fix
+
+#endif //#ifndef NO_LONG_NAMES
 
 #ifdef ROM_READ_BYTE
 	char kubuf[sizeof(UnitDefinition)];
@@ -1245,7 +1316,6 @@ bool PhysicalQuantity::findUnit(CSubString name, PhysicalQuantity::unitIndex_t& 
 	unitIndex_t iTryUnitName = 0;
 
 	// look up unit symbol
-	const char* pKnownUnitCmp;
 	while(iTryUnitName < 2)
 	{
 		if (tryUnitNames[iTryUnitName].length() == 0) { iTryUnitName++; continue; }
@@ -1553,7 +1623,7 @@ void PhysicalQuantity::UnitListBase::build(const CSubString& unitList, PhysicalQ
 
 	// Sort by decreasing magdim.
 	// Avoids things like "1 J, ft lbf" to go "ft^2 lbf / ft"
-	// simple insertion sort
+	// simple selection sort
 	signed char d[PQND];
 	for (int a = 0; a < count_; a++)
 	{

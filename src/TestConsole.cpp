@@ -384,7 +384,7 @@ void runLine(csubstr &line, bool useConvert, bool useSprint)
 			bool current = (insave && (savedVars[kv.first] == kv.second));
 			printf("%s %s = %s\n",
 				current ? " (saved) " : ( insave ? "(changed)" : "(session)"),
-				kv.first.c_str(), kv.second.toString().c_str());
+				kv.first.c_str(), kv.second.toString((useSlash ? PQ::SPRINT_SLASH : 0)).c_str());
 		}
 		printf("Total: %d vars in session.\n", (int)vars.size());
 		return;

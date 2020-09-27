@@ -602,20 +602,20 @@ typedef unsigned char UnitFlags_t;
 #endif // #ifndef NO_TEXT
 #if defined(YES_CONSTEXPR)
 	constexpr PhysicalQuantity()
-	 : value{0}, dim{0,0,0,0,0} {}
+	 : value{0}, dim{0,0,0,0,0}, iofs(0) {}
 	constexpr PhysicalQuantity(const PhysicalQuantity& copy)
-	 : value{copy.value}, dim{copy.dim[0], copy.dim[1], copy.dim[2], copy.dim[3], copy.dim[4]} {}
+	 : value{copy.value}, dim{copy.dim[0], copy.dim[1], copy.dim[2], copy.dim[3], copy.dim[4]}, iofs(copy.iofs) {}
 	constexpr PhysicalQuantity(num value_p, const signed char dim_p[(int)QuantityType::ENUM_MAX])
-	 : value(value_p), dim {dim_p[0], dim_p[1], dim_p[2], dim_p[3], dim_p[4]} {}
+	 : value(value_p), dim {dim_p[0], dim_p[1], dim_p[2], dim_p[3], dim_p[4]}, iofs(0) {}
 	constexpr PhysicalQuantity(num value_p)
-	 : value{value_p}, dim{0,0,0,0,0} {}
+	 : value{value_p}, dim{0,0,0,0,0}, iofs(0) {}
 	constexpr PhysicalQuantity(int value_p)
-	 : value{(num)value_p}, dim{0,0,0,0,0} {}
+	 : value{(num)value_p}, dim{0,0,0,0,0}, iofs(0) {}
 #ifdef _CHRONO_
 	template <typename numType, intmax_t numer, intmax_t denom>
 	constexpr PhysicalQuantity(std::chrono::duration<numType, std::ratio<numer, denom>> t)
 	  : value {t.count() * (num)numer / (num)denom},
-	   dim{0,0,1,0,0} {}
+	   dim{0,0,1,0,0}, iofs(0) {}
 	
 	//: value {std::chrono::duration<num, std::ratio<1,PQ_CHRONO_PRECISION>>(t).count() * (num)PQ_CHRONO_PRECISION },
 	//: value {std::chrono::duration<num, std::ratio<1,1>>(t).count() * (num)numer / (num)denom},
@@ -639,11 +639,12 @@ typedef unsigned char UnitFlags_t;
 #endif // chrono
 #else // inline
 	INLINE_KEYWORD PhysicalQuantity() { init(); }
-	INLINE_KEYWORD PhysicalQuantity(const PhysicalQuantity& copy) { value=copy.value; memcpy(dim, copy.dim, sizeof(dim)); }
+	INLINE_KEYWORD PhysicalQuantity(const PhysicalQuantity& copy) { value=copy.value; memcpy(dim, copy.dim, sizeof(dim)); iofs = copy.iofs; }
 	INLINE_KEYWORD PhysicalQuantity(num value_p, const signed char dim_p[(int)QuantityType::ENUM_MAX])
 	{
 		value = value_p;
 		memcpy(dim, dim_p, sizeof(dim));
+		iofs = 0;
 	}
 	INLINE_KEYWORD PhysicalQuantity(num value_p) { init(); value = value_p; }
 	INLINE_KEYWORD PhysicalQuantity(int value_p) { init(); value = (num)value_p; }
@@ -651,7 +652,7 @@ typedef unsigned char UnitFlags_t;
 	template <typename numType, intmax_t numer, intmax_t denom>
 	INLINE_KEYWORD PhysicalQuantity(std::chrono::duration<numType, std::ratio<numer, denom>> t)
 		: value{ t.count() * (num)numer / (num)denom },
-		dim{ 0,0,1,0,0 } {}
+		dim{ 0,0,1,0,0 }, iofs(0) {}
 #endif // chrono
 #endif // NO_INLINE
 
@@ -775,7 +776,9 @@ enum sprintFlags
 			(signed char)(dim[3] + rhs.dim[3]),  
 			(signed char)(dim[4] + rhs.dim[4])
 		};
-		return PhysicalQuantity(value * rhs.value, d);
+		//return PhysicalQuantity(value * rhs.value, d);
+		if (iofs == 0 && rhs.iofs == 0) { return PhysicalQuantity(value * rhs.value, d); }
+		return PhysicalQuantity((value - rom(KnownUnitOffsets[iofs])) * (rhs.value - rom(KnownUnitOffsets[rhs.iofs])), d);
 	}
 	constexpr PhysicalQuantity operator/ (const PhysicalQuantity& rhs) const 
 	{
@@ -787,7 +790,9 @@ enum sprintFlags
 			(signed char)(dim[3] - rhs.dim[3]),  
 			(signed char)(dim[4] - rhs.dim[4])
 		};
-		return PhysicalQuantity(value / rhs.value, d);
+		//return PhysicalQuantity(value / rhs.value, d);
+		if (iofs == 0 && rhs.iofs == 0) { return PhysicalQuantity(value / rhs.value, d); }
+		return PhysicalQuantity((value - rom(KnownUnitOffsets[iofs])) / (rhs.value - rom(KnownUnitOffsets[rhs.iofs])), d);
 	}
 #else
 //#endif //#if defined(YES_CONSTEXPR)
@@ -894,11 +899,12 @@ enum sprintFlags
 private:
 	num value;
 	signed char dim[(int)QuantityType::ENUM_MAX];
+	char iofs = 0;
 
 	unsigned int magdim() const; // Magnitude of dimension = sum(abs(dim[x]))
 
 #ifndef NO_TEXT
-	static void parseUnits(const CSubString& unitStr, signed char (&dimOut)[(int)QuantityType::ENUM_MAX], num& factorOut, num& offsetOut); // throws if unknown/invalid unit
+	static void parseUnits(const CSubString& unitStr, signed char (&dimOut)[(int)QuantityType::ENUM_MAX], num& factorOut, num& offsetOut, char& iofsOut); // throws if unknown/invalid unit
 	static void mulUnit(signed char (&dimOut)[(int)QuantityType::ENUM_MAX], const UnitDefinition& unit, signed int power, bool invert = false); // deals only with quantity dimension, conversion factors are handled elsewhere
 	int bestReductionPower(const UnitDefinition& unit, bool preferred = false) const;  // Divide by what power of (unit) to minimize magdim? Used in text output logic.
 	void WriteOutputUnit(int plen, int ulen, int reduceExp, size_t &outofs, size_t size, char * buf, prefixIndex_t ipre, const PhysicalQuantity::UnitDefinition & testunit, bool longNames = false) const;
