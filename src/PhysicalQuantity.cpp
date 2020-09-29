@@ -813,6 +813,14 @@ size_t PhysicalQuantity::sprint(char* buf, size_t bufsize, unsigned int precisio
 			{
 				PhysicalQuantity d = PhysicalQuantity::fromUnit(unit, p);
 				PhysicalQuantity testValue = r / d;
+				if (r.iofs > 0)
+				{
+					testValue.value += rom(KnownUnitOffsets[r.iofs]);
+				}
+				else if (d.iofs > 0)
+				{
+					testValue.value += rom(KnownUnitOffsets[d.iofs]);
+				}
 				int testMagdimDiff = r.magdim() - testValue.magdim();
 				if (testMagdimDiff > bestReductionMagdim)
 				{
