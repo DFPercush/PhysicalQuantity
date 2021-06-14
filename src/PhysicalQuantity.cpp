@@ -529,6 +529,7 @@ void PhysicalQuantity::mulUnit(signed char(&unitsOut)[(int)QuantityType::ENUM_MA
 	{
 		unitsOut[i] += power * unit.dim[i];
 	}
+
 }
 
 void PhysicalQuantity::parse(const CSubString& text_arg)
@@ -747,15 +748,16 @@ size_t PhysicalQuantity::sprint(char* buf, size_t bufsize, unsigned int precisio
 
 
 
-			if (pu[ipu].iUnit < KnownUnitOffsetsLength && p == 1 && pu.count() == 1)
+			if (pu[ipu].iUnit < KnownUnitOffsetsLength && p == 1 && pu.count() == 1 && r.magdim() == 1)
 			{
-				// Unit with offset like temperature degrees
+				// Unit with offset, like temperature, but not if combined with other units like (deg / min)
 				r.value = (r.value - rom(KnownUnitOffsets[pu[ipu].iUnit])) / rom(KnownUnits[pu[ipu].iUnit].factor);
 				for (int i = 0; i < PQ::ND; i++) { r.dim[i] -= rom(KnownUnits[pu[ipu].iUnit].dim[i]); }
 			}
 			else
 			{
 				PhysicalQuantity d = PhysicalQuantity::fromUnit(unit, p);
+				d.iofs = 0;
 				if (pu[ipu].iPrefix != -1)
 				{
 					d.value *= ::pow(rom(KnownPrefixes[pu[ipu].iPrefix].factor), p);
