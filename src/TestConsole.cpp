@@ -659,7 +659,10 @@ int main(int argc, char** argv)
 
 	if (argc <= 1)
 	{
-		showHelp();
+		//showHelp();
+		printf("Physical Quantity calculator by DFPercush.\n"
+			"https://github.com/DFPercush/PhysicalQuantity \n"
+			"Type a calculation, 'help' for a guide, or 'quit' to exit this program.\n");
 		interactive = true;
 		useSprint = true;
 	}

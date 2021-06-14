@@ -28,12 +28,16 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\PhysicalQuantity.h" />
+    <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\TestConsole.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="CSubString.natvis" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="version.rc" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>

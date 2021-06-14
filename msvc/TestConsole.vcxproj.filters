@@ -18,6 +18,9 @@
     <ClInclude Include="..\include\PhysicalQuantity.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\TestConsole.cpp">
@@ -26,5 +29,10 @@
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="CSubString.natvis" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="version.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
   </ItemGroup>
 </Project>
