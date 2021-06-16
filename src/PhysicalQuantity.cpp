@@ -1510,7 +1510,7 @@ bool PhysicalQuantity::operator==(const PhysicalQuantity& rhs) const
 {
 	if (memcmp(dim, rhs.dim, sizeof(dim)) != 0)
 	{
-		PQERRMSG(UnitMismatchException, "operator unit mismatch", E_UNIT_MISMATCH);
+		//PQERRMSG(UnitMismatchException, "operator unit mismatch", E_UNIT_MISMATCH);
 		return false;
 	}
 	return PhysicalQuantity::feq(value, rhs.value, equalityToleranceFactor);
@@ -1519,7 +1519,7 @@ bool PhysicalQuantity::operator!=(const PhysicalQuantity& rhs) const
 {
 	if (memcmp(dim, rhs.dim, sizeof(dim)) != 0)
 	{
-		PQERRMSG(UnitMismatchException, "operator unit mismatch", E_UNIT_MISMATCH);
+		//PQERRMSG(UnitMismatchException, "operator unit mismatch", E_UNIT_MISMATCH);
 		return true;
 	}
 	return !PhysicalQuantity::feq(value, rhs.value, equalityToleranceFactor);

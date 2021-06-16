@@ -234,7 +234,7 @@ DEFINE_CONST_ARRAY(PhysicalQuantity::UnitDefinition, PhysicalQuantity::KnownUnit
 {UN("F", "farad", "farads"), 1, {-1,-2,4,0,2}}, // capacitance
 {UN("Wb", "weber", "webers"), 1, {1,2,-2,0,-1}},
 {UN("T", "tesla", "teslas"), 1, {1,0,-2,0,-1}, NOBASELITERAL}, // some of these plurals might not be accurate, but will be permissive of user error when we know what they're talking about
-{UN("H", "henry", "henrys"), 1, {1,2,-2,0,-1}},
+{UN("H", "henry", "henrys"), 1, {1,2,-2,0,-2}},
 
 //                      Ma Di Ti Te Cu
 // Radiation
