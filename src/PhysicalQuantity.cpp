@@ -2089,16 +2089,25 @@ bool PhysicalQuantity::readNetworkBinary(void* buf)
 	return true;
 }
 
-PhysicalQuantity PhysicalQuantity::pow(int x)
+PhysicalQuantity PhysicalQuantity::pow(int exp_numerator, int exp_denominator)
 {
 	PQ ret;
-	ret.value = ::pow(value, x);
 	for (int pi = 0; pi < (int)QuantityType::ENUM_MAX; pi++)
 	{
-		ret.dim[pi] = dim[pi] * x;
+		int nprod = dim[pi] * exp_numerator;
+		int ndiv = nprod / exp_denominator;
+		int nmod = nprod % exp_denominator;
+		if (nmod != 0)
+		{
+			PQERRMSG(InvalidExpressionException, "Resulting unit has a non-integer exponent", E_INVALID_EXPRESSION);
+			return 0;
+		}
+		ret.dim[pi] = nprod / exp_denominator;
 	}
+	ret.value = ::pow(value, (num)exp_numerator / (num)exp_denominator);
 	return ret;
 }
+
 
 bool PhysicalQuantity::isScalar()
 {

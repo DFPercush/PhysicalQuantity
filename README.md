@@ -249,8 +249,14 @@ involves one floating point operation and 5 integer additions/comparisons.
 In the case of `eval()`'ing an exponentiation, that's 5 integer multiplies and a `pow()`.
 But `eval()` has overhead anyway, particularly if you're fond of parentheses.
 Note that there's no built in exponent operator, but you can use `sprint()` + `eval()`
-to accomplish this. A word of caution, though: values with units can only be raised
-to integer exponents. 1 meter ^ 2.3  will throw an error. Moving on...
+to accomplish this.
+
+#### New in 1.0.1.1
+To compute roots, use fractional exponents.
+Raising a PQ value to an exponent can be done as long as the resulting units
+have integer exponents. In code, use `PQ::pow(numerator, denominator)`.
+On the test console or using `eval` you can say `(1 km^2) ^ (1/2)`.
+But `(1 m^3) ^ (1/2)` would produce an error.
 
 As far as the memory footprint, it varies widely depending on your system,
 and which options you enable. The library itself takes hardly any RAM, and values

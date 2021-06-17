@@ -88,6 +88,7 @@
 #endif
 
 #ifndef PQ_MAX_RATIO
+// Applies to sprint()
 // When raising a unit-qualified value to a non-integer exponent,
 // it may be important to know whether the exponent is rational
 // and check whether the unit's exponent can be evenly divided. 
@@ -107,10 +108,7 @@
 // the ratio components are too large.
 // There is no error for raising scalars to arbitrary exponents.
 // This detection can be useful for user-input calculations, but for 
-// time-critical systems, any time you need a non-integer exponent,
-// I would recommend convert()ing the value out,
-// which will verify the correct units, doing the exponentiation,
-// and constructing a new PQ value with the result and appropriate units.
+// exponentiation in code you can use PQ::pow(numerator, denominator)
 #define PQ_MAX_RATIO 32
 #endif
 

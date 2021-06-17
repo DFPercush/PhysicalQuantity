@@ -804,7 +804,7 @@ enum sprintFlags
 	PhysicalQuantity operator- (const PhysicalQuantity& rhs) const;
 	PhysicalQuantity& operator++(); // Will throw an error if not scalar
 	PhysicalQuantity& operator--();
-	PhysicalQuantity pow(int exp);
+	PhysicalQuantity pow(int exp_numerator, int exp_denominator = 1);
 
 #if defined(YES_CONSTEXPR)
 	constexpr PhysicalQuantity operator* (num rhs)
