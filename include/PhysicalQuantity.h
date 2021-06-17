@@ -940,6 +940,9 @@ public:
 
 #endif //#ifndef NO_TEXT
 #endif //#else of #ifdef NO_INLINE
+
+	static bool findRatio(num test, std::pair<int, int>& out);
+
 	// End main class members
 	//==================================================================================
 };

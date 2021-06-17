@@ -87,6 +87,33 @@
 #define TOSTRING_BUFFER_SIZE 100
 #endif
 
+#ifndef PQ_MAX_RATIO
+// When raising a unit-qualified value to a non-integer exponent,
+// it may be important to know whether the exponent is rational
+// and check whether the unit's exponent can be evenly divided. 
+// This can allow expressions such as (1 kg^2) ^ (1/2) for example.
+// Sometimes physical formulas do involve square rooting units.
+// This #define controls how many iterations will be tested
+// as m/n for a matching value. Decomposing a decimal floating point
+// number into its rational components can be a complicated task, but
+// this library takes a naive approach by simply comparing m/n to the
+// value in question, within a certain tolerance. 
+// Smaller values will be tested first, to avoid large disparities between
+// a/b and b/a when one is large and one is small.
+// The algorithm progresses along the diagonal of a virtual division table,
+// calculated, not cached, and tests both right and bottom edges at
+// each stage, until the maximum threshold is reached, as defined here.
+// Worst case is O(n^2) division operations when exponent is irrational, or
+// the ratio components are too large.
+// There is no error for raising scalars to arbitrary exponents.
+// This detection can be useful for user-input calculations, but for 
+// time-critical systems, any time you need a non-integer exponent,
+// I would recommend convert()ing the value out,
+// which will verify the correct units, doing the exponentiation,
+// and constructing a new PQ value with the result and appropriate units.
+#define PQ_MAX_RATIO 32
+#endif
+
 /*
 TODO: 
 . NO_SPRINTF_INT  // Who doesn't have this?

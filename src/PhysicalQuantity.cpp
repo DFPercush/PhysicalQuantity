@@ -1917,34 +1917,58 @@ PhysicalQuantity PhysicalQuantity::eval(CSubString str, const void* vars_interna
 #endif
 				}
 			}
+			bool useRatio = false;
+			std::pair<int, int> exponentRatio;
+			const char* intExponentMessage = "Result has a non-integer power of a unit.";
+			if (abs(exp.value) >= std::numeric_limits<int>::max())
+			{
+				PQERRMSG(InvalidExpressionException, intExponentMessage, E_INVALID_EXPRESSION);
+				return 0;
+			}
+			int invertedExponentInt = 0;
 			if (exp.value != (num)((int)exp.value))
 			{
+				if (!findRatio(exp.value, exponentRatio))
+				{
+					PQERRMSG(InvalidExpressionException, intExponentMessage, E_INVALID_EXPRESSION);
+					return 0;
+				}
+				useRatio = true;
 				for (int id = 0; id < (int)QuantityType::ENUM_MAX; id++)
 				{
-					if (mant.dim[id] != 0)
+					if (mant.dim[id] * exponentRatio.first % exponentRatio.second != 0)
 					{
-#ifdef NO_THROW
-						errorHandler(errorUserContext, E_INVALID_EXPRESSION);
-						return PQ("0");
-#else
-						throw InvalidExpressionException("Exponent of a quantity with units must be an integer");
-#endif
+						PQERRMSG(InvalidExpressionException, intExponentMessage, E_INVALID_EXPRESSION);
+						return 0;
 					}
+
+					
 				}
 			}
 			mant.value = ::pow(mant.value, exp.value);
 			signed char newdim[(int)QuantityType::ENUM_MAX];
 			for (int id = 0; id < (int)QuantityType::ENUM_MAX; id++)
 			{
-				signed int newpow = (signed int)mant.dim[id] * (signed int)exp.value;
+				signed int newpow;
+				if (useRatio) // && (invertedExponentInt != 0))
+				{
+					//newpow = (signed int)mant.dim[id] / invertedExponentInt;
+					newpow = (signed int)mant.dim[id] * exponentRatio.first / exponentRatio.second;
+				}
+				else
+				{
+					newpow = (signed int)mant.dim[id] * (signed int)exp.value;
+				}
 				if (newpow > 127 || newpow < -128)
 				{
-#ifdef NO_THROW
-					errorHandler(errorUserContext, E_OVERFLOW);
-					return 0.0;
-#else
-					throw overflow_error("Unit exponent too large");
-#endif
+//#ifdef NO_THROW
+//					errorHandler(errorUserContext, E_OVERFLOW);
+//					return 0.0;
+//#else
+//					throw overflow_error("Unit exponent too large");
+//#endif
+					PQERRMSG(overflow_error, "Unit exponent is too large.", E_OVERFLOW);
+					return 0;
 				}
 				newdim[id] = (signed char)newpow;
 			}
@@ -2281,5 +2305,29 @@ bool PQVarList::isLegalName(PQ::CSubString name)
 	//if (name.find_first_not_of())
 }
 
-
 #endif  //#ifdef PQVARS
+
+bool PQ::findRatio(PQ::num test, std::pair<int, int>& out)
+{
+	// Find small numbers fast.
+	// Expand along the outside of a square.
+	for (int max = 1; max <= PQ_MAX_RATIO; max++)
+	{
+		for (int n = 1; n <= max; n++)
+		{
+			if (feq((num)n / (num)max, test, 0.0001))
+			{
+				out.first = n;
+				out.second = max;
+				return true;
+			}
+			if (feq((num)max / (num)n, test, 0.0001))
+			{
+				out.first = max;
+				out.second = n;
+				return true;
+			}
+		}
+	}
+	return false;
+}
