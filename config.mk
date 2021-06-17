@@ -6,7 +6,7 @@ Defines=
 
 # In case you use a different compiler
 Compiler=g++
-CompilerOptions=-Wall -Werror --std=gnu++14
+CompilerOptions=-Wall -Werror -Wno-char-subscripts --std=gnu++14
 OutputFlag=-o
 SharedFlag=-shared
 SharedCompileFlags=-fpic -c

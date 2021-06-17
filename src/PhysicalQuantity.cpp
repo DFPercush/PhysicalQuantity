@@ -1925,7 +1925,7 @@ PhysicalQuantity PhysicalQuantity::eval(CSubString str, const void* vars_interna
 				PQERRMSG(InvalidExpressionException, intExponentMessage, E_INVALID_EXPRESSION);
 				return 0;
 			}
-			int invertedExponentInt = 0;
+			
 			if (exp.value != (num)((int)exp.value))
 			{
 				if (!findRatio(exp.value, exponentRatio))
@@ -2102,7 +2102,7 @@ PhysicalQuantity PhysicalQuantity::pow(int exp_numerator, int exp_denominator)
 			PQERRMSG(InvalidExpressionException, "Resulting unit has a non-integer exponent", E_INVALID_EXPRESSION);
 			return 0;
 		}
-		ret.dim[pi] = nprod / exp_denominator;
+		ret.dim[pi] = ndiv;
 	}
 	ret.value = ::pow(value, (num)exp_numerator / (num)exp_denominator);
 	return ret;
