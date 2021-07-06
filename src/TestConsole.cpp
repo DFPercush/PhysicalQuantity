@@ -219,11 +219,6 @@ vector<string> split(string s, string delimiter) {
 int compareCharCaseInsensitive(const char& a, const char& b)
 {
 	return std::toupper(a) - std::toupper(b);
-	//if (a == b)
-	//	return true;
-	//else if (std::toupper(a) == std::toupper(b))
-	//	return true;
-	//return false;
 }
 
 bool lessStringCaseInsensitive(const std::string& a, const std::string& b)
@@ -232,7 +227,6 @@ bool lessStringCaseInsensitive(const std::string& a, const std::string& b)
 	for (size_t i = 0; i < len; i++)
 	{
 		int cmp = compareCharCaseInsensitive(a[i], b[i]);
-		//if (lessCharCaseInsensitive(a[i], b[i])) { return true; }
 		if (cmp < 0) { return true; }
 		if (cmp > 0) { return false; }
 	}
@@ -389,36 +383,14 @@ void runLine(csubstr &line, bool useConvert, bool useSprint)
 		printf("Saved %d variables to file. %d new, %d updated, %d current, %d errors\n",
 			nSavedToFile, nNewSaved, nUpdated, nCurrent, nBadName);
 		return;
-
-		//csubstr svname = line.substr(5);
-		//svname = svname.trim();
-		//if (vars.contains(svname))
-		//{
-		//	bool saveAlreadyContainsVar = savedVars.contains(svname);
-		//	savedVars.set(svname, vars.get(svname));
-		//	if (saveVars() > 0)
-		//	{
-		//		if (saveAlreadyContainsVar) { printf("Updated var '%s'.\n", svname.toStdString().c_str()); }
-		//		else { printf("Saved new var '%s'\n", svname.toStdString().c_str()); }
-		//	}
-		//	else
-		//	{
-		//		printf("Error: Save failed!\n");
-		//	}
-		//}
-		//return;
 	}
 	else if (line == "vars")
 	{
-		// TODO: sort
 		std::vector<std::string> sorted;
 		for (auto kv : vars) { sorted.push_back(kv.first); }
 		std::sort(sorted.begin(), sorted.end(), lessStringCaseInsensitive);
-		//for (auto kv : vars)
-		//for (auto varname : sorted)
 		for (int iVarName = 0; iVarName < sorted.size(); iVarName++)
 		{
-			//std::pair<std::string, PQ> kv { varname, vars[varname] };
 			std::pair<std::string, PQ> kv { sorted[iVarName], vars[sorted[iVarName]] };
 			bool insave = savedVars.contains(kv.first);
 			bool current = (insave && (savedVars[kv.first] == kv.second));
@@ -582,7 +554,6 @@ void runLine(csubstr &line, bool useConvert, bool useSprint)
 		}
 		else if (useSprint)
 		{
-			//val.sprint(buf, 1000, 15, (pustr + " " + units.toStdString()).c_str(), useSlash);
 			val.sprint(buf, 1000, 15, (units.toStdString() + " " + pustr).c_str(),
 				(useSlash ? PQ::SPRINT_SLASH : 0) | (useLongNames ? PQ::SPRINT_LONG_NAMES : 0));
 			printf("%s\n", buf);
