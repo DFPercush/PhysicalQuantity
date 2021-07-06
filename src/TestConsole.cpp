@@ -389,7 +389,7 @@ void runLine(csubstr &line, bool useConvert, bool useSprint)
 		std::vector<std::string> sorted;
 		for (auto kv : vars) { sorted.push_back(kv.first); }
 		std::sort(sorted.begin(), sorted.end(), lessStringCaseInsensitive);
-		for (int iVarName = 0; iVarName < sorted.size(); iVarName++)
+		for (size_t iVarName = 0; iVarName < sorted.size(); iVarName++)
 		{
 			std::pair<std::string, PQ> kv { sorted[iVarName], vars[sorted[iVarName]] };
 			bool insave = savedVars.contains(kv.first);
