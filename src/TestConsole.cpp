@@ -741,17 +741,19 @@ int main(int argc, char** argv)
 	printf("expression [ , preferred output units ] | 'help'\n");
 	string line_std_string;
 	char* line_cstr_malloc = nullptr;
+	const char* prompt;
 	while (true)
 	{
-		if (useConvert) { printf("\nPQ::convert> "); }
-		else if (useSprint) { printf("PQ::sprint> "); }
-		else { printf(">"); }
+		if (useConvert) { prompt = "PQ::convert> "; }
+		else if (useSprint) { prompt = "PQ::sprint> "; }
+		else { prompt = ">"; }
 
 #if defined _WIN32
+		printf("%s", prompt);
 		getline(cin, line_std_string);
 #else
 		// GNU readline for editing capability
-		line_cstr_malloc = readline("");
+		line_cstr_malloc = readline(prompt);
 		line_std_string = line_cstr_malloc;
 		free(line_cstr_malloc);
 #endif
