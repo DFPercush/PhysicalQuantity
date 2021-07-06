@@ -21,7 +21,7 @@ $(BinPath)gencode: $(gencodeObjects)
 #	$(compile) $(LibPathFlag)$(LibPath)  $(OutputFlag) $(BinPath)TestConsole $(ObjPath)TestConsole.o $(LibDepFlag)PhysicalQuantity
 TestConsoleObj=$(ObjPath)TestConsole.o $(LibPath)PhysicalQuantity.a
 $(BinPath)TestConsole: $(TestConsoleObj)
-	$(Compiler) $(OutputFlag) $(BinPath)pq $(ObjPath)TestConsole.o $(LibPath)PhysicalQuantity.a
+	$(Compiler) $(OutputFlag) $(BinPath)pq $(ObjPath)TestConsole.o $(LibPath)PhysicalQuantity.a $(LibDepFlag)readline
 
 #-----------------------------------------------------------------
 # Shared library

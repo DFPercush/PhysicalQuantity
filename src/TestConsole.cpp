@@ -31,6 +31,13 @@ int main()
 #include <vector>
 #include <string>
 #include <string.h>
+
+#if !defined(_WIN32)
+#include <readline/readline.h>
+#include <readline/history.h>
+#include <malloc.h>
+#endif
+
 using namespace std;
 typedef PhysicalQuantity PQ;
 typedef PQ::CSubString csubstr;
@@ -733,13 +740,21 @@ int main(int argc, char** argv)
 	}
 	printf("expression [ , preferred output units ] | 'help'\n");
 	string line_std_string;
+	char* line_cstr_malloc = nullptr;
 	while (true)
 	{
 		if (useConvert) { printf("\nPQ::convert> "); }
 		else if (useSprint) { printf("PQ::sprint> "); }
 		else { printf(">"); }
 
+#if defined _WIN32
 		getline(cin, line_std_string);
+#else
+		// GNU readline for editing capability
+		line_cstr_malloc = readline("");
+		line_std_string = line_cstr_malloc;
+		free(line_cstr_malloc);
+#endif
 		line = line_std_string.c_str();
 		line = line.trim();
 		if (line_std_string == "quit" || line_std_string == "exit") { break; }
