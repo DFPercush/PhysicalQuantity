@@ -31,6 +31,7 @@ int main()
 #include <vector>
 #include <string>
 #include <string.h>
+#include <algorithm>
 
 #if !defined(_WIN32)
 #include <readline/readline.h>
@@ -214,6 +215,31 @@ vector<string> split(string s, string delimiter) {
 	return res;
 }
 
+
+int compareCharCaseInsensitive(const char& a, const char& b)
+{
+	return std::toupper(a) - std::toupper(b);
+	//if (a == b)
+	//	return true;
+	//else if (std::toupper(a) == std::toupper(b))
+	//	return true;
+	//return false;
+}
+
+bool lessStringCaseInsensitive(const std::string& a, const std::string& b)
+{
+	size_t len = std::min(a.length(), b.length());
+	for (size_t i = 0; i < len; i++)
+	{
+		int cmp = compareCharCaseInsensitive(a[i], b[i]);
+		//if (lessCharCaseInsensitive(a[i], b[i])) { return true; }
+		if (cmp < 0) { return true; }
+		if (cmp > 0) { return false; }
+	}
+	return a.length() < b.length();
+}
+
+
 bool useLongNames = false;
 
 void runLine(csubstr &line, bool useConvert, bool useSprint)
@@ -385,8 +411,15 @@ void runLine(csubstr &line, bool useConvert, bool useSprint)
 	else if (line == "vars")
 	{
 		// TODO: sort
-		for (auto kv : vars)
+		std::vector<std::string> sorted;
+		for (auto kv : vars) { sorted.push_back(kv.first); }
+		std::sort(sorted.begin(), sorted.end(), lessStringCaseInsensitive);
+		//for (auto kv : vars)
+		//for (auto varname : sorted)
+		for (int iVarName = 0; iVarName < sorted.size(); iVarName++)
 		{
+			//std::pair<std::string, PQ> kv { varname, vars[varname] };
+			std::pair<std::string, PQ> kv { sorted[iVarName], vars[sorted[iVarName]] };
 			bool insave = savedVars.contains(kv.first);
 			bool current = (insave && (savedVars[kv.first] == kv.second));
 			printf("%s %s = %s\n",
@@ -536,6 +569,7 @@ void runLine(csubstr &line, bool useConvert, bool useSprint)
 #endif // #ifndef NO_THROW
 	{
 		val = PQ::eval(evalexpr, vars);
+		vars.set("ans", val);
 		if (varname.length() > 0)
 		{
 			vars.set(varname, val);
