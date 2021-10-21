@@ -763,6 +763,14 @@ int main(int argc, char** argv)
 		free(line_cstr_malloc);
 #endif
 		line = line_std_string.c_str();
+
+		// Strip #comments
+		auto commentStart = line.find_first_of("#");
+		if (commentStart != -1)
+		{
+			line = line.substr(0, commentStart);
+		}
+
 		line = line.trim();
 		if (line_std_string == "quit" || line_std_string == "exit") { break; }
 		else if (line_std_string == "help") { showHelp(); continue; }
