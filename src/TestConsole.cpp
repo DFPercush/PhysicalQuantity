@@ -666,8 +666,8 @@ int main(int argc, char** argv)
 
 	bool interactive = false;
 	bool useConvert = false;
-	bool useSprint = false;
-	int lastOptionArg = 0;
+	bool useSprint = true;
+	int lastOptionArg = 1;
 
 	if (argc <= 1)
 	{
@@ -718,8 +718,6 @@ int main(int argc, char** argv)
 		else
 		{
 			break;
-			//printf("Unknown option: %s", argv[iArg]);
-			//return 1;
 		}
 	}
 

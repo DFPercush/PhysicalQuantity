@@ -234,7 +234,7 @@ DEFINE_CONST_ARRAY(PhysicalQuantity::UnitDefinition, PhysicalQuantity::KnownUnit
 {UN("F", "farad", "farads"), 1, {-1,-2,4,0,2}}, // capacitance
 {UN("Wb", "weber", "webers"), 1, {1,2,-2,0,-1}},
 {UN("T", "tesla", "teslas"), 1, {1,0,-2,0,-1}, NOBASELITERAL}, // some of these plurals might not be accurate, but will be permissive of user error when we know what they're talking about
-{UN("gauss", "gauss", "gauss"), .0001, {1,0,-2,0,-1}, NOBASELITERAL},
+{UN("gauss", "gauss", "gauss"), .0001, {1,0,-2,0,-1}},
 
 {UN("H", "henry", "henrys"), 1, {1,2,-2,0,-2}},
 
@@ -269,6 +269,10 @@ DEFINE_CONST_ARRAY(PhysicalQuantity::UnitDefinition, PhysicalQuantity::KnownUnit
 {UN("pieze", "pieze","pieze"), 1000,{1,-1,-2,0,0}}, // e is suppoed to have a grave accent but we're making compromises
 {UN("cmH2O", "centimeter_water","centimeters_water"), 98.0665,{1,-1,-2,0,0}},
 {UN("mmH2O", "millimeter_water","millimeters_water"), 9.80665,{1,-1,-2,0,0}},
+
+// Viscosity
+{UN("poise", "poise","poise"), 0.1,{1,-1,-1,0,0}},
+
 
 //{UN("", "",""), ,{1,-1,-2,0,0}},
 
