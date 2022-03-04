@@ -63,6 +63,8 @@ DEFINE_CONST_ARRAY(PhysicalQuantity::UnitDefinition, PhysicalQuantity::KnownUnit
 {UN("pi","pi","pi"),3.1415926535897932384626433832795, {0,0,0,0,0}, NOPREFIX | NOLITERAL},
 {UN("tau","tau","tau"),6.283185307179586476925286766559, {0,0,0,0,0}, NOPREFIX | NOLITERAL},
 {UN("e", "e", "e"), 2.7182818284590452353602874713527, {0,0,0,0,0}, NOPREFIX | NOLITERAL},
+{UN("mol", "mole", "moles"), 6.0221415e23, {0,0,0,0,0}},
+
 
 // Mass
 // gram is at gramIndex
@@ -270,8 +272,10 @@ DEFINE_CONST_ARRAY(PhysicalQuantity::UnitDefinition, PhysicalQuantity::KnownUnit
 {UN("cmH2O", "centimeter_water","centimeters_water"), 98.0665,{1,-1,-2,0,0}},
 {UN("mmH2O", "millimeter_water","millimeters_water"), 9.80665,{1,-1,-2,0,0}},
 
-// Viscosity
-{UN("poise", "poise","poise"), 0.1,{1,-1,-1,0,0}},
+// Viscosity 
+{UN("P", "poise","poise"), 0.1,{1,-1,-1,0,0}},
+// Kinematic viscosity m^2 / s
+{UN("St", "stokes","stokes"), 1.0,{0,2,-1,0,0}},
 
 
 //{UN("", "",""), ,{1,-1,-2,0,0}},
