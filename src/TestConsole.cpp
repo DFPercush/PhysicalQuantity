@@ -32,6 +32,7 @@ int main()
 #include <string>
 #include <string.h>
 #include <algorithm>
+#include <stdio.h>
 
 #if !defined(_WIN32)
 #include <readline/readline.h>
@@ -751,12 +752,13 @@ int main(int argc, char** argv)
 		else if (useSprint) { prompt = "PQ::sprint> "; }
 		else { prompt = ">"; }
 
-#if defined _WIN32
+#if defined(_WIN32)
 		printf("%s", prompt);
 		getline(cin, line_std_string);
 #else
 		// GNU readline for editing capability
 		line_cstr_malloc = readline(prompt);
+		add_history(line_cstr_malloc);
 		line_std_string = line_cstr_malloc;
 		free(line_cstr_malloc);
 #endif
