@@ -1,5 +1,9 @@
 ﻿// cppstart: Begin PhysicalUnitDefinitions.cpp
+#ifdef NO_SKETCH
 #include <PhysicalQuantity.h>
+#else
+#include "PhysicalQuantity.h"
+#endif
 
 #if !defined(NO_TEXT) || defined(PQ_GENCODE)
 

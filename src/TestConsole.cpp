@@ -1,4 +1,8 @@
+#ifdef NO_SKETCH
 #include <PhysicalQuantity.h>
+#else
+#include "PhysicalQuantity.h"
+#endif
 #include <stdio.h>
 
 #if defined(NO_TEXT) || defined(NO_NEW) || defined(NO_STD_STRING) || defined(NO_STD_MAP)

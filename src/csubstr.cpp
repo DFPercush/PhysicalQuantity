@@ -1,5 +1,10 @@
-#include <PhysicalQuantity.h>
 #include <string.h>
+
+#ifdef NO_SKETCH
+#include <PhysicalQuantity.h>
+#else
+#include "PhysicalQuantity.h"
+#endif
 
 #ifndef NO_TEXT
 typedef PhysicalQuantity::CSubString csubstr;

@@ -1,6 +1,11 @@
 #pragma once
 
+#ifdef NO_SKETCH
 #include <PhysicalQuantity/ppOptions.h>
+#else
+#include "ppOptions.h"
+#endif
+
 
 //==================================================================================
 // Config checking
@@ -1155,7 +1160,7 @@ public:
 //==================================================================================
 
 #ifndef PQ_GENCODE
-#include <PhysicalQuantity/literals.ah>
+#include <PhysicalQuantity/literals.h>
 #endif
 
 

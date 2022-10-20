@@ -1,5 +1,10 @@
 
+#ifdef NO_SKETCH
 #include <PhysicalQuantity.h>
+#else
+#include "PhysicalQuantity.h"
+#endif
+
 //#include <math.h>
 template <typename T> T abs(T x) { return ((x >= 0) ? x : -x); }
 //#include <memory.h>
@@ -9,7 +14,11 @@ template <typename T> T abs(T x) { return ((x >= 0) ? x : -x); }
 
 #ifndef NO_HASHING
 #ifndef PQ_GENCODE
-#include <PhysicalQuantity/hashTables.ah>
+#ifdef NO_SKETCH
+#include <PhysicalQuantity/hashTables.h>
+#else
+#include "hashTables.h"
+#endif
 #endif //#ifndef PQ_GENCODE
 #endif //#ifndef NO_HASHING
 
@@ -1085,7 +1094,7 @@ PhysicalQuantity PhysicalQuantity::operator- (const PhysicalQuantity& rhs) const
 	}
 	PhysicalQuantity ret(*this);
 	//ret.value = value - rhs.value;
-	if (rhs.iofs == 0) { ret.value = value + rhs.value; }
+	if (rhs.iofs == 0) { ret.value = value - rhs.value; }
 	else { ret.value = value + (rhs.value - rom(KnownUnitOffsets[rhs.iofs])); }
 	return ret;
 }

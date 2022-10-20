@@ -37,13 +37,13 @@ void dumpLiterals(string rootpath)
 	{
 		rootpath += "/";
 	}
-	header.open(rootpath + "include/PhysicalQuantity/literals.ah");
-	if (!header.is_open()) { throw runtime_error("Could not open include/PhysicalQuantity/literals.ah"); }
-	source.open(rootpath + "src/literals.acpp");
+	header.open(rootpath + "include/PhysicalQuantity/literals.h");
+	if (!header.is_open()) { throw runtime_error("Could not open include/PhysicalQuantity/literals.h"); }
+	source.open(rootpath + "src/literals.cpp");
 	if (!source.is_open())
 	{
 		header.close();
-		throw runtime_error("Could not open src/literals.acpp");
+		throw runtime_error("Could not open src/literals.cpp");
 	}
 
 #ifdef NO_LITERALS
@@ -223,8 +223,8 @@ unsigned int dumpHashTable(string rootpath, int& out_bucketSize, float& out_cove
 	}
 	if (print)
 	{
-		hh.open(rootpath + "include/PhysicalQuantity/hashTables.ah", std::ofstream::app);
-		if (!hh.is_open()) { throw runtime_error("Could not open include/PhysicalQuantity/hashTables.ah"); }
+		hh.open(rootpath + "include/PhysicalQuantity/hashTables.h", std::ofstream::app);
+		if (!hh.is_open()) { throw runtime_error("Could not open include/PhysicalQuantity/hashTables.h"); }
 	}
 	size_t l_seed;
 	if (seed_p != 0) { l_seed = seed_p; }
@@ -614,7 +614,7 @@ void showinfo(string rootpath = "")
 	size_t unitLongNamesSeed = PQ::defaultHashSeed;
 	size_t prefixSymbolsSeed = PQ::defaultHashSeed;
 	size_t unitPluralsSeed = PQ::defaultHashSeed;
-	hashParamsFileIn.open(rootpath + "src/hashParams.acpp");
+	hashParamsFileIn.open(rootpath + "src/hashParams.cpp");
 	if (hashParamsFileIn.is_open())
 	{
 		string line;
@@ -634,7 +634,7 @@ void showinfo(string rootpath = "")
 	}
 	else
 	{
-		cout << "  *** Warning: Can not read hash parameters from src/hashParams.acpp. Using defaults.\n";
+		cout << "  *** Warning: Can not read hash parameters from src/hashParams.cpp. Using defaults.\n";
 	}
 
 	int ps = dumpHashTable("", iTrash, fTrash,
@@ -753,6 +753,7 @@ int main(int argc, char** argv)
 		cout << "   --max-seed [n]             Sets scanning range of seeds\n";
 		cout << "   --max-table-size [n]       Largest acceptable hash table length.\n";
 		cout << "                              Actual size will multiply by max bucket size.\n";
+		cout << "   --min-bucket-size [n]      Size of each bucket in hash table\n";
 		cout << "   --dry-run                  Do not write any files.\n";
 		cout << endl;
 		cout << "info                          Shows struct size and memory info.\n";
@@ -839,7 +840,7 @@ int main(int argc, char** argv)
 			string filepath;
 			string couldnotopen = "Could not open ";
 			ofstream hashTablesAh;
-			filepath = rootpath + "include/PhysicalQuantity/hashTables.ah";
+			filepath = rootpath + "include/PhysicalQuantity/hashTables.h";
 			hashTablesAh.open(filepath);
 			if (hashTablesAh.is_open())
 			{
@@ -853,7 +854,7 @@ int main(int argc, char** argv)
 			}
 			
 			ofstream hashParamsAcpp;
-			filepath = rootpath + "src/hashParams.acpp";
+			filepath = rootpath + "src/hashParams.cpp";
 			hashParamsAcpp.open(filepath);
 			if (hashParamsAcpp.is_open())
 			{
@@ -901,10 +902,10 @@ int main(int argc, char** argv)
 		ofstream hashParamsFile;
 		if (writeFiles)
 		{ 
-			hashParamsFile.open(rootpath + "src/hashParams.acpp");
+			hashParamsFile.open(rootpath + "src/hashParams.cpp");
 			if (!hashParamsFile.is_open())
 			{
-				throw runtime_error("Can not write src/hashParams.acpp");
+				throw runtime_error("Can not write src/hashParams.cpp");
 			}
 		}
 		if (runOptimize)
@@ -954,7 +955,7 @@ int main(int argc, char** argv)
 			hashParamsFile << "#endif\n";
 			hashParamsFile.close();
 
-			remove((rootpath + "include/PhysicalQuantity/hashTables.ah").c_str());
+			remove((rootpath + "include/PhysicalQuantity/hashTables.h").c_str());
 			cout << "gencode: Generating hash tables...";
 			int iTrash;
 			float fTrash;
@@ -1012,8 +1013,8 @@ int main(int argc, char** argv)
 		{
 			cout << "Generating ROM tables... ";
 			ofstream romtable;
-			romtable.open(rootpath + "src/romtable.acpp");
-			if (!romtable.is_open()) { throw runtime_error("Could not open src/romtable.acpp"); }
+			romtable.open(rootpath + "src/romtable.cpp");
+			if (!romtable.is_open()) { throw runtime_error("Could not open src/romtable.cpp"); }
 			romtable << "#include <PhysicalQuantity.h>\n";
 			romtable << "#ifndef NO_TEXT\n";
 			romtable << "#ifdef ROM_READ_BYTE\n";

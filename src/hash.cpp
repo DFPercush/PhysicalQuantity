@@ -1,5 +1,9 @@
 
+#ifdef NO_SKETCH
 #include <PhysicalQuantity.h>
+#else
+#include "PhysicalQuantity.h"
+#endif
 
 #ifndef NO_TEXT
 #ifndef NO_HASHING
