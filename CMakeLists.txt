@@ -27,6 +27,11 @@ option(NO_STD_CHRONO "Do not #include <chrono> - std::chrono::duration can be ca
 set(MAX_SPRINT_UNITS "10" CACHE STRING "Max number of units that can appear in printed output")
 set(MAX_NUM_TEXT_LENGTH "32" CACHE STRING "Max length of a printed number in bytes")
 set(PQ_MAX_RATIO "32" CACHE STRING "Max root of a physical unit. See ppOptions.h.in for more." 32)
+
+
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/include)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/include/PhysicalQuantity)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/src)
 configure_file(include/PhysicalQuantity/ppOptions.h.in include/PhysicalQuantity/ppOptions.h)
 
 
