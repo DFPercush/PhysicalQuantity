@@ -58,7 +58,7 @@ add_custom_command(
 		${CMAKE_CURRENT_BINARY_DIR}/include/PhysicalQuantity/literals.h
 		${CMAKE_CURRENT_BINARY_DIR}/include/PhysicalQuantity/hashTables.h
 	COMMAND $<TARGET_FILE:gencode> generate --rootpath ${CMAKE_CURRENT_BINARY_DIR} optimize --max-seed 255 info
-	MAIN_DEPENDENCY $<TARGET_FILE:gencode>
+	#MAIN_DEPENDENCY $<TARGET_FILE:gencode>
 )
 
 add_custom_target(generated_files
