@@ -192,6 +192,8 @@
 #include <string>
 #endif
 
+#include <array>
+
 #if !defined(NO_STD_MAP) && !defined(NO_NEW) && !defined(NO_STD_STRING) && !defined(NO_TEXT)
 #define PQVARS
 #include <unordered_map>
@@ -244,6 +246,8 @@ bool InitLibPQ(int headerOptionFlags = PQ_HEADER_OPTIONS);
 #ifdef PQVARS
 class PQVarList;
 #endif
+
+
 
 class PhysicalQuantity
 {
@@ -390,6 +394,11 @@ public:
 		CURRENT,
 		ENUM_MAX
 	};
+
+	template <signed char TMa, signed char TDi,signed char TTi,signed char TTe,signed char TCu, unsigned char iofs>
+	friend class SPQ;
+
+
 #ifdef YES_CONSTEXPR
 	static constexpr int ND = (int)QuantityType::ENUM_MAX;
 #else
@@ -422,7 +431,7 @@ typedef unsigned char UnitFlags_t;
 	};
 // PQ Number of Dimensions
 #define PQND ((int)PQ::QuantityType::ENUM_MAX)
-
+	static constexpr int NDIM = (int)QuantityType::ENUM_MAX;
 
 	struct Prefix
 	{
@@ -622,6 +631,14 @@ typedef unsigned char UnitFlags_t;
 	  : value {t.count() * (num)numer / (num)denom},
 	   dim{0,0,1,0,0}, iofs(0) {}
 	
+	constexpr num offset() const { return rom(KnownUnitOffsets[iofs]); }
+	constexpr num is(const PhysicalQuantity& b) const { return dim == b.dim; }
+	constexpr num extract(const PhysicalQuantity& b) const
+	{
+		if (dim != b.dim) { throw UnitMismatchException("PQ::as() conversion to dissimilar quantity"); }
+		return (value + offset()) / b.value - b.offset();
+	}
+
 	//: value {std::chrono::duration<num, std::ratio<1,PQ_CHRONO_PRECISION>>(t).count() * (num)PQ_CHRONO_PRECISION },
 	//: value {std::chrono::duration<num, std::ratio<1,1>>(t).count() * (num)numer / (num)denom},
    //template<typename numType, intmax_t numer, intmax_t denom>
@@ -904,12 +921,12 @@ enum sprintFlags
 private:
 	num value;
 	signed char dim[(int)QuantityType::ENUM_MAX];
-	char iofs = 0;
+	uint8_t iofs = 0;
 
 	unsigned int magdim() const; // Magnitude of dimension = sum(abs(dim[x]))
 
 #ifndef NO_TEXT
-	static void parseUnits(const CSubString& unitStr, signed char (&dimOut)[(int)QuantityType::ENUM_MAX], num& factorOut, num& offsetOut, char& iofsOut); // throws if unknown/invalid unit
+	static void parseUnits(const CSubString& unitStr, signed char (&dimOut)[(int)QuantityType::ENUM_MAX], num& factorOut, num& offsetOut, uint8_t& iofsOut); // throws if unknown/invalid unit
 	static void mulUnit(signed char (&dimOut)[(int)QuantityType::ENUM_MAX], const UnitDefinition& unit, signed int power, bool invert = false); // deals only with quantity dimension, conversion factors are handled elsewhere
 	int bestReductionPower(const UnitDefinition& unit, bool preferred = false) const;  // Divide by what power of (unit) to minimize magdim? Used in text output logic.
 	void WriteOutputUnit(int plen, int ulen, int reduceExp, size_t &outofs, size_t size, char * buf, prefixIndex_t ipre, const PhysicalQuantity::UnitDefinition & testunit, bool longNames = false) const;
@@ -937,8 +954,16 @@ public:
 		return true;
 	}
 
+	constexpr std::array<signed char, (int)QuantityType::ENUM_MAX> Dim() const
+	{
+		static_assert((int)QuantityType::ENUM_MAX == 5, "Dimension count changed");
+		return std::array<signed char,(int)QuantityType::ENUM_MAX>{dim[0], dim[1], dim[2], dim[3], dim[4]};
+	}
+
+
 #ifndef NO_TEXT
-	INLINE_KEYWORD 	PhysicalQuantity(const char* str) { PhysicalQuantity(CSubString(str)); }
+	// TODO: Maybe one day make this constexpr and inline
+	INLINE_KEYWORD PhysicalQuantity(const char* str) { PhysicalQuantity(CSubString(str)); }
 	INLINE_KEYWORD num convert(const char* units) const { return convert(CSubString(units)); }
 	INLINE_KEYWORD static bool findUnit(const char* pcharName, unitIndex_t& outUnitIndex, prefixIndex_t& outPrefixIndex) { return findUnit(CSubString(pcharName), outUnitIndex, outPrefixIndex); }
 	INLINE_KEYWORD void parse(const char* text) { parse(CSubString(text)); }
@@ -954,6 +979,7 @@ public:
 // END class PhysicalQuantity
 //===================================================================================================
 
+
 #ifndef NO_TYPEDEFS
 typedef PhysicalQuantity PQ;
 #ifndef NO_TEXT
@@ -961,6 +987,212 @@ typedef PhysicalQuantity::CSubString csubstr;
 #endif // #ifndef NO_TEXT
 #endif // #ifndef NO_TYPEDEFS
 
+
+
+// Static Physical Quantity
+template <signed char DMa, signed char DDi,signed char DTi,signed char DTe,signed char DCu, unsigned char iofs>
+class SPQ
+{
+public:
+	template <signed char BMa, signed char BDi,signed char BTi,signed char BTe,signed char BCu, unsigned char Biofs>
+	friend class SPQ; //<BMa, BDi, BTi, BTe, BCu, Biofs>;
+
+	using num = PQ::num;
+	static constexpr int NDIM = PQ::NDIM;
+	constexpr std::array<signed char, NDIM> Dim() const { return {DMa,DDi,DTi,DTe,DCu}; }
+
+private:
+	PQ::num value = 0;
+	//uint8_t iofs = 0;
+	static constexpr signed char dim[NDIM] = { DMa, DDi, DTi, DTe, DCu };
+
+public:
+	constexpr SPQ() : value{0} {} //, iofs{0} {}
+	constexpr SPQ(PQ::num v) : value{v} //, iofs{0}
+	{
+		//static_assert(NDIM == 5, "Dimension count changed");
+		//static_assert(dim[0] == 0 && dim[1] == 0 && dim[2] == 0 && dim[3] == 0 && dim[4] == 0, "Quantity mismatch (scalar)");
+		value = v;
+	}
+	constexpr SPQ(const SPQ<DMa,DDi,DTi,DTe,DCu,iofs>& b)
+		: value {b.value} //, iofs {b.iofs}
+	{
+		//static_assert(PQ::NDIM == 5);
+		//static_assert(dim[0] == b.dim[0] && dim[1] == b.dim[1] && dim[2] == b.dim[2] && dim[3] == b.dim[3] && dim[4] == b.dim[4], "Quantity mismatch (scalar)");
+	}
+	constexpr SPQ& operator = (const SPQ<DMa,DDi,DTi,DTe,DCu,iofs>& b)
+	{
+		//static_assert(PQ::NDIM == 5);
+		//static_assert(dim[0] == b.dim[0] && dim[1] == b.dim[1] && dim[2] == b.dim[2] && dim[3] == b.dim[3] && dim[4] == b.dim[4], "Quantity mismatch (scalar)");
+		value = b.value;
+		//iofs = b.iofs;
+		return *this;
+	}
+	constexpr SPQ& operator = (const PhysicalQuantity::num b)
+	{
+		static_assert(dim[0] == 0 && dim[1] == 0 && dim[2] == 0 && dim[3] == 0 && dim[4] == 0, "Quantity mismatch (scalar)");
+		value = b;
+	}
+	~SPQ() = default;
+
+	constexpr SPQ(const PQ& p)
+		: value { p.value } //, iofs {p.iofs}
+	{
+		static_assert((int)(PhysicalQuantity::QuantityType::ENUM_MAX) == 5, "Number of dimensions has changed");
+		static_assert(p.Dim()[0] == dim[0]);
+		static_assert(p.Dim()[1] == dim[1]);
+		static_assert(p.Dim()[2] == dim[2]);
+		static_assert(p.Dim()[3] == dim[3]);
+		static_assert(p.Dim()[4] == dim[4]);
+		static_assert(p.iofs == iofs);
+		//if (
+		//	p.Dim()[0] != dim[0] ||
+		//	p.Dim()[1] != dim[1] ||
+		//	p.Dim()[2] != dim[2] ||
+		//	p.Dim()[3] != dim[3] ||
+		//	p.Dim()[4] != dim[4]
+		//	)
+		//{
+		//	throw std::bad_cast();
+		//}
+	}
+
+	SPQ& operator += (const SPQ& b)
+	{
+		static_assert(dim == b.dim, "Quantity mismatch");
+		if (b.iofs == 0) { value += b.value; }
+		else { value += b.value - rom(PQ::KnownUnitOffsets[b.iofs]); }
+		return *this;
+	}
+	SPQ& operator -= (const SPQ& b)
+	{
+		static_assert(dim == b.dim, "Quantity mismatch");
+		if (b.iofs == 0) { value += b.value; }
+		else { value -= b.value - rom(PQ::KnownUnitOffsets[b.iofs]); }
+		return *this;
+	}
+	SPQ& operator *= (const SPQ& b)
+	{
+		static_assert(NDIM == 5, "Dimension count changed");
+		static_assert(b.dim[0] == 0 && b.dim[1] == 0 && b.dim[2] == 0 && b.dim[3] == 0 && b.dim[4] == 0, "New quantity can not be assigned to this var");
+		value = (value - rom(PQ::KnownUnitOffsets[iofs])) * b.value + rom(PQ::KnownUnitOffsets[iofs]);
+		//iofs = 0;
+		return *this;
+	}
+	SPQ& operator /= (const SPQ& b)
+	{
+		static_assert(NDIM == 5, "Dimension count changed");
+		static_assert(b.dim[0] == 0 && b.dim[1] == 0 && b.dim[2] == 0 && b.dim[3] == 0 && b.dim[4] == 0, "New quantity can not be assigned to this var");
+		value = (value - rom(PQ::KnownUnitOffsets[iofs])) / b.value + rom(PQ::KnownUnitOffsets[iofs]);
+		//iofs = 0;
+		return *this;
+	}
+
+	SPQ& operator *= (PQ::num bnum)
+	{
+		value = (value - rom(PQ::KnownUnitOffsets[iofs])) * bnum + rom(PQ::KnownUnitOffsets[iofs]);
+		return *this;
+	}
+	SPQ& operator /= (PQ::num bnum)
+	{
+		value = (value - rom(PQ::KnownUnitOffsets[iofs])) / bnum + rom(PQ::KnownUnitOffsets[iofs]);
+		return *this;
+	}
+
+	SPQ operator + (const SPQ& b)
+	{
+		static_assert(dim == b.dim, "Quantity mismatch");
+		SPQ r = *this;
+		r += b;
+		return r;
+	}
+	SPQ operator - (const SPQ& b)
+	{
+		static_assert(dim == b.dim, "Quantity mismatch");
+		SPQ r = *this;
+		r -= b;
+		return r;
+	}
+
+	template <signed char BMa, signed char BDi, signed char BTi, signed char BTe, signed char BCu, unsigned char Biofs>
+	auto operator * (const SPQ<BMa,BDi,BTi,BTe,BCu, Biofs>& b)
+	-> SPQ<DMa+BMa, DDi+BDi, DTi+BTi, DTe+BTe, DCu+BCu, 0>
+	{
+		//SPQ<stype1() * b.stype1()> r;
+		SPQ<DMa+BMa, DDi+BDi, DTi+BTi, DTe+BTe, DCu+BCu, 0> r;
+		static_assert(NDIM == 5, "Dimension count changed");
+		//if (iofs) { value -= rom(PQ::KnownUnitOffsets[iofs]); }
+		r.value = (value - rom(PQ::KnownUnitOffsets[iofs])) * (b.value - rom(PQ::KnownUnitOffsets[Biofs]));
+		//r.iofs = 0;
+		return r;
+	}
+
+	template <signed char BMa, signed char BDi, signed char BTi, signed char BTe, signed char BCu, unsigned char Biofs>
+	auto operator / (const SPQ<BMa,BDi,BTi,BTe,BCu, Biofs>& b)
+	-> SPQ<DMa-BMa, DDi-BDi, DTi-BTi, DTe-BTe, DCu-BCu, 0>
+	{
+		SPQ<DMa-BMa, DDi-BDi, DTi-BTi, DTe-BTe, DCu-BCu, 0> r;
+		static_assert(NDIM == 5, "Dimension count changed");
+		//r.value = value / b.value;
+		//r.iofs = 0;
+		r.value = (value - rom(PQ::KnownUnitOffsets[iofs])) * (b.value - rom(PQ::KnownUnitOffsets[Biofs]));
+		return r;
+	}
+
+	template <int P>
+	auto pow() -> SPQ<DMa*P, DDi*P, DTi*P, DTe*P, DCu*P, 0>
+	{
+		SPQ<DMa*P, DDi*P, DTi*P, DTe*P, DCu*P, 0> r;
+		static_assert(NDIM == 5, "Dimension count changed");
+		//r.value = pow(value - , P);
+		//r.iofs = 0;
+		r.value = pow(value - rom(PQ::KnownUnitOffsets[iofs]), P);
+	}
+
+	PQ pq()
+	{
+		PQ r;
+		r.value = value;
+		r.iofs = iofs;
+		for (int i = 0; i < NDIM; i++) { r.dim[i] = dim[i]; }
+		return r;
+	}
+
+	operator PQ ()
+	{
+		return pq();
+	}
+
+	constexpr PQ::num offset() const { return rom(PQ::KnownUnitOffsets[iofs]); }
+
+	constexpr PQ::num extract(const SPQ& b) const
+	{
+		static_assert(dim == b.dim);
+		return (value - offset()) / b.value + b.offset();
+	}
+
+
+	constexpr PQ::num extract(const PQ& b) const
+	{
+		PQ me = PQ(*this);
+		if (me.dim != b.dim) { throw PQ::UnitMismatchException("SPQ::as(): conversion to dissimilar quantity"); }
+		return (value - offset()) / b.value + b.offset();
+	}
+
+	constexpr bool is(const SPQ& b) const
+	{
+		return dim == b.dim;
+	}
+
+	constexpr bool is(const PQ& b) const
+	{
+		return dim == b.dim;
+	}
+
+};
+
+//template <const PQ& Q>
+//using PQS = SPQ<Q.Dim()[0], Q.Dim()[1], Q.Dim()[2], Q.Dim()[3], Q.Dim()[4], Q.iofs>;
 
 
 #ifdef NO_INLINE
@@ -1090,66 +1322,79 @@ public:
 
 #if defined(YES_CONSTEXPR)
 // Use these in a header
-#define CxLiteral(symbol_no_quotes, Ma, Di, Ti, Te, Cu, factor, offset) \
-	constexpr PhysicalQuantity operator ""_##symbol_no_quotes(long double v) \
+// TODO: Change these macros to iofs rather than value of ofs
+#define CxLiteral(symbol_no_quotes, Ma, Di, Ti, Te, Cu, factor, iofs) \
+	static constexpr auto operator ""_##symbol_no_quotes(long double v) \
 	{ \
-		signed char d[(int)PhysicalQuantity::QuantityType::ENUM_MAX]  \
-		{Ma, Di, Ti, Te, Cu}; \
-		return PhysicalQuantity(((PhysicalQuantity::num)factor * (PhysicalQuantity::num)v) + offset, d); \
+		return SPQ<Ma,Di,Ti,Te,Cu, iofs>(v * factor); \
 	} \
-	constexpr PhysicalQuantity operator ""_##symbol_no_quotes(unsigned long long v) \
+	static constexpr auto operator ""_##symbol_no_quotes(unsigned long long v) \
 	{ \
-		signed char d[(int)PhysicalQuantity::QuantityType::ENUM_MAX]  \
-		{Ma, Di, Ti, Te, Cu}; \
-		return PhysicalQuantity(((PhysicalQuantity::num)factor * (PhysicalQuantity::num)v) + offset, d); \
+		return SPQ<Ma,Di,Ti,Te,Cu, iofs>(v * factor); \
 	}
     /*#pragma message("Compiling literal symbol " #symbol_no_quotes) */ \
+//#define CxLiteral(symbol_no_quotes, Ma, Di, Ti, Te, Cu, factor, offset) \
+//	static constexpr auto operator ""_##symbol_no_quotes(long double v) \
+//{ \
+//	signed char d[(int)PhysicalQuantity::QuantityType::ENUM_MAX]  \
+//{Ma, Di, Ti, Te, Cu}; \
+//	auto r = PhysicalQuantity(((PhysicalQuantity::num)factor * (PhysicalQuantity::num)v) + offset, d); \
+//	return SPQ<r.Dim()[0], r.Dim()[1], r.Dim()[2], r.Dim()[3], r.Dim()[4], offset>(v * factor) \
+//	} \
+//	static constexpr auto operator ""_##symbol_no_quotes(unsigned long long v) \
+//{ \
+//	signed char d[(int)PhysicalQuantity::QuantityType::ENUM_MAX]  \
+//{Ma, Di, Ti, Te, Cu}; \
+//	auto r = return PhysicalQuantity(((PhysicalQuantity::num)factor * (PhysicalQuantity::num)v) + offset, d); \
+//	return SPQ<r.dim()[0], r.dim()[1], r.dim()[2], r.dim()[3], r.dim()[4], offset>(v * factor) \ \
+//	}
+///*#pragma message("Compiling literal symbol " #symbol_no_quotes) */ \
 
 //----------------------------------------------------------------------------
-#define CxLiteralWithPrefixes(symbol_no_quotes, Ma, Di, Ti, Te, Cu, factor, offset) \
-	CxLiteral( symbol_no_quotes,  Ma, Di, Ti, Te, Cu, factor, offset) \
-	CxLiteral( c##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e-2  , offset) \
-	CxLiteral( k##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e3   , offset) \
-	CxLiteral( m##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e-3  , offset) \
-	CxLiteral( M##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e6   , offset) \
-	CxLiteral( u##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e-6  , offset) \
-	CxLiteral( G##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e9   , offset) \
-	CxLiteral( n##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e-9  , offset) \
-	CxLiteral( T##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e12  , offset) \
-	CxLiteral( p##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e-12 , offset) \
-	CxLiteral( P##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e15  , offset) \
-	CxLiteral(da##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 10.0  , offset) \
-	CxLiteral( f##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e-15 , offset) \
-	CxLiteral( d##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 0.1   , offset) \
-	CxLiteral( h##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 100.0 , offset) \
-	CxLiteral( E##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e18  , offset) \
-	CxLiteral( a##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e-18 , offset) \
-	CxLiteral( z##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e-21 , offset) \
-	CxLiteral( Z##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e21  , offset) \
-	CxLiteral( y##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e-24 , offset) \
-	CxLiteral( Y##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e24  , offset) \
+#define CxLiteralWithPrefixes(symbol_no_quotes, Ma, Di, Ti, Te, Cu, factor, iofs) \
+	CxLiteral( symbol_no_quotes,  Ma, Di, Ti, Te, Cu, factor, iofs) \
+	CxLiteral( c##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e-2  , iofs) \
+	CxLiteral( k##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e3   , iofs) \
+	CxLiteral( m##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e-3  , iofs) \
+	CxLiteral( M##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e6   , iofs) \
+	CxLiteral( u##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e-6  , iofs) \
+	CxLiteral( G##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e9   , iofs) \
+	CxLiteral( n##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e-9  , iofs) \
+	CxLiteral( T##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e12  , iofs) \
+	CxLiteral( p##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e-12 , iofs) \
+	CxLiteral( P##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e15  , iofs) \
+	CxLiteral(da##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 10.0  , iofs) \
+	CxLiteral( f##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e-15 , iofs) \
+	CxLiteral( d##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 0.1   , iofs) \
+	CxLiteral( h##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 100.0 , iofs) \
+	CxLiteral( E##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e18  , iofs) \
+	CxLiteral( a##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e-18 , iofs) \
+	CxLiteral( z##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e-21 , iofs) \
+	CxLiteral( Z##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e21  , iofs) \
+	CxLiteral( y##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e-24 , iofs) \
+	CxLiteral( Y##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e24  , iofs) \
 
-#define CxLiteralWithPrefixesNoBase(symbol_no_quotes, Ma, Di, Ti, Te, Cu, factor, offset) \
-	CxLiteral( c##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e-2  , offset) \
-	CxLiteral( k##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e3   , offset) \
-	CxLiteral( m##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e-3  , offset) \
-	CxLiteral( M##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e6   , offset) \
-	CxLiteral( u##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e-6  , offset) \
-	CxLiteral( G##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e9   , offset) \
-	CxLiteral( n##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e-9  , offset) \
-	CxLiteral( T##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e12  , offset) \
-	CxLiteral( p##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e-12 , offset) \
-	CxLiteral( P##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e15  , offset) \
-	CxLiteral(da##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 10.0  , offset) \
-	CxLiteral( f##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e-15 , offset) \
-	CxLiteral( d##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 0.1   , offset) \
-	CxLiteral( h##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 100.0 , offset) \
-	CxLiteral( E##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e18  , offset) \
-	CxLiteral( a##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e-18 , offset) \
-	CxLiteral( z##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e-21 , offset) \
-	CxLiteral( Z##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e21  , offset) \
-	CxLiteral( y##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e-24 , offset) \
-	CxLiteral( Y##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e24  , offset) \
+#define CxLiteralWithPrefixesNoBase(symbol_no_quotes, Ma, Di, Ti, Te, Cu, factor, iofs) \
+	CxLiteral( c##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e-2  , iofs) \
+	CxLiteral( k##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e3   , iofs) \
+	CxLiteral( m##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e-3  , iofs) \
+	CxLiteral( M##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e6   , iofs) \
+	CxLiteral( u##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e-6  , iofs) \
+	CxLiteral( G##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e9   , iofs) \
+	CxLiteral( n##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e-9  , iofs) \
+	CxLiteral( T##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e12  , iofs) \
+	CxLiteral( p##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e-12 , iofs) \
+	CxLiteral( P##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e15  , iofs) \
+	CxLiteral(da##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 10.0  , iofs) \
+	CxLiteral( f##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e-15 , iofs) \
+	CxLiteral( d##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 0.1   , iofs) \
+	CxLiteral( h##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 100.0 , iofs) \
+	CxLiteral( E##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e18  , iofs) \
+	CxLiteral( a##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e-18 , iofs) \
+	CxLiteral( z##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e-21 , iofs) \
+	CxLiteral( Z##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e21  , iofs) \
+	CxLiteral( y##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e-24 , iofs) \
+	CxLiteral( Y##symbol_no_quotes, Ma, Di, Ti, Te, Cu,  factor * 1e24  , iofs) \
 //----------------------------------------------------------------------------
 
 #else // defined(YES_CONSTEXPR) && !defined(NO_INLINE)

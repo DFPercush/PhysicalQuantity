@@ -78,7 +78,8 @@ void dumpLiterals(string rootpath)
 			}
 			macroInnards << setprecision(std::numeric_limits<long double>::digits10)
 				<< u.factor << ","
-				<< ((ui < PQ::KnownUnitOffsetsLength) ? PQ::KnownUnitOffsets[ui] : 0);
+				//<< ((ui < PQ::KnownUnitOffsetsLength) ? PQ::KnownUnitOffsets[ui] : 0);
+				<< ((ui < PQ::KnownUnitOffsetsLength) ? ui : 0);
 				//<< ")" << endl;
 
 			if (u.flags & PQ::NOPREFIX)

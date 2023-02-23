@@ -236,7 +236,7 @@ PhysicalQuantity::num PhysicalQuantity::convert(const CSubString& units) const
 	signed char tdim[(int)QuantityType::ENUM_MAX];
 	num factor;
 	num offset;
-	char l_iofs;
+	uint8_t l_iofs;
 	parseUnits(units, tdim, factor, offset, l_iofs);
 	if (memcmp(dim, tdim, sizeof(dim)) != 0)
 	{
@@ -308,7 +308,7 @@ int PhysicalQuantity::bestReductionPower(const UnitDefinition& unit, bool prefer
 }
 
 
-void PhysicalQuantity::parseUnits(const CSubString& unitStr, signed char (&unitsOut_arg)[(int)QuantityType::ENUM_MAX], num& factorOut_arg, num& ofsOut_arg, char& iofsOut_arg)
+void PhysicalQuantity::parseUnits(const CSubString& unitStr, signed char (&unitsOut_arg)[(int)QuantityType::ENUM_MAX], num& factorOut_arg, num& ofsOut_arg, uint8_t& iofsOut_arg)
 {
 	signed char unitsOut[(int)QuantityType::ENUM_MAX];
 	memset(unitsOut, 0, sizeof(unitsOut));
@@ -1095,7 +1095,7 @@ PhysicalQuantity PhysicalQuantity::operator- (const PhysicalQuantity& rhs) const
 	PhysicalQuantity ret(*this);
 	//ret.value = value - rhs.value;
 	if (rhs.iofs == 0) { ret.value = value - rhs.value; }
-	else { ret.value = value + (rhs.value - rom(KnownUnitOffsets[rhs.iofs])); }
+	else { ret.value = value - (rhs.value - rom(KnownUnitOffsets[rhs.iofs])); }
 	return ret;
 }
 

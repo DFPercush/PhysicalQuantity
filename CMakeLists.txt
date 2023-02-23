@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.24)
 
 project(pq VERSION 1.1.0)
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 
@@ -27,7 +27,7 @@ option(NO_STD_CHRONO "Do not #include <chrono> - std::chrono::duration can be ca
 set(MAX_SPRINT_UNITS "10" CACHE STRING "Max number of units that can appear in printed output")
 set(MAX_NUM_TEXT_LENGTH "32" CACHE STRING "Max length of a printed number in bytes")
 set(PQ_MAX_RATIO "32" CACHE STRING "Max root of a physical unit. See ppOptions.h.in for more." 32)
-
+OPTION(OPTIMIZE_HASHES "Find optimal hash parameters for unit string lookups" OFF)
 
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/include)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/include/PhysicalQuantity)
@@ -50,6 +50,12 @@ add_executable(gencode
 
 set_property(TARGET gencode PROPERTY COMPILE_DEFINITIONS PQ_GENCODE NO_SKETCH)
 
+if(${OPTIMIZE_HASHES})
+	set(OPTIMIZE_ARGS "optimize --max-seed 255")
+else()
+	set(OPTIMIZE_ARGS "")
+endif()
+
 add_custom_command(
 	OUTPUT
 		${CMAKE_CURRENT_BINARY_DIR}/src/hashParams.cpp
@@ -57,7 +63,10 @@ add_custom_command(
 		${CMAKE_CURRENT_BINARY_DIR}/src/romtable.cpp
 		${CMAKE_CURRENT_BINARY_DIR}/include/PhysicalQuantity/literals.h
 		${CMAKE_CURRENT_BINARY_DIR}/include/PhysicalQuantity/hashTables.h
-	COMMAND ${CMAKE_CURRENT_BINARY_DIR}/gencode generate --rootpath ${CMAKE_CURRENT_BINARY_DIR} optimize --max-seed 255 info
+
+	#COMMAND ${CMAKE_CURRENT_BINARY_DIR}/gencode generate --rootpath ${CMAKE_CURRENT_BINARY_DIR} optimize --max-seed 255 info
+	#COMMAND ${CMAKE_CURRENT_BINARY_DIR}/gencode generate --rootpath ${CMAKE_CURRENT_BINARY_DIR} info
+	COMMAND ${CMAKE_CURRENT_BINARY_DIR}/gencode generate --rootpath ${CMAKE_CURRENT_BINARY_DIR} ${OPTIMIZE_ARGS} info
 	#MAIN_DEPENDENCY ${CMAKE_CURRENT_BINARY_DIR}/gencode
 )
 
@@ -78,21 +87,32 @@ set_property(SOURCE ${CMAKE_CURRENT_BINARY_DIR}/src/romtable.cpp PROPERTY GENERA
 set_property(SOURCE ${CMAKE_CURRENT_BINARY_DIR}/include/PhysicalQuantity/hashTables.h PROPERTY GENERATED 1)
 set_property(SOURCE ${CMAKE_CURRENT_BINARY_DIR}/include/PhysicalQuantity/literals.h PROPERTY GENERATED 1)
 
-
 if (${BUILD_ARDUINO_SKETCH})
-	add_custom_target(arduino_sketch ALL
-		COMMAND cp -f ${CMAKE_SOURCE_DIR}/src/csubstr.cpp                                                   ${CMAKE_CURRENT_BINARY_DIR}/arduino/PhysicalQuantity/
-		COMMAND cp -f ${CMAKE_SOURCE_DIR}/src/hash.cpp                                                      ${CMAKE_CURRENT_BINARY_DIR}/arduino/PhysicalQuantity/
-		COMMAND cp -f ${CMAKE_SOURCE_DIR}/src/PhysicalQuantity.cpp                                          ${CMAKE_CURRENT_BINARY_DIR}/arduino/PhysicalQuantity/
-		COMMAND cp -f ${CMAKE_SOURCE_DIR}/src/PhysicalUnitDefinitions.cpp                                   ${CMAKE_CURRENT_BINARY_DIR}/arduino/PhysicalQuantity/
-		COMMAND cp -f ${CMAKE_SOURCE_DIR}/include/PhysicalQuantity.h                                        ${CMAKE_CURRENT_BINARY_DIR}/arduino/PhysicalQuantity/
-		COMMAND cp -f ${CMAKE_CURRENT_BINARY_DIR}/src/hashParams.cpp                    ${CMAKE_CURRENT_BINARY_DIR}/arduino/PhysicalQuantity/
-		COMMAND cp -f ${CMAKE_CURRENT_BINARY_DIR}/src/literals.cpp                      ${CMAKE_CURRENT_BINARY_DIR}/arduino/PhysicalQuantity/
-		COMMAND cp -f ${CMAKE_CURRENT_BINARY_DIR}/src/romtable.cpp                      ${CMAKE_CURRENT_BINARY_DIR}/arduino/PhysicalQuantity/
-		COMMAND cp -f ${CMAKE_CURRENT_BINARY_DIR}/include/PhysicalQuantity/literals.h   ${CMAKE_CURRENT_BINARY_DIR}/arduino/PhysicalQuantity/
-		COMMAND cp -f ${CMAKE_CURRENT_BINARY_DIR}/include/PhysicalQuantity/hashTables.h ${CMAKE_CURRENT_BINARY_DIR}/arduino/PhysicalQuantity/
-		COMMAND cp -f ${CMAKE_CURRENT_BINARY_DIR}/include/PhysicalQuantity/ppOptions.h  ${CMAKE_CURRENT_BINARY_DIR}/arduino/PhysicalQuantity/
-	)
+	add_custom_target(arduino_sketch ALL)
+	#	COMMAND cp -f ${CMAKE_SOURCE_DIR}/src/csubstr.cpp                                                   ${CMAKE_CURRENT_BINARY_DIR}/arduino/PhysicalQuantity/
+	#	COMMAND cp -f ${CMAKE_SOURCE_DIR}/src/hash.cpp                                                      ${CMAKE_CURRENT_BINARY_DIR}/arduino/PhysicalQuantity/
+	#	COMMAND cp -f ${CMAKE_SOURCE_DIR}/src/PhysicalQuantity.cpp                                          ${CMAKE_CURRENT_BINARY_DIR}/arduino/PhysicalQuantity/
+	#	COMMAND cp -f ${CMAKE_SOURCE_DIR}/src/PhysicalUnitDefinitions.cpp                                   ${CMAKE_CURRENT_BINARY_DIR}/arduino/PhysicalQuantity/
+	#	COMMAND cp -f ${CMAKE_SOURCE_DIR}/include/PhysicalQuantity.h                                        ${CMAKE_CURRENT_BINARY_DIR}/arduino/PhysicalQuantity/
+	#	COMMAND cp -f ${CMAKE_CURRENT_BINARY_DIR}/src/hashParams.cpp                    ${CMAKE_CURRENT_BINARY_DIR}/arduino/PhysicalQuantity/
+	#	COMMAND cp -f ${CMAKE_CURRENT_BINARY_DIR}/src/literals.cpp                      ${CMAKE_CURRENT_BINARY_DIR}/arduino/PhysicalQuantity/
+	#	COMMAND cp -f ${CMAKE_CURRENT_BINARY_DIR}/src/romtable.cpp                      ${CMAKE_CURRENT_BINARY_DIR}/arduino/PhysicalQuantity/
+	#	COMMAND cp -f ${CMAKE_CURRENT_BINARY_DIR}/include/PhysicalQuantity/literals.h   ${CMAKE_CURRENT_BINARY_DIR}/arduino/PhysicalQuantity/
+	#	COMMAND cp -f ${CMAKE_CURRENT_BINARY_DIR}/include/PhysicalQuantity/hashTables.h ${CMAKE_CURRENT_BINARY_DIR}/arduino/PhysicalQuantity/
+	#	COMMAND cp -f ${CMAKE_CURRENT_BINARY_DIR}/include/PhysicalQuantity/ppOptions.h  ${CMAKE_CURRENT_BINARY_DIR}/arduino/PhysicalQuantity/
+	#)
+
+	FILE(COPY_FILE ${CMAKE_SOURCE_DIR}/src/csubstr.cpp                               ${CMAKE_CURRENT_BINARY_DIR}/arduino/PhysicalQuantity/ ONLY_IF_DIFFERENT)
+	FILE(COPY_FILE ${CMAKE_SOURCE_DIR}/src/hash.cpp                                  ${CMAKE_CURRENT_BINARY_DIR}/arduino/PhysicalQuantity/ ONLY_IF_DIFFERENT)
+	FILE(COPY_FILE ${CMAKE_SOURCE_DIR}/src/PhysicalQuantity.cpp                      ${CMAKE_CURRENT_BINARY_DIR}/arduino/PhysicalQuantity/ ONLY_IF_DIFFERENT)
+	FILE(COPY_FILE ${CMAKE_SOURCE_DIR}/src/PhysicalUnitDefinitions.cpp               ${CMAKE_CURRENT_BINARY_DIR}/arduino/PhysicalQuantity/ ONLY_IF_DIFFERENT)
+	FILE(COPY_FILE ${CMAKE_SOURCE_DIR}/include/PhysicalQuantity.h                    ${CMAKE_CURRENT_BINARY_DIR}/arduino/PhysicalQuantity/ ONLY_IF_DIFFERENT)
+	FILE(COPY_FILE ${CMAKE_CURRENT_BINARY_DIR}/src/hashParams.cpp                    ${CMAKE_CURRENT_BINARY_DIR}/arduino/PhysicalQuantity/ ONLY_IF_DIFFERENT)
+	FILE(COPY_FILE ${CMAKE_CURRENT_BINARY_DIR}/src/literals.cpp                      ${CMAKE_CURRENT_BINARY_DIR}/arduino/PhysicalQuantity/ ONLY_IF_DIFFERENT)
+	FILE(COPY_FILE ${CMAKE_CURRENT_BINARY_DIR}/src/romtable.cpp                      ${CMAKE_CURRENT_BINARY_DIR}/arduino/PhysicalQuantity/ ONLY_IF_DIFFERENT)
+	FILE(COPY_FILE ${CMAKE_CURRENT_BINARY_DIR}/include/PhysicalQuantity/literals.h   ${CMAKE_CURRENT_BINARY_DIR}/arduino/PhysicalQuantity/ ONLY_IF_DIFFERENT)
+	FILE(COPY_FILE ${CMAKE_CURRENT_BINARY_DIR}/include/PhysicalQuantity/hashTables.h ${CMAKE_CURRENT_BINARY_DIR}/arduino/PhysicalQuantity/ ONLY_IF_DIFFERENT)
+	FILE(COPY_FILE ${CMAKE_CURRENT_BINARY_DIR}/include/PhysicalQuantity/ppOptions.h  ${CMAKE_CURRENT_BINARY_DIR}/arduino/PhysicalQuantity/ ONLY_IF_DIFFERENT)
 	add_dependencies(arduino_sketch generated_files)
 else() # if (${BUILD_ARDUINO_SKETCH})
 
@@ -133,6 +153,14 @@ else() # if (${BUILD_ARDUINO_SKETCH})
 	add_dependencies(pq PhysicalQuantity)
 	add_dependencies(PhysicalQuantity generated_files)
 	target_link_libraries(pq PRIVATE PhysicalQuantity readline)
+
+
+	add_executable(test
+		test/test.cpp
+	)
+	set_property(TARGET test PROPERTY COMPILE_DEFINITIONS NO_SKETCH)
+	add_dependencies(test PhysicalQuantity)
+	target_link_libraries(test PRIVATE PhysicalQuantity)
 
 
 endif() # if (${BUILD_ARDUINO_SKETCH}) / else
