@@ -64,10 +64,7 @@ add_custom_command(
 		${CMAKE_CURRENT_BINARY_DIR}/include/PhysicalQuantity/literals.h
 		${CMAKE_CURRENT_BINARY_DIR}/include/PhysicalQuantity/hashTables.h
 
-	#COMMAND ${CMAKE_CURRENT_BINARY_DIR}/gencode generate --rootpath ${CMAKE_CURRENT_BINARY_DIR} optimize --max-seed 255 info
-	#COMMAND ${CMAKE_CURRENT_BINARY_DIR}/gencode generate --rootpath ${CMAKE_CURRENT_BINARY_DIR} info
 	COMMAND ${CMAKE_CURRENT_BINARY_DIR}/gencode generate --rootpath ${CMAKE_CURRENT_BINARY_DIR} ${OPTIMIZE_ARGS} info
-	#MAIN_DEPENDENCY ${CMAKE_CURRENT_BINARY_DIR}/gencode
 )
 
 add_custom_target(generated_files
@@ -147,12 +144,16 @@ else() # if (${BUILD_ARDUINO_SKETCH})
 		${CMAKE_CURRENT_BINARY_DIR}/include/PhysicalQuantity/ppOptions.h
 	)
 
+	target_include_directories(PhysicalQuantity PUBLIC ${CMAKE_CURRENT_BINARY_DIR}/include)
 
 	set_property(TARGET PhysicalQuantity PROPERTY COMPILE_DEFINITIONS NO_SKETCH)
 	set_property(TARGET pq PROPERTY COMPILE_DEFINITIONS NO_SKETCH)
 	add_dependencies(pq PhysicalQuantity)
 	add_dependencies(PhysicalQuantity generated_files)
-	target_link_libraries(pq PRIVATE PhysicalQuantity readline)
+	target_link_libraries(pq PRIVATE PhysicalQuantity)
+	if (${CMAKE_HOST_UNIX})
+		target_link_libraries(pq PRIVATE readline)
+	endif()
 
 
 	add_executable(test
